@@ -17,9 +17,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// startCmd represents the start command
-var startCmd = &cobra.Command{
-	Use:   "start",
+// StartCmd represents the Start command
+var StartCmd = &cobra.Command{
+	Use:   "Start",
 	Short: "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
@@ -180,7 +180,7 @@ func MirvaRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 func init() {
-	rootCmd.AddCommand(startCmd)
+	rootCmd.AddCommand(StartCmd)
 
 	// Here you will define your flags and configuration settings.
 
