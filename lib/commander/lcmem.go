@@ -1,4 +1,5 @@
-package analyze
+// The in-memory implementation of the mrva commander library
+package lcmem
 
 import (
 	"encoding/json"

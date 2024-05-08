@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strconv"
 
-	cim "github.com/advanced-security/mrvacommander/lib/commander/inmemory"
+	"github.com/advanced-security/mrvacommander/lib/commander/lcmem"
 	"github.com/gorilla/mux"
 	"github.com/hohn/ghes-mirva-server/analyze"
 	co "github.com/hohn/ghes-mirva-server/common"
@@ -105,7 +105,7 @@ func MirvaStatus(w http.ResponseWriter, r *http.Request) {
 	ji := store.GetJobInfo(js)
 
 	analyze.StatusResponse(w, js, ji, id)
-	cim.StatusResponse(w, js, ji, id)
+	lcmem.StatusResponse(w, js, ji, id)
 }
 
 // Download artifacts
