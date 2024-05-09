@@ -17,6 +17,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// XX: no subcommands here
 // StartCmd represents the Start command
 var StartCmd = &cobra.Command{
 	Use:   "Start",
