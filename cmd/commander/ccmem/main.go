@@ -1,7 +1,7 @@
 /*
 Copyright © 2024 github
 */
-package cmd
+package ccmem
 
 import (
 	"log"
@@ -28,7 +28,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		LogAbove(LogWarning, "Starting server")
+		slog.Info("Starting server")
 		serve()
 	},
 }
@@ -53,9 +53,9 @@ func serve() {
 
 	r.HandleFunc("/repos/{controller_owner}/{controller_repo}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}/repos/{repo_owner}/{repo_name}", MirvaDownloadArtifact)
 
-	r.HandleFunc("/codeql-query-console/codeql-variant-analysis-repo-tasks/{codeql_variant_analysis_id}/{repo_id}/{owner_id}/{controller_repo_id}", MirvaDownLoad3)
-
-	r.HandleFunc("/github-codeql-query-console-prod/codeql-variant-analysis-repo-tasks/{codeql_variant_analysis_id}/{repo_id}", MirvaDownLoad4)
+	// Not implemented:
+	// r.HandleFunc("/codeql-query-console/codeql-variant-analysis-repo-tasks/{codeql_variant_analysis_id}/{repo_id}/{owner_id}/{controller_repo_id}", MirvaDownLoad3)
+	// r.HandleFunc("/github-codeql-query-console-prod/codeql-variant-analysis-repo-tasks/{codeql_variant_analysis_id}/{repo_id}", MirvaDownLoad4)
 
 	//
 	// Now some support API endpoints
@@ -69,7 +69,7 @@ func serve() {
 }
 
 func RootHandler(w http.ResponseWriter, r *http.Request) {
-	LogAbove(LogWarning, "Request on /")
+	slog.Info("Request on /")
 }
 
 func MirvaStatus(w http.ResponseWriter, r *http.Request) {
@@ -136,22 +136,6 @@ func MirvaDownloadArtifact(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func MirvaDownLoad3(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	LogAbove(LogWarning, "mrva download step 3 for (%s,%s,%s,%s)\n",
-		vars["codeql_variant_analysis_id"],
-		vars["repo_id"],
-		vars["owner_id"],
-		vars["controller_repo_id"])
-}
-
-func MirvaDownLoad4(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	LogAbove(LogWarning, "mrva download step 4 for (%s,%s)\n",
-		vars["codeql_variant_analysis_id"],
-		vars["repo_id"])
-}
-
 func MirvaDownloadServe(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	slog.Info("File download request", "local_path", vars["local_path"])
@@ -161,22 +145,22 @@ func MirvaDownloadServe(w http.ResponseWriter, r *http.Request) {
 
 func MirvaRequestID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	LogAbove(LogWarning, "New mrva using repository_id=%v\n", vars["repository_id"])
+	slog.Info("New mrva using repository_id=%v\n", vars["repository_id"])
 }
 
 func MirvaRequest(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	slog.Info("New mrva run ", "owner", vars["owner"], "repo", vars["repo"])
 	// TODO Change this to functional style?
-	session := new(MirvaSession)
-	session.id = next_id()
-	session.owner = vars["owner"]
-	session.controller_repo = vars["repo"]
-	session.collect_info(w, r)
-	session.find_available_DBs()
-	session.start_analyses()
-	session.submit_response(w)
-	session.save()
+	// session := new(MirvaSession)
+	// session.id = next_id()
+	// session.owner = vars["owner"]
+	// session.controller_repo = vars["repo"]
+	// session.collect_info(w, r)
+	// session.find_available_DBs()
+	// session.start_analyses()
+	// session.submit_response(w)
+	// session.save()
 }
 
 func init() {

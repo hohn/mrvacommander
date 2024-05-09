@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package cmd
+package ccmem
 
 import (
 	"log"
@@ -79,9 +79,6 @@ func init() {
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-
-	rootCmd.AddCommand(startCmd)
-
 	err := rootCmd.Execute()
 	if err != nil {
 		os.Exit(1)
