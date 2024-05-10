@@ -8,6 +8,8 @@ import (
 	"log"
 	"log/slog"
 	"os"
+
+	"github.com/BurntSushi/toml"
 )
 
 func main() {
@@ -48,11 +50,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Read configuration
+	config := loadConfig("cconfig.toml")
+
 	// Apply 'mode' flag
 	switch *mode {
 	case "standalone":
+		// Assemble ccmem
 	case "container":
+		// Assemble cccontainer
 	case "cluster":
+		// Assemble cccluster
 	default:
 		slog.Error("Invalid value for --mode. Allowed values are: standalone, container, cluster\n")
 		os.Exit(1)
@@ -62,4 +70,40 @@ func main() {
 	log.Printf("Help: %t\n", *helpFlag)
 	log.Printf("Log Level: %s\n", *logLevel)
 	log.Printf("Mode: %s\n", *mode)
+
+	// Run in the chosen mode
+
+}
+
+type CommanderParts struct {
+	commander MCCommander
+	logger    MCLogger
+	queue     MCQueue
+	storage   MCStorage
+	runner    MCRunner
+}
+
+type MCConfig struct {
+	commander MCCConf
+	logger    MCLConf
+	queue     MCQConf
+	storage   MCSConf
+	runner    MCRConf
+}
+
+func loadConfig(fname string) *MCConfig {
+	if _, err := os.Stat(fname); err != nil {
+		slog.Error("Configuration file %s not found", f)
+		os.Exit(1)
+	}
+
+	var config MCConfig
+
+	_, err := toml.DecodeFile(fname, &config)
+	if err != nil {
+		slog.Error("", err)
+		os.Exit(1)
+	}
+
+	return &config
 }
