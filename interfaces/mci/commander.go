@@ -1,4 +1,12 @@
 package mci
 
-type MCCommander struct {
+type Commander interface {
+}
+
+type State struct {
+	Commander Commander
+	Logger    Logger
+	Queue     Queue
+	Storage   Storage
+	Runner    Runner
 }

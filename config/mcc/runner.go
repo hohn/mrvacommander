@@ -1,4 +1,4 @@
-package lrmem
+package mcc
 
 type Runner struct {
 }

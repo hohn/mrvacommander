@@ -1,4 +1,4 @@
 package mci
 
-type MCStorage struct {
+type Storage interface {
 }

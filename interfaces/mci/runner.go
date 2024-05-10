@@ -1,4 +1,4 @@
 package mci
 
-type MCRunner struct {
+type Runner interface {
 }

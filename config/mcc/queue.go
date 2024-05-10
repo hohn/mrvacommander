@@ -1,4 +1,4 @@
-package lqmem
+package mcc
 
 type Queue struct {
 }

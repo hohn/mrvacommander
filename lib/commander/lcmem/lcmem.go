@@ -12,6 +12,9 @@ import (
 	"github.com/hohn/ghes-mirva-server/store"
 )
 
+type Commander struct {
+}
+
 func StatusResponse(w http.ResponseWriter, js co.JobSpec, ji co.JobInfo, vaid int) {
 	slog.Debug("Submitting status response", "session", vaid)
 

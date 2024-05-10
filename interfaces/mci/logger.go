@@ -1,4 +1,4 @@
 package mci
 
-type MCLogger struct {
+type Logger interface {
 }

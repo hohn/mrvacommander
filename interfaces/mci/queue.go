@@ -1,4 +1,4 @@
 package mci
 
-type MCQueue struct {
+type Queue interface {
 }

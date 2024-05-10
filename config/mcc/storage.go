@@ -1,4 +1,4 @@
-package lsmem
+package mcc
 
 type Storage struct {
 }

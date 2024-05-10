@@ -10,7 +10,8 @@ import (
 	"os"
 
 	"github.com/BurntSushi/toml"
-	"github.com/advanced-security/mrvacommander/intefaces/mci"
+	"github.com/advanced-security/mrvacommander/config/mcc"
+	"github.com/advanced-security/mrvacommander/interfaces/mci"
 	"github.com/advanced-security/mrvacommander/lib/commander/lcmem"
 	"github.com/advanced-security/mrvacommander/lib/logger/llmem"
 	"github.com/advanced-security/mrvacommander/lib/queue/lqmem"
@@ -63,12 +64,12 @@ func main() {
 	switch *mode {
 	case "standalone":
 		// Assemble single-process version
-		state := MCState{
-			commander: lcmem.LCCommander,
-			logger:    llmem.LCLogger,
-			queue:     lqmem.LCQueue,
-			storage:   lsmem.LCStorage,
-			runner:    lrmem.LCRunner,
+		state := mci.State{
+			Commander: lcmem.Commander{},
+			Logger:    llmem.Logger{},
+			Queue:     lqmem.Queue{},
+			Storage:   lsmem.Storage{},
+			Runner:    lrmem.Runner{},
 		}
 
 	case "container":
@@ -89,31 +90,12 @@ func main() {
 
 }
 
-type MCCConf struct {
-}
-type MCLConf struct {
-}
-type MCQConf struct {
-}
-type MCSConf struct {
-}
-type MCRConf struct {
-}
-
-type MCState struct {
-	commander mci.MCCommander
-	logger    mci.MCLogger
-	queue     mci.MCQueue
-	storage   mci.MCStorage
-	runner    mci.MCRunner
-}
-
 type MCConfig struct {
-	commander MCCConf
-	logger    MCLConf
-	queue     MCQConf
-	storage   MCSConf
-	runner    MCRConf
+	commander mcc.Commander
+	logger    mcc.Logger
+	queue     mcc.Queue
+	storage   mcc.Storage
+	runner    mcc.Runner
 }
 
 func loadConfig(fname string) *MCConfig {
