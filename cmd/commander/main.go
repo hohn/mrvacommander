@@ -10,6 +10,12 @@ import (
 	"os"
 
 	"github.com/BurntSushi/toml"
+	"github.com/advanced-security/mrvacommander/intefaces/mci"
+	"github.com/advanced-security/mrvacommander/lib/commander/lcmem"
+	"github.com/advanced-security/mrvacommander/lib/logger/llmem"
+	"github.com/advanced-security/mrvacommander/lib/queue/lqmem"
+	"github.com/advanced-security/mrvacommander/lib/runner/lrmem"
+	"github.com/advanced-security/mrvacommander/lib/storage/lsmem"
 )
 
 func main() {
@@ -56,7 +62,15 @@ func main() {
 	// Apply 'mode' flag
 	switch *mode {
 	case "standalone":
-		// Assemble ccmem
+		// Assemble single-process version
+		state := MCState{
+			commander: lcmem.LCCommander,
+			logger:    llmem.LCLogger,
+			queue:     lqmem.LCQueue,
+			storage:   lsmem.LCStorage,
+			runner:    lrmem.LCRunner,
+		}
+
 	case "container":
 		// Assemble cccontainer
 	case "cluster":
@@ -75,12 +89,23 @@ func main() {
 
 }
 
-type CommanderParts struct {
-	commander MCCommander
-	logger    MCLogger
-	queue     MCQueue
-	storage   MCStorage
-	runner    MCRunner
+type MCCConf struct {
+}
+type MCLConf struct {
+}
+type MCQConf struct {
+}
+type MCSConf struct {
+}
+type MCRConf struct {
+}
+
+type MCState struct {
+	commander mci.MCCommander
+	logger    mci.MCLogger
+	queue     mci.MCQueue
+	storage   mci.MCStorage
+	runner    mci.MCRunner
 }
 
 type MCConfig struct {

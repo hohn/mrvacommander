@@ -1,7 +1,7 @@
 /*
 Copyright © 2024 github
 */
-package ccmem
+package lcmem
 
 import (
 	"log"
@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/advanced-security/mrvacommander/lib/commander/lcmem"
 	"github.com/gorilla/mux"
 	"github.com/hohn/ghes-mirva-server/analyze"
 	co "github.com/hohn/ghes-mirva-server/common"
