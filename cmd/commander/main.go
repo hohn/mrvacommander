@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/BurntSushi/toml"
 	"github.com/advanced-security/mrvacommander/config/mcc"
 	"github.com/advanced-security/mrvacommander/interfaces/mci"
 	"github.com/advanced-security/mrvacommander/lib/commander/lcmem"
@@ -58,7 +57,7 @@ func main() {
 	}
 
 	// Read configuration
-	config := loadConfig("cconfig.toml")
+	config := mcc.LoadConfig("cconfig.toml")
 
 	// Apply 'mode' flag
 	switch *mode {
@@ -88,29 +87,4 @@ func main() {
 
 	// Run in the chosen mode
 
-}
-
-type MCConfig struct {
-	commander mcc.Commander
-	logger    mcc.Logger
-	queue     mcc.Queue
-	storage   mcc.Storage
-	runner    mcc.Runner
-}
-
-func loadConfig(fname string) *MCConfig {
-	if _, err := os.Stat(fname); err != nil {
-		slog.Error("Configuration file %s not found", f)
-		os.Exit(1)
-	}
-
-	var config MCConfig
-
-	_, err := toml.DecodeFile(fname, &config)
-	if err != nil {
-		slog.Error("", err)
-		os.Exit(1)
-	}
-
-	return &config
 }
