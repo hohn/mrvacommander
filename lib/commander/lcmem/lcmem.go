@@ -18,6 +18,7 @@ import (
 )
 
 type Commander struct {
+	st mci.State // st points to this Commander instance.  Circular, but needed.
 }
 
 func (c *Commander) Run(st mci.State) {
@@ -25,6 +26,7 @@ func (c *Commander) Run(st mci.State) {
 
 func (c *Commander) Setup(st mci.State) {
 	r := mux.NewRouter()
+	c.st = st
 
 	//
 	// First are the API endpoints that mirror those used in the github API
@@ -197,12 +199,15 @@ func (c *Commander) MirvaRequest(w http.ResponseWriter, r *http.Request) {
 	slog.Info("New mrva run ", "owner", vars["owner"], "repo", vars["repo"])
 	// TODO Change this to functional style?
 	// session := new(MirvaSession)
-	// session.id = next_id()
-	// session.owner = vars["owner"]
-	// session.controller_repo = vars["repo"]
-	// session.collect_info(w, r)
-	// session.find_available_DBs()
-	// session.start_analyses()
-	// session.submit_response(w)
-	// session.save()
+	session_id := c.st.Storage.NextID()
+	slog.Info("id: ", session_id)
+	// session_owner = vars["owner"]
+	// session_controller_repo = vars["repo"]
+	// session_collect_info(w, r)
+
+	// session_find_available_DBs()
+
+	// session_start_analyses()
+	// session_submit_response(w)
+	// session_save()
 }

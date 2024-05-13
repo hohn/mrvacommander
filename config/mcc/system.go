@@ -8,11 +8,11 @@ import (
 )
 
 type System struct {
-	commander Commander
-	logger    Logger
-	queue     Queue
-	storage   Storage
-	runner    Runner
+	Commander Commander
+	Logger    Logger
+	Queue     Queue
+	Storage   Storage
+	Runner    Runner
 }
 
 func LoadConfig(fname string) *System {

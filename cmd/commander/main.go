@@ -57,7 +57,7 @@ func main() {
 	}
 
 	// Read configuration
-	config := mcc.LoadConfig("cconfig.toml")
+	config := mcc.LoadConfig("mcconfig.toml")
 
 	// Output configuration summary
 	log.Printf("Help: %t\n", *helpFlag)
@@ -69,13 +69,13 @@ func main() {
 	case "standalone":
 		// Assemble single-process version
 		state := mci.State{
-			Commander: lcmem.Commander{},
-			Logger:    llmem.Logger{},
-			Queue:     lqmem.Queue{},
-			Storage:   lsmem.Storage{},
-			Runner:    lrmem.Runner{},
+			Commander: &lcmem.Commander{},
+			Logger:    &llmem.Logger{},
+			Queue:     &lqmem.Queue{},
+			Storage:   &lsmem.Storage{CurrentID: config.Storage.StartingID},
+			Runner:    &lrmem.Runner{},
 		}
-		main := lcmem.Commander{}
+		main := &lcmem.Commander{}
 		main.Setup(state)
 		main.Run(state)
 
