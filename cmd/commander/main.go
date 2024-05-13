@@ -59,6 +59,11 @@ func main() {
 	// Read configuration
 	config := mcc.LoadConfig("cconfig.toml")
 
+	// Output configuration summary
+	log.Printf("Help: %t\n", *helpFlag)
+	log.Printf("Log Level: %s\n", *logLevel)
+	log.Printf("Mode: %s\n", *mode)
+
 	// Apply 'mode' flag
 	switch *mode {
 	case "standalone":
@@ -70,6 +75,9 @@ func main() {
 			Storage:   lsmem.Storage{},
 			Runner:    lrmem.Runner{},
 		}
+		main := lcmem.Commander{}
+		main.Setup(state)
+		main.Run(state)
 
 	case "container":
 		// Assemble cccontainer
@@ -79,12 +87,5 @@ func main() {
 		slog.Error("Invalid value for --mode. Allowed values are: standalone, container, cluster\n")
 		os.Exit(1)
 	}
-
-	// Output configuration summary
-	log.Printf("Help: %t\n", *helpFlag)
-	log.Printf("Log Level: %s\n", *logLevel)
-	log.Printf("Mode: %s\n", *mode)
-
-	// Run in the chosen mode
 
 }
