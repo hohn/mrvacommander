@@ -1,4 +1,4 @@
-package types
+package mct
 
 type DownloadResponse struct {
 	Repository           DownloadRepo `json:"repository"`
@@ -209,4 +209,11 @@ type StatusResponse struct {
 	Status               string              `json:"status"`
 	ScannedRepositories  []ScannedRepo       `json:"scanned_repositories"`
 	SkippedRepositories  SkippedRepositories `json:"skipped_repositories"`
+}
+
+type SubmitMsg struct {
+	ActionRepoRef string   `json:"action_repo_ref"`
+	Language      string   `json:"language"`
+	QueryPack     string   `json:"query_pack"`
+	Repositories  []string `json:"repositories"`
 }
