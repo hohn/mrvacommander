@@ -1,4 +1,9 @@
-package mct
+package tcmdr
+
+import (
+	"github.com/advanced-security/mrvacommander/types/tsto"
+	co "github.com/hohn/ghes-mirva-server/common"
+)
 
 type DownloadResponse struct {
 	Repository           DownloadRepo `json:"repository"`
@@ -216,4 +221,21 @@ type SubmitMsg struct {
 	Language      string   `json:"language"`
 	QueryPack     string   `json:"query_pack"`
 	Repositories  []string `json:"repositories"`
+}
+
+type SessionInfo struct {
+	ID             int
+	Owner          string
+	ControllerRepo string
+
+	QueryPack    string
+	Language     string
+	Repositories []co.OwnerRepo
+
+	AccessMismatchRepos []co.OwnerRepo
+	NotFoundRepos       []co.OwnerRepo
+	NoCodeqlDBRepos     []co.OwnerRepo
+	OverLimitRepos      []co.OwnerRepo
+
+	AnalysisRepos *map[co.OwnerRepo]tsto.DBLocation
 }
