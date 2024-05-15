@@ -9,13 +9,13 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/advanced-security/mrvacommander/config/mcc"
-	"github.com/advanced-security/mrvacommander/interfaces/mci"
-	"github.com/advanced-security/mrvacommander/lib/commander/lcmem"
-	"github.com/advanced-security/mrvacommander/lib/logger/llmem"
-	"github.com/advanced-security/mrvacommander/lib/queue/lqmem"
-	"github.com/advanced-security/mrvacommander/lib/runner/lrmem"
-	"github.com/advanced-security/mrvacommander/lib/storage/lsmem"
+	"mrvacommander/config/mcc"
+
+	"mrvacommander/pkg/agent"
+	"mrvacommander/pkg/logger"
+	"mrvacommander/pkg/queue"
+	"mrvacommander/pkg/server"
+	"mrvacommander/pkg/storage"
 )
 
 func main() {
@@ -68,16 +68,16 @@ func main() {
 	switch *mode {
 	case "standalone":
 		// Assemble single-process version
-		state := mci.State{
-			Commander: &lcmem.Commander{},
-			Logger:    &llmem.Logger{},
-			Queue:     &lqmem.Queue{},
-			Storage:   &lsmem.Storage{CurrentID: config.Storage.StartingID},
-			Runner:    &lrmem.Runner{},
+		state := server.State{
+			Commander: &server.CommanderSingle{},
+			Logger:    &logger.LoggerSingle{},
+			Queue:     &queue.QueueSingle{},
+			Storage:   &storage.StorageSingle{CurrentID: config.Storage.StartingID},
+			Runner:    &agent.RunnerSingle{},
 		}
-		main := &lcmem.Commander{}
-		main.Setup(state)
-		main.Run(state)
+		main := &server.CommanderSingle{}
+		main.Setup(&state)
+		main.Run()
 
 	case "container":
 		// Assemble cccontainer

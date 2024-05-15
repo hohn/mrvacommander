@@ -1,4 +1,4 @@
-package lsmem
+package storage
 
 import (
 	"errors"
@@ -9,20 +9,19 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/advanced-security/mrvacommander/types/tsto"
 	co "github.com/hohn/ghes-mirva-server/common"
 )
 
-type Storage struct {
+type StorageSingle struct {
 	CurrentID int
 }
 
-func (s *Storage) NextID() int {
+func (s *StorageSingle) NextID() int {
 	s.CurrentID += 1
 	return s.CurrentID
 }
 
-func (s *Storage) SaveQueryPack(tgz []byte, sessionId int) (string, error) {
+func (s *StorageSingle) SaveQueryPack(tgz []byte, sessionId int) (string, error) {
 	// Save the tar.gz body
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -52,8 +51,8 @@ func (s *Storage) SaveQueryPack(tgz []byte, sessionId int) (string, error) {
 //		Determine for which repositories codeql databases are available.
 //
 //	 Those will be the analysis_repos.  The rest will be skipped.
-func (s *Storage) FindAvailableDBs(analysisReposRequested []co.OwnerRepo) (not_found_repos []co.OwnerRepo,
-	analysisRepos *map[co.OwnerRepo]tsto.DBLocation) {
+func (s *StorageSingle) FindAvailableDBs(analysisReposRequested []co.OwnerRepo) (not_found_repos []co.OwnerRepo,
+	analysisRepos *map[co.OwnerRepo]DBLocation) {
 	slog.Debug("Looking for available CodeQL databases")
 
 	cwd, err := os.Getwd()
@@ -62,7 +61,7 @@ func (s *Storage) FindAvailableDBs(analysisReposRequested []co.OwnerRepo) (not_f
 		return
 	}
 
-	analysisRepos = &map[co.OwnerRepo]tsto.DBLocation{}
+	analysisRepos = &map[co.OwnerRepo]DBLocation{}
 
 	not_found_repos = []co.OwnerRepo{}
 
@@ -77,7 +76,7 @@ func (s *Storage) FindAvailableDBs(analysisReposRequested []co.OwnerRepo) (not_f
 			not_found_repos = append(not_found_repos, rep)
 		} else {
 			slog.Info("Found database for ", "owner/repo", rep, "path", dbPath)
-			(*analysisRepos)[rep] = tsto.DBLocation{Prefix: dbPrefix, File: dbName}
+			(*analysisRepos)[rep] = DBLocation{Prefix: dbPrefix, File: dbName}
 		}
 	}
 	return not_found_repos, analysisRepos

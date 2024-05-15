@@ -1,7 +1,11 @@
-package tcmdr
+package server
 
 import (
-	"github.com/advanced-security/mrvacommander/types/tsto"
+	"mrvacommander/pkg/agent"
+	"mrvacommander/pkg/logger"
+	"mrvacommander/pkg/queue"
+	"mrvacommander/pkg/storage"
+
 	co "github.com/hohn/ghes-mirva-server/common"
 )
 
@@ -237,5 +241,17 @@ type SessionInfo struct {
 	NoCodeqlDBRepos     []co.OwnerRepo
 	OverLimitRepos      []co.OwnerRepo
 
-	AnalysisRepos *map[co.OwnerRepo]tsto.DBLocation
+	AnalysisRepos *map[co.OwnerRepo]storage.DBLocation
+}
+
+type CommanderSingle struct {
+	st *State
+}
+
+type State struct {
+	Commander Commander
+	Logger    logger.Logger
+	Queue     queue.Queue
+	Storage   storage.Storage
+	Runner    agent.Runner
 }

@@ -1,5 +1,4 @@
-// The in-memory implementation of the mrva commander library
-package lcmem
+package server
 
 import (
 	"bytes"
@@ -14,8 +13,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/advanced-security/mrvacommander/interfaces/mci"
-	"github.com/advanced-security/mrvacommander/types/tcmdr"
 	"github.com/gorilla/mux"
 	"github.com/hohn/ghes-mirva-server/analyze"
 	"github.com/hohn/ghes-mirva-server/api"
@@ -23,14 +20,10 @@ import (
 	"github.com/hohn/ghes-mirva-server/store"
 )
 
-type Commander struct {
-	st mci.State // st points to this Commander instance.  Circular, but needed.
+func (c *CommanderSingle) Run() {
 }
 
-func (c *Commander) Run(st mci.State) {
-}
-
-func (c *Commander) Setup(st mci.State) {
+func (c *CommanderSingle) Setup(st *State) {
 	r := mux.NewRouter()
 	c.st = st
 
@@ -66,7 +59,7 @@ func (c *Commander) Setup(st mci.State) {
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
-func (c *Commander) StatusResponse(w http.ResponseWriter, js co.JobSpec, ji co.JobInfo, vaid int) {
+func (c *CommanderSingle) StatusResponse(w http.ResponseWriter, js co.JobSpec, ji co.JobInfo, vaid int) {
 	slog.Debug("Submitting status response", "session", vaid)
 
 	all_scanned := []api.ScannedRepo{}
@@ -120,11 +113,11 @@ func (c *Commander) StatusResponse(w http.ResponseWriter, js co.JobSpec, ji co.J
 	w.Write(submitStatus)
 }
 
-func (c *Commander) RootHandler(w http.ResponseWriter, r *http.Request) {
+func (c *CommanderSingle) RootHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Request on /")
 }
 
-func (c *Commander) MirvaStatus(w http.ResponseWriter, r *http.Request) {
+func (c *CommanderSingle) MirvaStatus(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	slog.Info("mrva status request for ",
 		"owner", vars["owner"],
@@ -161,7 +154,7 @@ func (c *Commander) MirvaStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 // Download artifacts
-func (c *Commander) MirvaDownloadArtifact(w http.ResponseWriter, r *http.Request) {
+func (c *CommanderSingle) MirvaDownloadArtifact(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	slog.Info("MRVA artifact download",
 		"controller_owner", vars["controller_owner"],
@@ -188,19 +181,19 @@ func (c *Commander) MirvaDownloadArtifact(w http.ResponseWriter, r *http.Request
 
 }
 
-func (c *Commander) MirvaDownloadServe(w http.ResponseWriter, r *http.Request) {
+func (c *CommanderSingle) MirvaDownloadServe(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	slog.Info("File download request", "local_path", vars["local_path"])
 
 	analyze.FileDownload(w, vars["local_path"])
 }
 
-func (c *Commander) MirvaRequestID(w http.ResponseWriter, r *http.Request) {
+func (c *CommanderSingle) MirvaRequestID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	slog.Info("New mrva using repository_id=%v\n", vars["repository_id"])
 }
 
-func (c *Commander) MirvaRequest(w http.ResponseWriter, r *http.Request) {
+func (c *CommanderSingle) MirvaRequest(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	slog.Info("New mrva run ", "owner", vars["owner"], "repo", vars["repo"])
 	// session := new(MirvaSession)
@@ -221,7 +214,7 @@ func (c *Commander) MirvaRequest(w http.ResponseWriter, r *http.Request) {
 	// session_start_analyses()
 
 	// TODO into Commander (here)
-	si := tcmdr.SessionInfo{
+	si := SessionInfo{
 		ID:             session_id,
 		Owner:          session_owner,
 		ControllerRepo: session_controller_repo,
@@ -244,11 +237,11 @@ func (c *Commander) MirvaRequest(w http.ResponseWriter, r *http.Request) {
 	// session_save()
 
 }
-func (c *Commander) submit_response(s tcmdr.SessionInfo) {
+func (c *CommanderSingle) submit_response(s SessionInfo) {
 	// TODO
 }
 
-func (c *Commander) collectRequestInfo(w http.ResponseWriter, r *http.Request, sessionId int) (string, []co.OwnerRepo, string, error) {
+func (c *CommanderSingle) collectRequestInfo(w http.ResponseWriter, r *http.Request, sessionId int) (string, []co.OwnerRepo, string, error) {
 	slog.Debug("Collecting session info")
 
 	if r.Body == nil {
@@ -305,12 +298,12 @@ func (c *Commander) collectRequestInfo(w http.ResponseWriter, r *http.Request, s
 }
 
 // Try to extract a SubmitMsg from a json-encoded buffer
-func TrySubmitMsg(buf []byte) (tcmdr.SubmitMsg, error) {
+func TrySubmitMsg(buf []byte) (SubmitMsg, error) {
 	buf1 := make([]byte, len(buf))
 	copy(buf1, buf)
 	dec := json.NewDecoder(bytes.NewReader(buf1))
 	dec.DisallowUnknownFields()
-	var m tcmdr.SubmitMsg
+	var m SubmitMsg
 	err := dec.Decode(&m)
 	return m, err
 }
@@ -340,7 +333,7 @@ func isBase64Gzip(val []byte) bool {
 	}
 }
 
-func (c *Commander) extract_tgz(qp string, sessionID int) (string, error) {
+func (c *CommanderSingle) extract_tgz(qp string, sessionID int) (string, error) {
 	// These are decoded manually via
 	//    base64 -d < foo1 | gunzip | tar t | head -20
 	// base64 decode the body

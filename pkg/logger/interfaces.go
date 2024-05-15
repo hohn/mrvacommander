@@ -1,4 +1,4 @@
-package mci
+package logger
 
 type Logger interface {
 }

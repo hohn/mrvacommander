@@ -1,4 +1,4 @@
-module github.com/advanced-security/mrvacommander
+module mrvacommander
 
 go 1.22.0
 

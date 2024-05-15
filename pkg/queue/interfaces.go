@@ -1,4 +1,4 @@
-package mci
+package queue
 
 type Queue interface {
 }
