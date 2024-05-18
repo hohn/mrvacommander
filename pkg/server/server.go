@@ -118,6 +118,7 @@ func (c *CommanderSingle) RootHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *CommanderSingle) MirvaStatus(w http.ResponseWriter, r *http.Request) {
+	// 	TODO Port this function from ghes-mirva-server
 	vars := mux.Vars(r)
 	slog.Info("mrva status request for ",
 		"owner", vars["owner"],
@@ -155,6 +156,7 @@ func (c *CommanderSingle) MirvaStatus(w http.ResponseWriter, r *http.Request) {
 
 // Download artifacts
 func (c *CommanderSingle) MirvaDownloadArtifact(w http.ResponseWriter, r *http.Request) {
+	// 	TODO Port this function from ghes-mirva-server
 	vars := mux.Vars(r)
 	slog.Info("MRVA artifact download",
 		"controller_owner", vars["controller_owner"],
@@ -182,6 +184,7 @@ func (c *CommanderSingle) MirvaDownloadArtifact(w http.ResponseWriter, r *http.R
 }
 
 func (c *CommanderSingle) MirvaDownloadServe(w http.ResponseWriter, r *http.Request) {
+	// 	TODO Port this function from ghes-mirva-server
 	vars := mux.Vars(r)
 	slog.Info("File download request", "local_path", vars["local_path"])
 
@@ -238,7 +241,7 @@ func (c *CommanderSingle) MirvaRequest(w http.ResponseWriter, r *http.Request) {
 
 }
 func (c *CommanderSingle) submit_response(s SessionInfo) {
-	// TODO
+	// 	TODO Port this function from ghes-mirva-server
 }
 
 func (c *CommanderSingle) collectRequestInfo(w http.ResponseWriter, r *http.Request, sessionId int) (string, []co.OwnerRepo, string, error) {
