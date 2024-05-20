@@ -195,3 +195,18 @@ func GetStatus(sessionid int, orl co.OwnerRepo) co.Status {
 	defer mutex.Unlock()
 	return status[co.JobSpec{ID: sessionid, OwnerRepo: orl}]
 }
+
+func ResultAsFile(path string) (string, []byte, error) {
+	fpath := path
+	if !filepath.IsAbs(path) {
+		fpath = "/" + path
+	}
+
+	file, err := os.ReadFile(fpath)
+	if err != nil {
+		slog.Warn("Failed to read results file", fpath, err)
+		return "", nil, err
+	}
+
+	return fpath, file, nil
+}

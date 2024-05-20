@@ -10,13 +10,13 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 
 	"mrvacommander/pkg/storage"
 
 	"github.com/gorilla/mux"
-	"github.com/hohn/ghes-mirva-server/analyze"
 	"github.com/hohn/ghes-mirva-server/api"
 	co "github.com/hohn/ghes-mirva-server/common"
 )
@@ -237,11 +237,35 @@ func (c *CommanderSingle) DownloadResponse(w http.ResponseWriter, js co.JobSpec,
 }
 
 func (c *CommanderSingle) MirvaDownloadServe(w http.ResponseWriter, r *http.Request) {
-	// 	TODO Port this function from ghes-mirva-server
 	vars := mux.Vars(r)
 	slog.Info("File download request", "local_path", vars["local_path"])
 
-	analyze.FileDownload(w, vars["local_path"])
+	FileDownload(w, vars["local_path"])
+}
+
+func FileDownload(w http.ResponseWriter, path string) {
+	slog.Debug("Sending zip file with .sarif/.bqrs", "path", path)
+
+	fpath, res, err := storage.ResultAsFile(path)
+	if err != nil {
+		http.Error(w, "Failed to read results", http.StatusInternalServerError)
+		return
+	}
+	// Set headers
+	fname := filepath.Base(fpath)
+	w.Header().Set("Content-Disposition", "attachment; filename="+fname)
+	w.Header().Set("Content-Type", "application/octet-stream")
+
+	// Copy the file contents to the response writer
+	rdr := bytes.NewReader(res)
+	_, err = io.Copy(w, rdr)
+	if err != nil {
+		http.Error(w, "Failed to send file", http.StatusInternalServerError)
+		return
+	}
+
+	slog.Debug("Uploaded file", "path", fpath)
+
 }
 
 func (c *CommanderSingle) MirvaRequestID(w http.ResponseWriter, r *http.Request) {
