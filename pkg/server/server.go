@@ -19,7 +19,6 @@ import (
 	"github.com/hohn/ghes-mirva-server/analyze"
 	"github.com/hohn/ghes-mirva-server/api"
 	co "github.com/hohn/ghes-mirva-server/common"
-	"github.com/hohn/ghes-mirva-server/store"
 )
 
 func (c *CommanderSingle) Run() {
@@ -65,9 +64,9 @@ func (c *CommanderSingle) StatusResponse(w http.ResponseWriter, js co.JobSpec, j
 	slog.Debug("Submitting status response", "session", vaid)
 
 	all_scanned := []api.ScannedRepo{}
-	jobs := store.GetJobList(js.ID)
+	jobs := storage.GetJobList(js.ID)
 	for _, job := range jobs {
-		astat := store.GetStatus(js.ID, job.ORL).ToExternalString()
+		astat := storage.GetStatus(js.ID, job.ORL).ToExternalString()
 		all_scanned = append(all_scanned,
 			api.ScannedRepo{
 				Repository: api.Repository{
@@ -85,7 +84,7 @@ func (c *CommanderSingle) StatusResponse(w http.ResponseWriter, js co.JobSpec, j
 		)
 	}
 
-	astat := store.GetStatus(js.ID, js.OwnerRepo).ToExternalString()
+	astat := storage.GetStatus(js.ID, js.OwnerRepo).ToExternalString()
 
 	status := api.StatusResponse{
 		SessionId:            js.ID,
@@ -120,7 +119,6 @@ func (c *CommanderSingle) RootHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *CommanderSingle) MirvaStatus(w http.ResponseWriter, r *http.Request) {
-	// 	TODO Port this function from ghes-mirva-server
 	vars := mux.Vars(r)
 	slog.Info("mrva status request for ",
 		"owner", vars["owner"],
@@ -135,7 +133,7 @@ func (c *CommanderSingle) MirvaStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	// The status reports one status for all jobs belonging to an id.
 	// So we simply report the status of a job as the status of all.
-	spec := store.GetJobList(id)
+	spec := storage.GetJobList(id)
 	if spec == nil {
 		msg := "No jobs found for given job id"
 		slog.Error(msg, "id", vars["codeql_variant_analysis_id"])
@@ -150,7 +148,7 @@ func (c *CommanderSingle) MirvaStatus(w http.ResponseWriter, r *http.Request) {
 		OwnerRepo: job.ORL,
 	}
 
-	ji := store.GetJobInfo(js)
+	ji := storage.GetJobInfo(js)
 
 	c.StatusResponse(w, js, ji, id)
 }
@@ -185,7 +183,7 @@ func (c *CommanderSingle) MirvaDownloadArtifact(w http.ResponseWriter, r *http.R
 func (c *CommanderSingle) DownloadResponse(w http.ResponseWriter, js co.JobSpec, vaid int) {
 	slog.Debug("Forming download response", "session", vaid, "job", js)
 
-	astat := store.GetStatus(vaid, js.OwnerRepo)
+	astat := storage.GetStatus(vaid, js.OwnerRepo)
 
 	var dlr api.DownloadResponse
 	if astat == co.StatusSuccess {

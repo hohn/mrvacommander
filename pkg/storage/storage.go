@@ -16,8 +16,11 @@ import (
 )
 
 var (
-	mutex  sync.Mutex
+	jobs   map[int][]co.AnalyzeJob         = make(map[int][]co.AnalyzeJob)
+	info   map[co.JobSpec]co.JobInfo       = make(map[co.JobSpec]co.JobInfo)
+	status map[co.JobSpec]co.Status        = make(map[co.JobSpec]co.Status)
 	result map[co.JobSpec]co.AnalyzeResult = make(map[co.JobSpec]co.AnalyzeResult)
+	mutex  sync.Mutex
 )
 
 type StorageSingle struct {
@@ -173,4 +176,22 @@ func PackageResults(ar co.AnalyzeResult, owre co.OwnerRepo, vaid int) (zipPath s
 		}
 	}
 	return zpath, nil
+}
+
+func GetJobList(sessionid int) []co.AnalyzeJob {
+	mutex.Lock()
+	defer mutex.Unlock()
+	return jobs[sessionid]
+}
+
+func GetJobInfo(js co.JobSpec) co.JobInfo {
+	mutex.Lock()
+	defer mutex.Unlock()
+	return info[js]
+}
+
+func GetStatus(sessionid int, orl co.OwnerRepo) co.Status {
+	mutex.Lock()
+	defer mutex.Unlock()
+	return status[co.JobSpec{ID: sessionid, OwnerRepo: orl}]
 }
