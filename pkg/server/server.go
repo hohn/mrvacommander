@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 
+	"mrvacommander/pkg/storage"
+
 	"github.com/gorilla/mux"
 	"github.com/hohn/ghes-mirva-server/analyze"
 	"github.com/hohn/ghes-mirva-server/api"
@@ -135,9 +137,9 @@ func (c *CommanderSingle) MirvaStatus(w http.ResponseWriter, r *http.Request) {
 	// So we simply report the status of a job as the status of all.
 	spec := store.GetJobList(id)
 	if spec == nil {
-		slog.Error("No jobs found for given job id",
-			"id", vars["codeql_variant_analysis_id"])
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		msg := "No jobs found for given job id"
+		slog.Error(msg, "id", vars["codeql_variant_analysis_id"])
+		http.Error(w, msg, http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -150,13 +152,11 @@ func (c *CommanderSingle) MirvaStatus(w http.ResponseWriter, r *http.Request) {
 
 	ji := store.GetJobInfo(js)
 
-	analyze.StatusResponse(w, js, ji, id)
 	c.StatusResponse(w, js, ji, id)
 }
 
 // Download artifacts
 func (c *CommanderSingle) MirvaDownloadArtifact(w http.ResponseWriter, r *http.Request) {
-	// 	TODO Port this function from ghes-mirva-server
 	vars := mux.Vars(r)
 	slog.Info("MRVA artifact download",
 		"controller_owner", vars["controller_owner"],
@@ -179,7 +179,62 @@ func (c *CommanderSingle) MirvaDownloadArtifact(w http.ResponseWriter, r *http.R
 			Repo:  vars["repo_name"],
 		},
 	}
-	analyze.DownloadResponse(w, js, vaid)
+	c.DownloadResponse(w, js, vaid)
+}
+
+func (c *CommanderSingle) DownloadResponse(w http.ResponseWriter, js co.JobSpec, vaid int) {
+	slog.Debug("Forming download response", "session", vaid, "job", js)
+
+	astat := store.GetStatus(vaid, js.OwnerRepo)
+
+	var dlr api.DownloadResponse
+	if astat == co.StatusSuccess {
+
+		au, err := storage.ArtifactURL(js, vaid)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		dlr = api.DownloadResponse{
+			Repository: api.DownloadRepo{
+				Name:     js.Repo,
+				FullName: fmt.Sprintf("%s/%s", js.Owner, js.Repo),
+			},
+			AnalysisStatus:       astat.ToExternalString(),
+			ResultCount:          123, // FIXME
+			ArtifactSizeBytes:    123, // FIXME
+			DatabaseCommitSha:    "do-we-use-dcs-p",
+			SourceLocationPrefix: "do-we-use-slp-p",
+			ArtifactURL:          au,
+		}
+	} else {
+		dlr = api.DownloadResponse{
+			Repository: api.DownloadRepo{
+				Name:     js.Repo,
+				FullName: fmt.Sprintf("%s/%s", js.Owner, js.Repo),
+			},
+			AnalysisStatus:       astat.ToExternalString(),
+			ResultCount:          0,
+			ArtifactSizeBytes:    0,
+			DatabaseCommitSha:    "",
+			SourceLocationPrefix: "/not/relevant/here",
+			ArtifactURL:          "",
+		}
+	}
+
+	// Encode the response as JSON
+	jdlr, err := json.Marshal(dlr)
+	if err != nil {
+		slog.Error("Error encoding response as JSON:",
+			"error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Send analysisReposJSON via ResponseWriter
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jdlr)
 
 }
 
