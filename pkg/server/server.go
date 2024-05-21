@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 
+	"mrvacommander/pkg/queue"
 	"mrvacommander/pkg/storage"
 
 	"github.com/gorilla/mux"
@@ -290,8 +291,7 @@ func (c *CommanderSingle) MirvaRequest(w http.ResponseWriter, r *http.Request) {
 
 	not_found_repos, analysisRepos := c.st.Storage.FindAvailableDBs(session_repositories)
 
-	// TODO into Queue
-	// session_start_analyses()
+	queue.StartAnalyses(analysisRepos, session_id, session_language)
 
 	// TODO into Commander (here)
 	si := SessionInfo{

@@ -210,3 +210,15 @@ func ResultAsFile(path string) (string, []byte, error) {
 
 	return fpath, file, nil
 }
+
+func SetStatus(sessionid int, orl co.OwnerRepo, s co.Status) {
+	mutex.Lock()
+	defer mutex.Unlock()
+	status[co.JobSpec{ID: sessionid, OwnerRepo: orl}] = s
+}
+
+func AddJob(sessionid int, job co.AnalyzeJob) {
+	mutex.Lock()
+	defer mutex.Unlock()
+	jobs[sessionid] = append(jobs[sessionid], job)
+}
