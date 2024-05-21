@@ -21,7 +21,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/hohn/ghes-mirva-server/api"
 	co "github.com/hohn/ghes-mirva-server/common"
-	"github.com/hohn/ghes-mirva-server/store"
 )
 
 func (c *CommanderSingle) Run() {
@@ -279,14 +278,12 @@ func (c *CommanderSingle) MirvaRequestID(w http.ResponseWriter, r *http.Request)
 func (c *CommanderSingle) MirvaRequest(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	slog.Info("New mrva run ", "owner", vars["owner"], "repo", vars["repo"])
-	// session := new(MirvaSession)
+
 	session_id := c.st.Storage.NextID()
 	session_owner := vars["owner"]
 	session_controller_repo := vars["repo"]
 	slog.Info("new run", "id: ", fmt.Sprint(session_id), session_owner, session_controller_repo)
-
 	session_language, session_repositories, session_tgz_ref, err := c.collectRequestInfo(w, r, session_id)
-
 	if err != nil {
 		return
 	}
@@ -312,7 +309,8 @@ func (c *CommanderSingle) MirvaRequest(w http.ResponseWriter, r *http.Request) {
 		AnalysisRepos: analysisRepos,
 	}
 
-	submit_response, err := c.submit_response(si)
+	slog.Debug("Forming and sending response for submitted analysis job", "id", si.ID)
+	submit_response, err := submit_response(si)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -320,10 +318,6 @@ func (c *CommanderSingle) MirvaRequest(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(submit_response)
-
-	// TODO into Storage
-	// session_save()
-
 }
 
 func ORToArr(aor []co.OwnerRepo) ([]string, int) {
@@ -335,10 +329,7 @@ func ORToArr(aor []co.OwnerRepo) ([]string, int) {
 	return repos, count
 }
 
-func (c *CommanderSingle) submit_response(sn SessionInfo) ([]byte, error) {
-
-	slog.Debug("Forming and sending response for submitted analysis job", "id", sn.ID)
-
+func submit_response(sn SessionInfo) ([]byte, error) {
 	// Construct the response bottom-up
 	var m_cr api.ControllerRepo
 	var m_ac api.Actor
@@ -378,7 +369,7 @@ func (c *CommanderSingle) submit_response(sn SessionInfo) ([]byte, error) {
 	joblist := storage.GetJobList(sn.ID)
 
 	for _, job := range joblist {
-		store.SetJobInfo(co.JobSpec{
+		storage.SetJobInfo(co.JobSpec{
 			ID:        sn.ID,
 			OwnerRepo: job.ORL,
 		}, co.JobInfo{
@@ -404,7 +395,7 @@ func (c *CommanderSingle) collectRequestInfo(w http.ResponseWriter, r *http.Requ
 	slog.Debug("Collecting session info")
 
 	if r.Body == nil {
-		err := errors.New("Missing request body")
+		err := errors.New("missing request body")
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusNoContent)
 		return "", []co.OwnerRepo{}, "", err
@@ -447,8 +438,9 @@ func (c *CommanderSingle) collectRequestInfo(w http.ResponseWriter, r *http.Requ
 	for _, v := range msg.Repositories {
 		t := strings.Split(v, "/")
 		if len(t) != 2 {
-			slog.Error("Invalid owner / repository entry", "entry", t)
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			err := "Invalid owner / repository entry"
+			slog.Error(err, "entry", t)
+			http.Error(w, err, http.StatusBadRequest)
 		}
 		session_repositories = append(session_repositories,
 			co.OwnerRepo{Owner: t[0], Repo: t[1]})

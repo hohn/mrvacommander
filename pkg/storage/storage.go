@@ -190,6 +190,12 @@ func GetJobInfo(js co.JobSpec) co.JobInfo {
 	return info[js]
 }
 
+func SetJobInfo(js co.JobSpec, ji co.JobInfo) {
+	mutex.Lock()
+	defer mutex.Unlock()
+	info[js] = ji
+}
+
 func GetStatus(sessionid int, orl co.OwnerRepo) co.Status {
 	mutex.Lock()
 	defer mutex.Unlock()
