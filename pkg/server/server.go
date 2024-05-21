@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"mrvacommander/pkg/queue"
 	"mrvacommander/pkg/storage"
@@ -20,6 +21,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/hohn/ghes-mirva-server/api"
 	co "github.com/hohn/ghes-mirva-server/common"
+	"github.com/hohn/ghes-mirva-server/store"
 )
 
 func (c *CommanderSingle) Run() {
@@ -293,7 +295,6 @@ func (c *CommanderSingle) MirvaRequest(w http.ResponseWriter, r *http.Request) {
 
 	queue.StartAnalyses(analysisRepos, session_id, session_language)
 
-	// TODO into Commander (here)
 	si := SessionInfo{
 		ID:             session_id,
 		Owner:          session_owner,
@@ -311,14 +312,92 @@ func (c *CommanderSingle) MirvaRequest(w http.ResponseWriter, r *http.Request) {
 		AnalysisRepos: analysisRepos,
 	}
 
-	c.submit_response(si)
+	submit_response, err := c.submit_response(si)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(submit_response)
 
 	// TODO into Storage
 	// session_save()
 
 }
-func (c *CommanderSingle) submit_response(s SessionInfo) {
-	// 	TODO Port this function from ghes-mirva-server
+
+func ORToArr(aor []co.OwnerRepo) ([]string, int) {
+	repos := []string{}
+	count := len(aor)
+	for _, repo := range aor {
+		repos = append(repos, fmt.Sprintf("%s/%s", repo.Owner, repo.Repo))
+	}
+	return repos, count
+}
+
+func (c *CommanderSingle) submit_response(sn SessionInfo) ([]byte, error) {
+
+	slog.Debug("Forming and sending response for submitted analysis job", "id", sn.ID)
+
+	// Construct the response bottom-up
+	var m_cr api.ControllerRepo
+	var m_ac api.Actor
+
+	repos, count := ORToArr(sn.NotFoundRepos)
+	r_nfr := api.NotFoundRepos{RepositoryCount: count, RepositoryFullNames: repos}
+
+	repos, count = ORToArr(sn.AccessMismatchRepos)
+	r_amr := api.AccessMismatchRepos{RepositoryCount: count, Repositories: repos}
+
+	repos, count = ORToArr(sn.NoCodeqlDBRepos)
+	r_ncd := api.NoCodeqlDBRepos{RepositoryCount: count, Repositories: repos}
+
+	// TODO fill these with real values?
+	repos, count = ORToArr(sn.NoCodeqlDBRepos)
+	r_olr := api.OverLimitRepos{RepositoryCount: count, Repositories: repos}
+
+	m_skip := api.SkippedRepositories{
+		AccessMismatchRepos: r_amr,
+		NotFoundRepos:       r_nfr,
+		NoCodeqlDBRepos:     r_ncd,
+		OverLimitRepos:      r_olr}
+
+	m_sr := api.SubmitResponse{
+		Actor:               m_ac,
+		ControllerRepo:      m_cr,
+		ID:                  sn.ID,
+		QueryLanguage:       sn.Language,
+		QueryPackURL:        sn.QueryPack,
+		CreatedAt:           time.Now().Format(time.RFC3339),
+		UpdatedAt:           time.Now().Format(time.RFC3339),
+		Status:              "in_progress",
+		SkippedRepositories: m_skip,
+	}
+
+	// Store data needed later
+	joblist := storage.GetJobList(sn.ID)
+
+	for _, job := range joblist {
+		store.SetJobInfo(co.JobSpec{
+			ID:        sn.ID,
+			OwnerRepo: job.ORL,
+		}, co.JobInfo{
+			QueryLanguage:       sn.Language,
+			CreatedAt:           m_sr.CreatedAt,
+			UpdatedAt:           m_sr.UpdatedAt,
+			SkippedRepositories: m_skip,
+		},
+		)
+	}
+
+	// Encode the response as JSON
+	submit_response, err := json.Marshal(m_sr)
+	if err != nil {
+		slog.Warn("Error encoding response as JSON:", err)
+		return nil, err
+	}
+	return submit_response, nil
+
 }
 
 func (c *CommanderSingle) collectRequestInfo(w http.ResponseWriter, r *http.Request, sessionId int) (string, []co.OwnerRepo, string, error) {
