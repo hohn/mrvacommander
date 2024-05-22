@@ -12,14 +12,14 @@ import (
 	"path/filepath"
 	"sync"
 
-	co "github.com/hohn/ghes-mirva-server/common"
+	"mrvacommander/pkg/common"
 )
 
 var (
-	jobs   map[int][]co.AnalyzeJob         = make(map[int][]co.AnalyzeJob)
-	info   map[co.JobSpec]co.JobInfo       = make(map[co.JobSpec]co.JobInfo)
-	status map[co.JobSpec]co.Status        = make(map[co.JobSpec]co.Status)
-	result map[co.JobSpec]co.AnalyzeResult = make(map[co.JobSpec]co.AnalyzeResult)
+	jobs   map[int][]common.AnalyzeJob             = make(map[int][]common.AnalyzeJob)
+	info   map[common.JobSpec]common.JobInfo       = make(map[common.JobSpec]common.JobInfo)
+	status map[common.JobSpec]common.Status        = make(map[common.JobSpec]common.Status)
+	result map[common.JobSpec]common.AnalyzeResult = make(map[common.JobSpec]common.AnalyzeResult)
 	mutex  sync.Mutex
 )
 
@@ -62,8 +62,8 @@ func (s *StorageSingle) SaveQueryPack(tgz []byte, sessionId int) (string, error)
 //		Determine for which repositories codeql databases are available.
 //
 //	 Those will be the analysis_repos.  The rest will be skipped.
-func (s *StorageSingle) FindAvailableDBs(analysisReposRequested []co.OwnerRepo) (not_found_repos []co.OwnerRepo,
-	analysisRepos *map[co.OwnerRepo]DBLocation) {
+func (s *StorageSingle) FindAvailableDBs(analysisReposRequested []common.OwnerRepo) (not_found_repos []common.OwnerRepo,
+	analysisRepos *map[common.OwnerRepo]DBLocation) {
 	slog.Debug("Looking for available CodeQL databases")
 
 	cwd, err := os.Getwd()
@@ -72,9 +72,9 @@ func (s *StorageSingle) FindAvailableDBs(analysisReposRequested []co.OwnerRepo) 
 		return
 	}
 
-	analysisRepos = &map[co.OwnerRepo]DBLocation{}
+	analysisRepos = &map[common.OwnerRepo]DBLocation{}
 
-	not_found_repos = []co.OwnerRepo{}
+	not_found_repos = []common.OwnerRepo{}
 
 	for _, rep := range analysisReposRequested {
 		dbPrefix := filepath.Join(cwd, "codeql", "dbs", rep.Owner, rep.Repo)
@@ -93,7 +93,7 @@ func (s *StorageSingle) FindAvailableDBs(analysisReposRequested []co.OwnerRepo) 
 	return not_found_repos, analysisRepos
 }
 
-func ArtifactURL(js co.JobSpec, vaid int) (string, error) {
+func ArtifactURL(js common.JobSpec, vaid int) (string, error) {
 	// We're looking for paths like
 	// codeql/sarif/google/flatbuffers/google_flatbuffers.sarif
 
@@ -114,14 +114,14 @@ func ArtifactURL(js co.JobSpec, vaid int) (string, error) {
 	return au, nil
 }
 
-func GetResult(js co.JobSpec) co.AnalyzeResult {
+func GetResult(js common.JobSpec) common.AnalyzeResult {
 	mutex.Lock()
 	defer mutex.Unlock()
 	ar := result[js]
 	return ar
 }
 
-func PackageResults(ar co.AnalyzeResult, owre co.OwnerRepo, vaid int) (zipPath string, e error) {
+func PackageResults(ar common.AnalyzeResult, owre common.OwnerRepo, vaid int) (zipPath string, e error) {
 	slog.Debug("Readying zip file with .sarif/.bqrs", "analyze-result", ar)
 
 	cwd, err := os.Getwd()
@@ -178,28 +178,28 @@ func PackageResults(ar co.AnalyzeResult, owre co.OwnerRepo, vaid int) (zipPath s
 	return zpath, nil
 }
 
-func GetJobList(sessionid int) []co.AnalyzeJob {
+func GetJobList(sessionid int) []common.AnalyzeJob {
 	mutex.Lock()
 	defer mutex.Unlock()
 	return jobs[sessionid]
 }
 
-func GetJobInfo(js co.JobSpec) co.JobInfo {
+func GetJobInfo(js common.JobSpec) common.JobInfo {
 	mutex.Lock()
 	defer mutex.Unlock()
 	return info[js]
 }
 
-func SetJobInfo(js co.JobSpec, ji co.JobInfo) {
+func SetJobInfo(js common.JobSpec, ji common.JobInfo) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	info[js] = ji
 }
 
-func GetStatus(sessionid int, orl co.OwnerRepo) co.Status {
+func GetStatus(sessionid int, orl common.OwnerRepo) common.Status {
 	mutex.Lock()
 	defer mutex.Unlock()
-	return status[co.JobSpec{ID: sessionid, OwnerRepo: orl}]
+	return status[common.JobSpec{ID: sessionid, OwnerRepo: orl}]
 }
 
 func ResultAsFile(path string) (string, []byte, error) {
@@ -217,13 +217,13 @@ func ResultAsFile(path string) (string, []byte, error) {
 	return fpath, file, nil
 }
 
-func SetStatus(sessionid int, orl co.OwnerRepo, s co.Status) {
+func SetStatus(sessionid int, orl common.OwnerRepo, s common.Status) {
 	mutex.Lock()
 	defer mutex.Unlock()
-	status[co.JobSpec{ID: sessionid, OwnerRepo: orl}] = s
+	status[common.JobSpec{ID: sessionid, OwnerRepo: orl}] = s
 }
 
-func AddJob(sessionid int, job co.AnalyzeJob) {
+func AddJob(sessionid int, job common.AnalyzeJob) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	jobs[sessionid] = append(jobs[sessionid], job)

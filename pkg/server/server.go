@@ -15,12 +15,11 @@ import (
 	"strings"
 	"time"
 
+	"mrvacommander/pkg/common"
 	"mrvacommander/pkg/queue"
 	"mrvacommander/pkg/storage"
 
 	"github.com/gorilla/mux"
-	"github.com/hohn/ghes-mirva-server/api"
-	co "github.com/hohn/ghes-mirva-server/common"
 )
 
 func (c *CommanderSingle) Run() {
@@ -62,16 +61,16 @@ func (c *CommanderSingle) Setup(st *State) {
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
-func (c *CommanderSingle) StatusResponse(w http.ResponseWriter, js co.JobSpec, ji co.JobInfo, vaid int) {
+func (c *CommanderSingle) StatusResponse(w http.ResponseWriter, js common.JobSpec, ji common.JobInfo, vaid int) {
 	slog.Debug("Submitting status response", "session", vaid)
 
-	all_scanned := []api.ScannedRepo{}
+	all_scanned := []common.ScannedRepo{}
 	jobs := storage.GetJobList(js.ID)
 	for _, job := range jobs {
 		astat := storage.GetStatus(js.ID, job.ORL).ToExternalString()
 		all_scanned = append(all_scanned,
-			api.ScannedRepo{
-				Repository: api.Repository{
+			common.ScannedRepo{
+				Repository: common.Repository{
 					ID:              0,
 					Name:            job.ORL.Repo,
 					FullName:        fmt.Sprintf("%s/%s", job.ORL.Owner, job.ORL.Repo),
@@ -88,10 +87,10 @@ func (c *CommanderSingle) StatusResponse(w http.ResponseWriter, js co.JobSpec, j
 
 	astat := storage.GetStatus(js.ID, js.OwnerRepo).ToExternalString()
 
-	status := api.StatusResponse{
+	status := common.StatusResponse{
 		SessionId:            js.ID,
-		ControllerRepo:       api.ControllerRepo{},
-		Actor:                api.Actor{},
+		ControllerRepo:       common.ControllerRepo{},
+		Actor:                common.Actor{},
 		QueryLanguage:        ji.QueryLanguage,
 		QueryPackURL:         "", // FIXME
 		CreatedAt:            ji.CreatedAt,
@@ -145,7 +144,7 @@ func (c *CommanderSingle) MirvaStatus(w http.ResponseWriter, r *http.Request) {
 
 	job := spec[0]
 
-	js := co.JobSpec{
+	js := common.JobSpec{
 		ID:        job.QueryPackId,
 		OwnerRepo: job.ORL,
 	}
@@ -172,9 +171,9 @@ func (c *CommanderSingle) MirvaDownloadArtifact(w http.ResponseWriter, r *http.R
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	js := co.JobSpec{
+	js := common.JobSpec{
 		ID: vaid,
-		OwnerRepo: co.OwnerRepo{
+		OwnerRepo: common.OwnerRepo{
 			Owner: vars["repo_owner"],
 			Repo:  vars["repo_name"],
 		},
@@ -182,13 +181,13 @@ func (c *CommanderSingle) MirvaDownloadArtifact(w http.ResponseWriter, r *http.R
 	c.DownloadResponse(w, js, vaid)
 }
 
-func (c *CommanderSingle) DownloadResponse(w http.ResponseWriter, js co.JobSpec, vaid int) {
+func (c *CommanderSingle) DownloadResponse(w http.ResponseWriter, js common.JobSpec, vaid int) {
 	slog.Debug("Forming download response", "session", vaid, "job", js)
 
 	astat := storage.GetStatus(vaid, js.OwnerRepo)
 
-	var dlr api.DownloadResponse
-	if astat == co.StatusSuccess {
+	var dlr common.DownloadResponse
+	if astat == common.StatusSuccess {
 
 		au, err := storage.ArtifactURL(js, vaid)
 		if err != nil {
@@ -196,8 +195,8 @@ func (c *CommanderSingle) DownloadResponse(w http.ResponseWriter, js co.JobSpec,
 			return
 		}
 
-		dlr = api.DownloadResponse{
-			Repository: api.DownloadRepo{
+		dlr = common.DownloadResponse{
+			Repository: common.DownloadRepo{
 				Name:     js.Repo,
 				FullName: fmt.Sprintf("%s/%s", js.Owner, js.Repo),
 			},
@@ -209,8 +208,8 @@ func (c *CommanderSingle) DownloadResponse(w http.ResponseWriter, js co.JobSpec,
 			ArtifactURL:          au,
 		}
 	} else {
-		dlr = api.DownloadResponse{
-			Repository: api.DownloadRepo{
+		dlr = common.DownloadResponse{
+			Repository: common.DownloadRepo{
 				Name:     js.Repo,
 				FullName: fmt.Sprintf("%s/%s", js.Owner, js.Repo),
 			},
@@ -320,7 +319,7 @@ func (c *CommanderSingle) MirvaRequest(w http.ResponseWriter, r *http.Request) {
 	w.Write(submit_response)
 }
 
-func ORToArr(aor []co.OwnerRepo) ([]string, int) {
+func ORToArr(aor []common.OwnerRepo) ([]string, int) {
 	repos := []string{}
 	count := len(aor)
 	for _, repo := range aor {
@@ -331,29 +330,29 @@ func ORToArr(aor []co.OwnerRepo) ([]string, int) {
 
 func submit_response(sn SessionInfo) ([]byte, error) {
 	// Construct the response bottom-up
-	var m_cr api.ControllerRepo
-	var m_ac api.Actor
+	var m_cr common.ControllerRepo
+	var m_ac common.Actor
 
 	repos, count := ORToArr(sn.NotFoundRepos)
-	r_nfr := api.NotFoundRepos{RepositoryCount: count, RepositoryFullNames: repos}
+	r_nfr := common.NotFoundRepos{RepositoryCount: count, RepositoryFullNames: repos}
 
 	repos, count = ORToArr(sn.AccessMismatchRepos)
-	r_amr := api.AccessMismatchRepos{RepositoryCount: count, Repositories: repos}
+	r_amr := common.AccessMismatchRepos{RepositoryCount: count, Repositories: repos}
 
 	repos, count = ORToArr(sn.NoCodeqlDBRepos)
-	r_ncd := api.NoCodeqlDBRepos{RepositoryCount: count, Repositories: repos}
+	r_ncd := common.NoCodeqlDBRepos{RepositoryCount: count, Repositories: repos}
 
 	// TODO fill these with real values?
 	repos, count = ORToArr(sn.NoCodeqlDBRepos)
-	r_olr := api.OverLimitRepos{RepositoryCount: count, Repositories: repos}
+	r_olr := common.OverLimitRepos{RepositoryCount: count, Repositories: repos}
 
-	m_skip := api.SkippedRepositories{
+	m_skip := common.SkippedRepositories{
 		AccessMismatchRepos: r_amr,
 		NotFoundRepos:       r_nfr,
 		NoCodeqlDBRepos:     r_ncd,
 		OverLimitRepos:      r_olr}
 
-	m_sr := api.SubmitResponse{
+	m_sr := common.SubmitResponse{
 		Actor:               m_ac,
 		ControllerRepo:      m_cr,
 		ID:                  sn.ID,
@@ -369,10 +368,10 @@ func submit_response(sn SessionInfo) ([]byte, error) {
 	joblist := storage.GetJobList(sn.ID)
 
 	for _, job := range joblist {
-		storage.SetJobInfo(co.JobSpec{
+		storage.SetJobInfo(common.JobSpec{
 			ID:        sn.ID,
 			OwnerRepo: job.ORL,
-		}, co.JobInfo{
+		}, common.JobInfo{
 			QueryLanguage:       sn.Language,
 			CreatedAt:           m_sr.CreatedAt,
 			UpdatedAt:           m_sr.UpdatedAt,
@@ -391,28 +390,28 @@ func submit_response(sn SessionInfo) ([]byte, error) {
 
 }
 
-func (c *CommanderSingle) collectRequestInfo(w http.ResponseWriter, r *http.Request, sessionId int) (string, []co.OwnerRepo, string, error) {
+func (c *CommanderSingle) collectRequestInfo(w http.ResponseWriter, r *http.Request, sessionId int) (string, []common.OwnerRepo, string, error) {
 	slog.Debug("Collecting session info")
 
 	if r.Body == nil {
 		err := errors.New("missing request body")
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusNoContent)
-		return "", []co.OwnerRepo{}, "", err
+		return "", []common.OwnerRepo{}, "", err
 	}
 	buf, err := io.ReadAll(r.Body)
 	if err != nil {
 		var w http.ResponseWriter
 		slog.Error("Error reading MRVA submission body", "error", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return "", []co.OwnerRepo{}, "", err
+		return "", []common.OwnerRepo{}, "", err
 	}
 	msg, err := TrySubmitMsg(buf)
 	if err != nil {
 		// Unknown message
 		slog.Error("Unknown MRVA submission body format")
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return "", []co.OwnerRepo{}, "", err
+		return "", []common.OwnerRepo{}, "", err
 	}
 	// Decompose the SubmitMsg and keep information
 
@@ -421,19 +420,19 @@ func (c *CommanderSingle) collectRequestInfo(w http.ResponseWriter, r *http.Requ
 		slog.Error("MRVA submission body querypack has invalid format")
 		err := errors.New("MRVA submission body querypack has invalid format")
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return "", []co.OwnerRepo{}, "", err
+		return "", []common.OwnerRepo{}, "", err
 	}
 	session_tgz_ref, err := c.extract_tgz(msg.QueryPack, sessionId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return "", []co.OwnerRepo{}, "", err
+		return "", []common.OwnerRepo{}, "", err
 	}
 
 	// 2. Save the language
 	session_language := msg.Language
 
 	// 3. Save the repositories
-	var session_repositories []co.OwnerRepo
+	var session_repositories []common.OwnerRepo
 
 	for _, v := range msg.Repositories {
 		t := strings.Split(v, "/")
@@ -443,18 +442,18 @@ func (c *CommanderSingle) collectRequestInfo(w http.ResponseWriter, r *http.Requ
 			http.Error(w, err, http.StatusBadRequest)
 		}
 		session_repositories = append(session_repositories,
-			co.OwnerRepo{Owner: t[0], Repo: t[1]})
+			common.OwnerRepo{Owner: t[0], Repo: t[1]})
 	}
 	return session_language, session_repositories, session_tgz_ref, nil
 }
 
 // Try to extract a SubmitMsg from a json-encoded buffer
-func TrySubmitMsg(buf []byte) (SubmitMsg, error) {
+func TrySubmitMsg(buf []byte) (common.SubmitMsg, error) {
 	buf1 := make([]byte, len(buf))
 	copy(buf1, buf)
 	dec := json.NewDecoder(bytes.NewReader(buf1))
 	dec.DisallowUnknownFields()
-	var m SubmitMsg
+	var m common.SubmitMsg
 	err := dec.Decode(&m)
 	return m, err
 }
