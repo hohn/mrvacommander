@@ -26,7 +26,13 @@ type SessionInfo struct {
 }
 
 type CommanderSingle struct {
-	st *State
+	st    *State
+	queue queue.Queue
+}
+
+func NewCommanderSingle(s *State, q queue.Queue) *CommanderSingle {
+	c := CommanderSingle{s, q}
+	return &c
 }
 
 type State struct {

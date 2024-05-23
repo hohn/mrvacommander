@@ -27,6 +27,11 @@ type StorageSingle struct {
 	CurrentID int
 }
 
+func NewStorageSingle(startingID int) *StorageSingle {
+	s := StorageSingle{CurrentID: startingID}
+	return &s
+}
+
 func (s *StorageSingle) NextID() int {
 	s.CurrentID += 1
 	return s.CurrentID
@@ -119,6 +124,12 @@ func GetResult(js common.JobSpec) common.AnalyzeResult {
 	defer mutex.Unlock()
 	ar := result[js]
 	return ar
+}
+
+func SetResult(sessionid int, orl common.OwnerRepo, ar common.AnalyzeResult) {
+	mutex.Lock()
+	defer mutex.Unlock()
+	result[common.JobSpec{ID: sessionid, OwnerRepo: orl}] = ar
 }
 
 func PackageResults(ar common.AnalyzeResult, owre common.OwnerRepo, vaid int) (zipPath string, e error) {

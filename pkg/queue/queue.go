@@ -6,13 +6,15 @@ import (
 	"mrvacommander/pkg/storage"
 )
 
-var (
-	NumWorkers int
-	Jobs       chan common.AnalyzeJob
-	Results    chan common.AnalyzeResult
-)
+func (q *QueueSingle) Jobs() chan common.AnalyzeJob {
+	return q.jobs
+}
 
-func StartAnalyses(analysis_repos *map[common.OwnerRepo]storage.DBLocation, session_id int,
+func (q *QueueSingle) Results() chan common.AnalyzeResult {
+	return q.results
+}
+
+func (q *QueueSingle) StartAnalyses(analysis_repos *map[common.OwnerRepo]storage.DBLocation, session_id int,
 	session_language string) {
 	slog.Debug("Queueing codeql database analyze jobs")
 
@@ -23,7 +25,7 @@ func StartAnalyses(analysis_repos *map[common.OwnerRepo]storage.DBLocation, sess
 
 			ORL: orl,
 		}
-		Jobs <- info
+		q.jobs <- info
 		storage.SetStatus(session_id, orl, common.StatusQueued)
 		storage.AddJob(session_id, info)
 	}

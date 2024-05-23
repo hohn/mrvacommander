@@ -16,14 +16,10 @@ import (
 	"time"
 
 	"mrvacommander/pkg/common"
-	"mrvacommander/pkg/queue"
 	"mrvacommander/pkg/storage"
 
 	"github.com/gorilla/mux"
 )
-
-func (c *CommanderSingle) Run() {
-}
 
 func (c *CommanderSingle) Setup(st *State) {
 	r := mux.NewRouter()
@@ -289,7 +285,7 @@ func (c *CommanderSingle) MirvaRequest(w http.ResponseWriter, r *http.Request) {
 
 	not_found_repos, analysisRepos := c.st.Storage.FindAvailableDBs(session_repositories)
 
-	queue.StartAnalyses(analysisRepos, session_id, session_language)
+	c.queue.StartAnalyses(analysisRepos, session_id, session_language)
 
 	si := SessionInfo{
 		ID:             session_id,

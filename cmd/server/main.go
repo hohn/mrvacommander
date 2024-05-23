@@ -29,7 +29,7 @@ func main() {
 		log.Printf("Usage of %s:\n", os.Args[0])
 		flag.PrintDefaults()
 		log.Println("\nExamples:")
-		log.Println("  go run main.go --loglevel=Debug --mode=container")
+		log.Println("  go run main.go --loglevel=debug --mode=container")
 	}
 
 	// Parse the flags
@@ -68,16 +68,21 @@ func main() {
 	switch *mode {
 	case "standalone":
 		// Assemble single-process version
+		sq := queue.NewQueueSingle(2) // FIXME take value from configuration
+		sc := server.NewCommanderSingle(nil, sq)
+		sl := logger.NewLoggerSingle()
+		ss := storage.NewStorageSingle(config.Storage.StartingID)
+		sr := agent.NewRunnerSingle(2, sq) // FIXME take value from configuration
+
 		state := server.State{
-			Commander: &server.CommanderSingle{},
-			Logger:    &logger.LoggerSingle{},
-			Queue:     &queue.QueueSingle{},
-			Storage:   &storage.StorageSingle{CurrentID: config.Storage.StartingID},
-			Runner:    &agent.RunnerSingle{},
+			Commander: sc,
+			Logger:    sl,
+			Queue:     sq,
+			Storage:   ss,
+			Runner:    sr,
 		}
-		main := &server.CommanderSingle{}
-		main.Setup(&state)
-		main.Run()
+
+		sc.Setup(&state) // sc is part of state and dereferences it
 
 	case "container":
 		// Assemble cccontainer
