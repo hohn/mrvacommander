@@ -45,7 +45,7 @@ func (r *RunnerSingle) worker(wid int) {
 
 		slog.Debug("Analysis: running", "job", job)
 		storage.SetStatus(job.QueryPackId, job.ORL, common.StatusQueued)
-		cmd := exec.Command(path.Join(cwd, "cmd", "run-analysis.sh"),
+		cmd := exec.Command(path.Join(cwd, "bin", "run-analysis.sh"),
 			strconv.FormatInt(int64(job.QueryPackId), 10),
 			job.QueryLanguage, job.ORL.Owner, job.ORL.Repo)
 

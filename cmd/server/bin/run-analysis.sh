@@ -12,7 +12,9 @@ DBOWNER=$1
 shift
 DBREPO=$1
 
+# FIXME Provide this via environment or explicit argument
 GMSROOT=/Users/hohn/local/ghes-mirva-server
+GMSROOT=/Users/hohn/work-gh/mrva/mrvacommander/cmd/server
 
 #* Set up derived paths
 DBPATH=$GMSROOT/var/codeql/dbs/$DBOWNER/$DBREPO
@@ -30,7 +32,6 @@ QUERYOUTF=$QUERYOUTD/${DBOWNER}_${DBREPO}.sarif
 #**        Extract database
 mkdir -p  $DBEXTRACT && cd $DBEXTRACT
 unzip -o -q $DBZIP
-DBINFIX=`\ls | head -1`                   # Could be cpp, codeql_db, or whatever
 
 #   Extract query pack
 mkdir -p $QUERYEXTRACT && cd $QUERYEXTRACT
@@ -41,17 +42,17 @@ mkdir -p $QUERYOUTD
 
 #*    run database analyze
 cd $GMSROOT
-codeql database analyze --format=sarif-latest --rerun \
-       --output $QUERYOUTF \
-       -j8 \
-       -- $DBPATH/$DBINFIX $QUERYEXTRACT
+codeql database analyze --format=sarif-latest --rerun   \
+       --output $QUERYOUTF                              \
+       -j8                                              \
+       -- $DBPATH $QUERYEXTRACT 
 
 #*    report result
-# var/codeql/sarif/localrun/google/flatbuffers/google_flatbuffers.sarif
 printf "run-analysis-output in %s\n" $QUERYOUTF
+
 # TODO Is the bqrs really necessary?  It can also be found by the go code at this point. 
-# The name of the query is only found in the query pack itself and would have to be 
-# extracted from there.
-# var/codeql/dbs/google/flatbuffers/cpp/results/codeql-remote/query/FlatBuffersFunc.bqrs
+# TODO The name of the query is only found in the query pack itself and would have
+# to be extracted from there.
+
 # BQRSPATH=$GMSROOT/var/codeql/dbs/$DBOWNER/$DBREPO/$LANGUAGE/results/codeql-remote/query/
 # printf "run-analysis-bqrs in %s\n" $QUERYOUTF
