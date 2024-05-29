@@ -1,0 +1,5 @@
+# Files created by agents at run-time 
+cmd/server/var/
+
+# vscode project dir
+.vscode/
