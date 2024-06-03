@@ -26,3 +26,30 @@ TODO Style notes
 4.  Run server in container
 
         cd /mrva/mrvacommander/cmd/server/ && ./server
+
+## Using docker
+1.  start the services
+
+        docker-compose up -d
+
+    
+2.  get status
+
+        docker-compose ps
+        
+3.  stop services
+
+        docker-compose down
+        
+4.  view all logs
+
+        docker-compose logs
+
+5.  check containers from server container
+
+        docker exec -it server bash
+        curl -I postgres:5432
+        curl -I http://rabbitmq:15672
+
+
+        

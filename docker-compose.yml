@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16.3-bookworm
+    container_name: postgres
+    environment:
+      POSTGRES_USER: exampleuser
+      POSTGRES_PASSWORD: examplepass
+      POSTGRES_DB: exampledb
+    volumes:
+      - postgres_data:/Users/hohn/var/lib/postgresql/data
+    expose:
+      - "5432"
+    networks:
+      - backend
+
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    expose:
+      - "5672"
+      - "15672"
+    ports:
+      - "15672:15672"
+    networks:
+      - backend
+
+
+  server:
+    image: ubuntu:22.04
+    container_name: server
+    command: sh -c "apt-get update && apt-get install -y curl && tail -f /dev/null"
+    ports:
+      - "8080:80" # Exposing port 80 inside the container as port 8080 on the host
+    depends_on:
+      - postgres
+      - rabbitmq
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
+    
+volumes:
+  postgres_data:
+    driver: local
