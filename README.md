@@ -50,6 +50,40 @@ TODO Style notes
         docker exec -it server bash
         curl -I postgres:5432
         curl -I http://rabbitmq:15672
-
-
         
+1.  Accessing PostgreSQL
+    
+        psql -h localhost -p 5432 -U exampleuser -d exampledb
+
+1.  List all tables
+    
+        \dt
+
+1.  Run pgmin
+
+    ```sh
+    cd ~/work-gh/mrva/mrvacommander/cmd/postgres
+    GOOS=linux GOARCH=arm64 go build
+    docker exec -it server bash
+    /mrva/mrvacommander/cmd/postgres/postgres
+    ```
+
+    Exit the container.  Back on the host:
+    
+        psql -h localhost -p 5432 -U exampleuser -d exampledb
+        \dt
+    
+    Should show
+
+                List of relations
+         Schema |    Name     | Type  |    Owner
+        --------+-------------+-------+-------------
+         public | owner_repos | table | exampleuser    
+
+
+1.  Check table contents
+
+        exampledb=# select * from owner_repos;
+         owner |  repo
+        -------+---------
+         foo   | foo/bar

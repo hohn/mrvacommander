@@ -10,6 +10,8 @@ services:
       POSTGRES_DB: exampledb
     volumes:
       - postgres_data:/Users/hohn/var/lib/postgresql/data
+    ports:
+      - "5432:5432" # Exposing PostgreSQL to the host
     expose:
       - "5432"
     networks:
@@ -37,6 +39,8 @@ services:
     command: sh -c "apt-get update && apt-get install -y curl && tail -f /dev/null"
     ports:
       - "8080:80" # Exposing port 80 inside the container as port 8080 on the host
+    volumes:
+      - /Users/hohn/work-gh/mrva/mrvacommander:/mrva/mrvacommander
     depends_on:
       - postgres
       - rabbitmq
