@@ -62,9 +62,9 @@ func (c *CommanderSingle) StatusResponse(w http.ResponseWriter, js common.JobSpe
 	slog.Debug("Submitting status response", "session", vaid)
 
 	all_scanned := []common.ScannedRepo{}
-	jobs := storage.GetJobList(js.ID)
+	jobs := storage.GetJobList(js.JobID)
 	for _, job := range jobs {
-		astat := storage.GetStatus(js.ID, job.ORL).ToExternalString()
+		astat := storage.GetStatus(js.JobID, job.ORL).ToExternalString()
 		all_scanned = append(all_scanned,
 			common.ScannedRepo{
 				Repository: common.Repository{
@@ -82,10 +82,10 @@ func (c *CommanderSingle) StatusResponse(w http.ResponseWriter, js common.JobSpe
 		)
 	}
 
-	astat := storage.GetStatus(js.ID, js.OwnerRepo).ToExternalString()
+	astat := storage.GetStatus(js.JobID, js.OwnerRepo).ToExternalString()
 
 	status := common.StatusResponse{
-		SessionId:            js.ID,
+		SessionId:            js.JobID,
 		ControllerRepo:       common.ControllerRepo{},
 		Actor:                common.Actor{},
 		QueryLanguage:        ji.QueryLanguage,
@@ -142,7 +142,7 @@ func (c *CommanderSingle) MirvaStatus(w http.ResponseWriter, r *http.Request) {
 	job := spec[0]
 
 	js := common.JobSpec{
-		ID:        job.QueryPackId,
+		JobID:     job.QueryPackId,
 		OwnerRepo: job.ORL,
 	}
 
@@ -169,7 +169,7 @@ func (c *CommanderSingle) MirvaDownloadArtifact(w http.ResponseWriter, r *http.R
 		return
 	}
 	js := common.JobSpec{
-		ID: vaid,
+		JobID: vaid,
 		OwnerRepo: common.OwnerRepo{
 			Owner: vars["repo_owner"],
 			Repo:  vars["repo_name"],
@@ -366,7 +366,7 @@ func submit_response(sn SessionInfo) ([]byte, error) {
 
 	for _, job := range joblist {
 		storage.SetJobInfo(common.JobSpec{
-			ID:        sn.ID,
+			JobID:     sn.ID,
 			OwnerRepo: job.ORL,
 		}, common.JobInfo{
 			QueryLanguage:       sn.Language,

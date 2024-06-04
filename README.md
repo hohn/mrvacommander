@@ -40,6 +40,7 @@ Steps to build and run the server in a multi-container environment set up by doc
 1.  Start the containers
 
         cd ~/work-gh/mrva/mrvacommander/
+        docker-compose down
         docker-compose up -d
     
 4.  Run server in its container

@@ -47,6 +47,6 @@ func (s Status) ToExternalString() string {
 }
 
 type JobSpec struct {
-	ID int
+	JobID int
 	OwnerRepo
 }

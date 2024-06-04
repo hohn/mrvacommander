@@ -125,7 +125,7 @@ func GetResult(js common.JobSpec) common.AnalyzeResult {
 func SetResult(sessionid int, orl common.OwnerRepo, ar common.AnalyzeResult) {
 	mutex.Lock()
 	defer mutex.Unlock()
-	result[common.JobSpec{ID: sessionid, OwnerRepo: orl}] = ar
+	result[common.JobSpec{JobID: sessionid, OwnerRepo: orl}] = ar
 }
 
 func PackageResults(ar common.AnalyzeResult, owre common.OwnerRepo, vaid int) (zipPath string, e error) {
@@ -206,7 +206,7 @@ func SetJobInfo(js common.JobSpec, ji common.JobInfo) {
 func GetStatus(sessionid int, orl common.OwnerRepo) common.Status {
 	mutex.Lock()
 	defer mutex.Unlock()
-	return status[common.JobSpec{ID: sessionid, OwnerRepo: orl}]
+	return status[common.JobSpec{JobID: sessionid, OwnerRepo: orl}]
 }
 
 func ResultAsFile(path string) (string, []byte, error) {
@@ -227,7 +227,7 @@ func ResultAsFile(path string) (string, []byte, error) {
 func SetStatus(sessionid int, orl common.OwnerRepo, s common.Status) {
 	mutex.Lock()
 	defer mutex.Unlock()
-	status[common.JobSpec{ID: sessionid, OwnerRepo: orl}] = s
+	status[common.JobSpec{JobID: sessionid, OwnerRepo: orl}] = s
 }
 
 func AddJob(sessionid int, job common.AnalyzeJob) {
