@@ -6,7 +6,9 @@ TODO Style notes
 - NO package init() functions
 - Dynamic behaviour must be explicit
  
-## cross-compile server on host, run it in container 
+## Cross-compile server on host, run it in container 
+These are simple steps using a single container.
+
 1.  build server on host
 
         GOOS=linux GOARCH=arm64 go build
@@ -27,21 +29,42 @@ TODO Style notes
 
         cd /mrva/mrvacommander/cmd/server/ && ./server
 
-## Using docker
-1.  start the services
+## Using docker-compose
+Steps to build and run the server in a multi-container environment set up by docker-compose.
 
+1.  Build server on host
+
+        cd ~/work-gh/mrva/mrvacommander/cmd/server/
+        GOOS=linux GOARCH=arm64 go build
+
+1.  Start the containers
+
+        cd ~/work-gh/mrva/mrvacommander/
         docker-compose up -d
-
     
-2.  get status
+4.  Run server in its container
+
+        cd ~/work-gh/mrva/mrvacommander/
+        docker exec -it server bash
+        cd /mrva/mrvacommander/cmd/server/ 
+        ./server -loglevel=debug -mode=container
+
+1.  Test server via remote client by following the steps in [gh-mrva](https://github.com/hohn/gh-mrva/blob/connection-redirect/README.org#compacted-edit-run-debug-cycle)
+    
+
+
+
+Some general docker-compose commands
+
+2.  Get service status
 
         docker-compose ps
         
-3.  stop services
+3.  Stop services
 
         docker-compose down
         
-4.  view all logs
+4.  View all logs
 
         docker-compose logs
 
@@ -50,14 +73,19 @@ TODO Style notes
         docker exec -it server bash
         curl -I postgres:5432
         curl -I http://rabbitmq:15672
-        
-1.  Accessing PostgreSQL
+
+
+Some postgres specific commands
+
+1.  Access PostgreSQL
     
         psql -h localhost -p 5432 -U exampleuser -d exampledb
 
 1.  List all tables
     
         \dt
+
+To run pgmin, the minimal go/postgres test part of this repository:
 
 1.  Run pgmin
 

@@ -23,18 +23,14 @@ var (
 	mutex  sync.Mutex
 )
 
-type StorageSingle struct {
-	CurrentID int
-}
-
 func NewStorageSingle(startingID int) *StorageSingle {
-	s := StorageSingle{CurrentID: startingID}
+	s := StorageSingle{currentID: startingID}
 	return &s
 }
 
 func (s *StorageSingle) NextID() int {
-	s.CurrentID += 1
-	return s.CurrentID
+	s.currentID += 1
+	return s.currentID
 }
 
 func (s *StorageSingle) SaveQueryPack(tgz []byte, sessionId int) (string, error) {

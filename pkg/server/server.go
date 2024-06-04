@@ -54,6 +54,7 @@ func (c *CommanderSingle) Setup(st *State) {
 	//
 	// Bind to a port and pass our router in
 	//
+	// TODO make this a configuration entry
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
