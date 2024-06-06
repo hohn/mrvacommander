@@ -6,7 +6,7 @@ type AnalyzeJob struct {
 	QueryPackId   int
 	QueryLanguage string
 
-	ORL OwnerRepo
+	ORepo OwnerRepo
 }
 
 type OwnerRepo struct {

@@ -23,7 +23,7 @@ func (q *QueueSingle) StartAnalyses(analysis_repos *map[common.OwnerRepo]storage
 			QueryPackId:   session_id,
 			QueryLanguage: session_language,
 
-			ORL: orl,
+			ORepo: orl,
 		}
 		q.jobs <- info
 		storage.SetStatus(session_id, orl, common.StatusQueued)

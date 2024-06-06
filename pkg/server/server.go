@@ -64,13 +64,13 @@ func (c *CommanderSingle) StatusResponse(w http.ResponseWriter, js common.JobSpe
 	all_scanned := []common.ScannedRepo{}
 	jobs := storage.GetJobList(js.JobID)
 	for _, job := range jobs {
-		astat := storage.GetStatus(js.JobID, job.ORL).ToExternalString()
+		astat := storage.GetStatus(js.JobID, job.ORepo).ToExternalString()
 		all_scanned = append(all_scanned,
 			common.ScannedRepo{
 				Repository: common.Repository{
 					ID:              0,
-					Name:            job.ORL.Repo,
-					FullName:        fmt.Sprintf("%s/%s", job.ORL.Owner, job.ORL.Repo),
+					Name:            job.ORepo.Repo,
+					FullName:        fmt.Sprintf("%s/%s", job.ORepo.Owner, job.ORepo.Repo),
 					Private:         false,
 					StargazersCount: 0,
 					UpdatedAt:       ji.UpdatedAt,
@@ -143,7 +143,7 @@ func (c *CommanderSingle) MirvaStatus(w http.ResponseWriter, r *http.Request) {
 
 	js := common.JobSpec{
 		JobID:     job.QueryPackId,
-		OwnerRepo: job.ORL,
+		OwnerRepo: job.ORepo,
 	}
 
 	ji := storage.GetJobInfo(js)
@@ -367,7 +367,7 @@ func submit_response(sn SessionInfo) ([]byte, error) {
 	for _, job := range joblist {
 		storage.SetJobInfo(common.JobSpec{
 			JobID:     sn.ID,
-			OwnerRepo: job.ORL,
+			OwnerRepo: job.ORepo,
 		}, common.JobInfo{
 			QueryLanguage:       sn.Language,
 			CreatedAt:           m_sr.CreatedAt,

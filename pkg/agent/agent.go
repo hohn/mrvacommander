@@ -40,7 +40,7 @@ func (r *RunnerSingle) worker(wid int) {
 		slog.Debug("Picking up job", "job", job, "worker", wid)
 
 		slog.Debug("Analysis: running", "job", job)
-		storage.SetStatus(job.QueryPackId, job.ORL, common.StatusQueued)
+		storage.SetStatus(job.QueryPackId, job.ORepo, common.StatusQueued)
 
 		resultFile, err := r.RunAnalysis(job)
 		if err != nil {
@@ -54,8 +54,8 @@ func (r *RunnerSingle) worker(wid int) {
 			RunAnalysisBQRS:  "", // FIXME ?
 		}
 		r.queue.Results() <- res
-		storage.SetStatus(job.QueryPackId, job.ORL, common.StatusSuccess)
-		storage.SetResult(job.QueryPackId, job.ORL, res)
+		storage.SetStatus(job.QueryPackId, job.ORepo, common.StatusSuccess)
+		storage.SetResult(job.QueryPackId, job.ORepo, res)
 
 	}
 }
@@ -65,7 +65,7 @@ func (r *RunnerSingle) RunAnalysis(job common.AnalyzeJob) (string, error) {
 	// queryPackID, queryLanguage, dbOwner, dbRepo :=
 	// 	job.QueryPackId, job.QueryLanguage, job.ORL.Owner, job.ORL.Repo
 	queryPackID, dbOwner, dbRepo :=
-		job.QueryPackId, job.ORL.Owner, job.ORL.Repo
+		job.QueryPackId, job.ORepo.Owner, job.ORepo.Repo
 
 	// FIXME Provide this via environment or explicit argument
 	gmsRoot := "/Users/hohn/work-gh/mrva/mrvacommander/cmd/server"
@@ -124,7 +124,7 @@ func (r *RunnerSingle) RunAnalysis(job common.AnalyzeJob) (string, error) {
 
 	if err := cmd.Run(); err != nil {
 		slog.Error("codeql database analyze failed:", "error", err, "job", job)
-		storage.SetStatus(job.QueryPackId, job.ORL, common.StatusError)
+		storage.SetStatus(job.QueryPackId, job.ORepo, common.StatusError)
 		return "", err
 	}
 
