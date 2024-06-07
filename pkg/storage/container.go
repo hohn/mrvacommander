@@ -32,6 +32,42 @@ func (s *StorageContainer) FindAvailableDBs(analysisReposRequested []common.Owne
 	return notFoundRepos, analysisRepos
 }
 
+func (s *StorageContainer) Setup(v *ServerStorageVisibles) {
+	s.modules = v
+}
+
+func NewQLDBStore() (*StorageContainer, error) {
+	// TODO set up qldb_db
+	return nil, nil
+}
+
+func NewQueryPackStore(startingID int) (*StorageContainer, error) {
+	// TODO set up querypack_db
+	// TODO drop the startingID
+
+	db, err := ConnectDB(DBSpec{
+		Host:     "postgres",
+		Port:     5432,
+		User:     "exampleuser",
+		Password: "examplepass",
+		DBname:   "querypack_db",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	s := StorageContainer{RequestID: startingID, DB: db}
+	if err := s.SetupDB(); err != nil {
+		return nil, err
+	}
+
+	if err = s.loadState(); err != nil {
+		return nil, err
+	}
+
+	return &s, nil
+}
+
 func NewStorageContainer(startingID int) (*StorageContainer, error) {
 
 	db, err := ConnectDB(DBSpec{
@@ -39,32 +75,21 @@ func NewStorageContainer(startingID int) (*StorageContainer, error) {
 		Port:     5432,
 		User:     "exampleuser",
 		Password: "examplepass",
-		DBname:   "exampledb",
+		DBname:   "server_db",
 	})
-
 	if err != nil {
 		return nil, err
 	}
 
-	s, err := LoadOrInit(db, startingID)
-	if err != nil {
-		return nil, err
-	}
-	return s, nil
-
-}
-
-func LoadOrInit(db *gorm.DB, startingID int) (*StorageContainer, error) {
-	// Check and set up the database
 	s := StorageContainer{RequestID: startingID, DB: db}
-	if s.hasTables() {
-		s.loadState()
-	} else {
-		if err := s.SetupDB(); err != nil {
-			return nil, err
-		}
-		s.setFresh()
+	if err := s.SetupDB(); err != nil {
+		return nil, err
 	}
+
+	if err = s.loadState(); err != nil {
+		return nil, err
+	}
+
 	return &s, nil
 }
 
@@ -80,12 +105,7 @@ func ConnectDB(s DBSpec) (*gorm.DB, error) {
 	return db, nil
 }
 
-func (s *StorageContainer) setFresh() {
-	// TODO Set initial state
-}
-
 func (s *StorageContainer) SetupDB() error {
-	// TODO Migrate the schemas
 	msg := "Failed to initialize database "
 
 	if err := s.DB.AutoMigrate(&DBInfo{}); err != nil {
@@ -108,9 +128,9 @@ func (s *StorageContainer) SetupDB() error {
 	return nil
 }
 
-func (s *StorageContainer) loadState() {
+func (s *StorageContainer) loadState() error {
 	// TODO load the state
-	return
+	return nil
 }
 
 func (s *StorageContainer) hasTables() bool {

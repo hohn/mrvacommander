@@ -13,6 +13,7 @@ type DBLocation struct {
 
 type StorageSingle struct {
 	currentID int
+	modules   *ServerStorageVisibles
 }
 
 type DBSpec struct {
@@ -59,4 +60,7 @@ type StorageContainer struct {
 	// Database version of StorageSingle
 	RequestID int
 	DB        *gorm.DB
+	modules   *ServerStorageVisibles
 }
+
+type ServerStorageVisibles struct{}

@@ -2,6 +2,7 @@ package agent
 
 import (
 	"mrvacommander/pkg/common"
+	"mrvacommander/pkg/logger"
 	"mrvacommander/pkg/queue"
 	"mrvacommander/pkg/storage"
 
@@ -29,6 +30,19 @@ func NewRunnerSingle(numWorkers int, queue queue.Queue) *RunnerSingle {
 		go r.worker(id)
 	}
 	return &r
+}
+
+type RunnerVisibles struct {
+	Logger logger.Logger
+	Queue  queue.Queue
+	// TODO extra package for query pack storage
+	QueryPackStore storage.Storage
+	// TODO extra package for ql db storage
+	QLDBStore storage.Storage
+}
+
+func (c *RunnerSingle) Setup(st *RunnerVisibles) {
+	return
 }
 
 func (r *RunnerSingle) worker(wid int) {

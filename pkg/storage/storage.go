@@ -28,6 +28,10 @@ func NewStorageSingle(startingID int) *StorageSingle {
 	return &s
 }
 
+func (s *StorageSingle) Setup(v *ServerStorageVisibles) {
+	s.modules = v
+}
+
 func (s *StorageSingle) NextID() int {
 	s.currentID += 1
 	return s.currentID

@@ -21,7 +21,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func (c *CommanderSingle) Setup(st *State) {
+func (c *CommanderSingle) Setup(st *CommanderVisibles) {
 	r := mux.NewRouter()
 	c.st = st
 
@@ -275,7 +275,7 @@ func (c *CommanderSingle) MirvaRequest(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	slog.Info("New mrva run ", "owner", vars["owner"], "repo", vars["repo"])
 
-	session_id := c.st.Storage.NextID()
+	session_id := c.st.ServerStore.NextID()
 	session_owner := vars["owner"]
 	session_controller_repo := vars["repo"]
 	slog.Info("new run", "id: ", fmt.Sprint(session_id), session_owner, session_controller_repo)
@@ -284,7 +284,7 @@ func (c *CommanderSingle) MirvaRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	not_found_repos, analysisRepos := c.st.Storage.FindAvailableDBs(session_repositories)
+	not_found_repos, analysisRepos := c.st.ServerStore.FindAvailableDBs(session_repositories)
 
 	c.queue.StartAnalyses(analysisRepos, session_id, session_language)
 
@@ -492,7 +492,7 @@ func (c *CommanderSingle) extract_tgz(qp string, sessionID int) (string, error) 
 		return "", err
 	}
 
-	session_query_pack_tgz_filepath, err := c.st.Storage.SaveQueryPack(tgz, sessionID)
+	session_query_pack_tgz_filepath, err := c.st.ServerStore.SaveQueryPack(tgz, sessionID)
 	if err != nil {
 		return "", err
 	}

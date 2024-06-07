@@ -1,7 +1,6 @@
 package server
 
 import (
-	"mrvacommander/pkg/agent"
 	"mrvacommander/pkg/common"
 	"mrvacommander/pkg/logger"
 	"mrvacommander/pkg/queue"
@@ -26,19 +25,30 @@ type SessionInfo struct {
 }
 
 type CommanderSingle struct {
-	st    *State
+	st *CommanderVisibles
+	// TODO remove:
 	queue queue.Queue
 }
 
-func NewCommanderSingle(s *State, q queue.Queue) *CommanderSingle {
+func NewCommanderSingle(s *CommanderVisibles, q queue.Queue) *CommanderSingle {
 	c := CommanderSingle{s, q}
 	return &c
 }
 
-type State struct {
-	Commander Commander
-	Logger    logger.Logger
-	Queue     queue.Queue
-	Storage   storage.Storage
-	Runner    agent.Runner
+// type State struct {
+// 	Commander Commander
+// 	Logger    logger.Logger
+// 	Queue     queue.Queue
+// 	Storage   storage.Storage
+// 	Runner    agent.Runner
+// }
+
+type CommanderVisibles struct {
+	Logger      logger.Logger
+	Queue       queue.Queue
+	ServerStore storage.Storage
+	// TODO extra package for query pack storage
+	QueryPackStore storage.Storage
+	// TODO extra package for ql db storage
+	QLDBStore storage.Storage
 }

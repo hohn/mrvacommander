@@ -86,6 +86,33 @@ Some postgres specific commands
     
         \dt
 
+1.  Examine a table
+
+        select * from db_infos
+
+1.  Show all columns in a specific table
+
+        \d+ db_infos
+
+1.  Miscellany
+
+        \pset pager off
+        \lo_import FILE [COMMENT]
+
+
+Manually create needed postgres databases
+
+    # on the host
+    psql -h localhost -p 5432 -U exampleuser -d postgres
+
+    # Conditionally create dbs
+    SELECT 'CREATE DATABASE server_db' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'server_db')\gexec
+    SELECT 'CREATE DATABASE querypack_db' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'querypack_db')\gexec
+    SELECT 'CREATE DATABASE qldb_db' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'qldb_db')\gexec
+
+    # List all dbs
+    \l
+
 To run pgmin, the minimal go/postgres test part of this repository:
 
 1.  Run pgmin
