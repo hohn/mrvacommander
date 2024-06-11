@@ -30,7 +30,7 @@ These are simple steps using a single container.
         cd /mrva/mrvacommander/cmd/server/ && ./server
 
 ## Using docker-compose
-Steps to build and run the server in a multi-container environment set up by docker-compose.
+### Steps to build and run the server in a multi-container environment set up by docker-compose.
 
 1.  Build server on host
 
@@ -51,11 +51,8 @@ Steps to build and run the server in a multi-container environment set up by doc
         ./server -loglevel=debug -mode=container
 
 1.  Test server via remote client by following the steps in [gh-mrva](https://github.com/hohn/gh-mrva/blob/connection-redirect/README.org#compacted-edit-run-debug-cycle)
-    
 
-
-
-Some general docker-compose commands
+### Some general docker-compose commands
 
 2.  Get service status
 
@@ -76,7 +73,7 @@ Some general docker-compose commands
         curl -I http://rabbitmq:15672
 
 
-Some postgres specific commands
+### Some postgres specific commands
 
 1.  Access PostgreSQL
     
@@ -100,7 +97,7 @@ Some postgres specific commands
         \lo_import FILE [COMMENT]
 
 
-Manually create needed postgres databases
+### Manually create needed postgres databases
 
     # on the host
     psql -h localhost -p 5432 -U exampleuser -d postgres

@@ -286,7 +286,7 @@ func (c *CommanderSingle) MirvaRequest(w http.ResponseWriter, r *http.Request) {
 
 	not_found_repos, analysisRepos := c.st.ServerStore.FindAvailableDBs(session_repositories)
 
-	c.queue.StartAnalyses(analysisRepos, session_id, session_language)
+	c.st.Queue.StartAnalyses(analysisRepos, session_id, session_language)
 
 	si := SessionInfo{
 		ID:             session_id,

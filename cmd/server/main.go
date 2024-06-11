@@ -69,7 +69,7 @@ func main() {
 	case "standalone":
 		// Assemble single-process version
 		sq := queue.NewQueueSingle(2) // FIXME take value from configuration
-		sc := server.NewCommanderSingle(nil, sq)
+		sc := server.NewCommanderSingle()
 		sl := logger.NewLoggerSingle()
 		ss := storage.NewStorageSingle(config.Storage.StartingID)
 		sr := agent.NewRunnerSingle(2, sq) // FIXME take value from configuration
@@ -112,7 +112,7 @@ func main() {
 	case "container":
 		// Assemble container version
 		sq := queue.NewQueueSingle(2) // FIXME take value from configuration
-		sc := server.NewCommanderSingle(nil, sq)
+		sc := server.NewCommanderSingle()
 		sl := logger.NewLoggerSingle()
 
 		ss, err := storage.NewStorageContainer(config.Storage.StartingID)

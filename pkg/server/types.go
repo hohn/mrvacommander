@@ -26,12 +26,10 @@ type SessionInfo struct {
 
 type CommanderSingle struct {
 	st *CommanderVisibles
-	// TODO remove:
-	queue queue.Queue
 }
 
-func NewCommanderSingle(s *CommanderVisibles, q queue.Queue) *CommanderSingle {
-	c := CommanderSingle{s, q}
+func NewCommanderSingle() *CommanderSingle {
+	c := CommanderSingle{}
 	return &c
 }
 
