@@ -87,7 +87,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		sc.Setup(&server.CommanderVisibles{
+		sc.Setup(&server.Visibles{
 			Logger:         sl,
 			Queue:          sq,
 			ServerStore:    ss,
@@ -95,15 +95,15 @@ func main() {
 			QLDBStore:      ql,
 		})
 
-		sl.Setup(&logger.LoggerVisibles{})
+		sl.Setup(&logger.Visibles{})
 
-		sq.Setup(&queue.QueueVisibles{
+		sq.Setup(&queue.Visibles{
 			Logger: sl,
 		})
 
-		ss.Setup(&storage.ServerStorageVisibles{})
+		ss.Setup(&storage.Visibles{})
 
-		sr.Setup(&agent.RunnerVisibles{
+		sr.Setup(&agent.Visibles{
 			Logger:         sl,
 			Queue:          sq,
 			QueryPackStore: qp,
@@ -136,7 +136,7 @@ func main() {
 
 		sr := agent.NewRunnerSingle(2, sq) // FIXME take value from configuration
 
-		sc.Setup(&server.CommanderVisibles{
+		sc.Setup(&server.Visibles{
 			Logger:         sl,
 			Queue:          sq,
 			ServerStore:    ss,
@@ -144,15 +144,15 @@ func main() {
 			QLDBStore:      ql,
 		})
 
-		sl.Setup(&logger.LoggerVisibles{})
+		sl.Setup(&logger.Visibles{})
 
-		sq.Setup(&queue.QueueVisibles{
+		sq.Setup(&queue.Visibles{
 			Logger: sl,
 		})
 
-		ss.Setup(&storage.ServerStorageVisibles{})
+		ss.Setup(&storage.Visibles{})
 
-		sr.Setup(&agent.RunnerVisibles{
+		sr.Setup(&agent.Visibles{
 			Logger:         sl,
 			Queue:          sq,
 			QueryPackStore: qp,

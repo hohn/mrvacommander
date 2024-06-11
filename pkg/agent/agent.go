@@ -33,7 +33,7 @@ func NewRunnerSingle(numWorkers int, queue queue.Queue) *RunnerSingle {
 	return &r
 }
 
-type RunnerVisibles struct {
+type Visibles struct {
 	Logger logger.Logger
 	Queue  queue.Queue
 	// TODO extra package for query pack storage
@@ -42,7 +42,7 @@ type RunnerVisibles struct {
 	QLDBStore storage.Storage
 }
 
-func (c *RunnerSingle) Setup(st *RunnerVisibles) {
+func (c *RunnerSingle) Setup(st *Visibles) {
 	return
 }
 

@@ -26,7 +26,7 @@ type SessionInfo struct {
 }
 
 type CommanderSingle struct {
-	st *CommanderVisibles
+	st *Visibles
 }
 
 func NewCommanderSingle() *CommanderSingle {
@@ -42,7 +42,7 @@ func NewCommanderSingle() *CommanderSingle {
 // 	Runner    agent.Runner
 // }
 
-type CommanderVisibles struct {
+type Visibles struct {
 	Logger      logger.Logger
 	Queue       queue.Queue
 	ServerStore storage.Storage

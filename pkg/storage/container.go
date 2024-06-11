@@ -32,7 +32,7 @@ func (s *StorageContainer) FindAvailableDBs(analysisReposRequested []common.Owne
 	return notFoundRepos, analysisRepos
 }
 
-func (s *StorageContainer) Setup(v *ServerStorageVisibles) {
+func (s *StorageContainer) Setup(v *Visibles) {
 	s.modules = v
 }
 

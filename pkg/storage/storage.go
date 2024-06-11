@@ -28,7 +28,7 @@ func NewStorageSingle(startingID int) *StorageSingle {
 	return &s
 }
 
-func (s *StorageSingle) Setup(v *ServerStorageVisibles) {
+func (s *StorageSingle) Setup(v *Visibles) {
 	s.modules = v
 }
 

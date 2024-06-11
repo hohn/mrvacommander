@@ -1,7 +1,7 @@
 package logger
 
 type LoggerSingle struct {
-	modules *LoggerVisibles
+	modules *Visibles
 }
 
 func NewLoggerSingle() *LoggerSingle {
@@ -9,8 +9,8 @@ func NewLoggerSingle() *LoggerSingle {
 	return &l
 }
 
-type LoggerVisibles struct{}
+type Visibles struct{}
 
-func (l *LoggerSingle) Setup(v *LoggerVisibles) {
+func (l *LoggerSingle) Setup(v *Visibles) {
 	l.modules = v
 }

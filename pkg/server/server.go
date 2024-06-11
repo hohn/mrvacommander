@@ -21,7 +21,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func (c *CommanderSingle) Setup(st *CommanderVisibles) {
+func (c *CommanderSingle) Setup(st *Visibles) {
 	r := mux.NewRouter()
 	c.st = st
 

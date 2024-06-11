@@ -9,14 +9,14 @@ type QueueSingle struct {
 	NumWorkers int
 	jobs       chan common.AnalyzeJob
 	results    chan common.AnalyzeResult
-	modules    *QueueVisibles
+	modules    *Visibles
 }
 
-type QueueVisibles struct {
+type Visibles struct {
 	Logger logger.Logger
 }
 
-func (q *QueueSingle) Setup(v *QueueVisibles) {
+func (q *QueueSingle) Setup(v *Visibles) {
 	q.modules = v
 }
 
