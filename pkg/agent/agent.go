@@ -3,6 +3,7 @@ package agent
 import (
 	"mrvacommander/pkg/common"
 	"mrvacommander/pkg/logger"
+	"mrvacommander/pkg/qpstore"
 	"mrvacommander/pkg/queue"
 	"mrvacommander/pkg/storage"
 
@@ -36,7 +37,7 @@ type RunnerVisibles struct {
 	Logger logger.Logger
 	Queue  queue.Queue
 	// TODO extra package for query pack storage
-	QueryPackStore storage.Storage
+	QueryPackStore qpstore.Storage
 	// TODO extra package for ql db storage
 	QLDBStore storage.Storage
 }

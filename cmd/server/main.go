@@ -13,6 +13,7 @@ import (
 
 	"mrvacommander/pkg/agent"
 	"mrvacommander/pkg/logger"
+	"mrvacommander/pkg/qpstore"
 	"mrvacommander/pkg/queue"
 	"mrvacommander/pkg/server"
 	"mrvacommander/pkg/storage"
@@ -74,7 +75,7 @@ func main() {
 		ss := storage.NewStorageSingle(config.Storage.StartingID)
 		sr := agent.NewRunnerSingle(2, sq) // FIXME take value from configuration
 
-		qp, err := storage.NewQueryPackStore(config.Storage.StartingID)
+		qp, err := qpstore.NewStore(config.Storage.StartingID)
 		if err != nil {
 			slog.Error("Unable to initialize query pack storage")
 			os.Exit(1)
@@ -121,7 +122,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		qp, err := storage.NewQueryPackStore(config.Storage.StartingID)
+		qp, err := qpstore.NewStore(config.Storage.StartingID)
 		if err != nil {
 			slog.Error("Unable to initialize query pack storage")
 			os.Exit(1)

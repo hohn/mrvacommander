@@ -99,6 +99,18 @@ These are simple steps using a single container.
 
 ### Manually create needed postgres databases
 
+This is still necessary after `docker-compose up` to avoid
+
+    [error] failed to initialize database, got error failed to connect to
+    `user=exampleuser database=server_db`: 172.25.0.3:5432 (postgres): server
+    error: FATAL: database "server_db" does not exist (SQLSTATE 3D000) 
+
+from
+
+    ./server -loglevel=debug -mode=container
+
+The steps:
+
     # on the host
     psql -h localhost -p 5432 -U exampleuser -d postgres
 
