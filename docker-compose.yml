@@ -37,6 +37,8 @@ services:
   server:
     image: ubuntu:22.04
     container_name: server
+    environment:
+      - MRVA_SERVER_ROOT=/mrva/mrvacommander/cmd/server
     command: sh -c "apt-get update && apt-get install -y curl && tail -f /dev/null"
     ports:
       - "8080:8080" 
