@@ -99,7 +99,10 @@ These are simple steps using a single container.
 
 ### Manually create needed postgres databases
 
-This is still necessary after `docker-compose up` to avoid
+docker-compose now runs a db init script, but this information is useful for 
+debugging/manual work.
+
+~~This is still necessary after `docker-compose up` to avoid~~
 
     [error] failed to initialize database, got error failed to connect to
     `user=exampleuser database=server_db`: 172.25.0.3:5432 (postgres): server
@@ -122,7 +125,7 @@ The steps:
     # List all dbs
     \l
 
-To run pgmin, the minimal go/postgres test part of this repository:
+### To run pgmin, the minimal go/postgres test part of this repository
 
 1.  Run pgmin
 

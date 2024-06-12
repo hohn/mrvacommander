@@ -9,7 +9,8 @@ services:
       POSTGRES_PASSWORD: examplepass
       POSTGRES_DB: exampledb
     volumes:
-      - postgres_data:/Users/hohn/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init-scripts:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432" # Exposing PostgreSQL to the host
     expose:
@@ -38,7 +39,7 @@ services:
     container_name: server
     command: sh -c "apt-get update && apt-get install -y curl && tail -f /dev/null"
     ports:
-      - "8080:80" # Exposing port 80 inside the container as port 8080 on the host
+      - "8080:8080" 
     volumes:
       - /Users/hohn/work-gh/mrva/mrvacommander:/mrva/mrvacommander
     depends_on:
