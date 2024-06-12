@@ -13,6 +13,7 @@ import (
 
 	"mrvacommander/pkg/agent"
 	"mrvacommander/pkg/logger"
+	"mrvacommander/pkg/qpstore"
 	"mrvacommander/pkg/queue"
 	"mrvacommander/pkg/server"
 	"mrvacommander/pkg/storage"
@@ -69,43 +70,94 @@ func main() {
 	case "standalone":
 		// Assemble single-process version
 		sq := queue.NewQueueSingle(2) // FIXME take value from configuration
-		sc := server.NewCommanderSingle(nil, sq)
+		sc := server.NewCommanderSingle()
 		sl := logger.NewLoggerSingle()
 		ss := storage.NewStorageSingle(config.Storage.StartingID)
 		sr := agent.NewRunnerSingle(2, sq) // FIXME take value from configuration
 
-		state := server.State{
-			Commander: sc,
-			Logger:    sl,
-			Queue:     sq,
-			Storage:   ss,
-			Runner:    sr,
+		qp, err := qpstore.NewStore(config.Storage.StartingID)
+		if err != nil {
+			slog.Error("Unable to initialize query pack storage")
+			os.Exit(1)
 		}
 
-		sc.Setup(&state) // sc is part of state and dereferences it
+		ql, err := storage.NewQLDBStore()
+		if err != nil {
+			slog.Error("Unable to initialize ql database storage")
+			os.Exit(1)
+		}
+
+		sc.Setup(&server.Visibles{
+			Logger:         sl,
+			Queue:          sq,
+			ServerStore:    ss,
+			QueryPackStore: qp,
+			QLDBStore:      ql,
+		})
+
+		sl.Setup(&logger.Visibles{})
+
+		sq.Setup(&queue.Visibles{
+			Logger: sl,
+		})
+
+		ss.Setup(&storage.Visibles{})
+
+		sr.Setup(&agent.Visibles{
+			Logger:         sl,
+			Queue:          sq,
+			QueryPackStore: qp,
+			QLDBStore:      ql,
+		})
 
 	case "container":
 		// Assemble container version
 		sq := queue.NewQueueSingle(2) // FIXME take value from configuration
-		sc := server.NewCommanderSingle(nil, sq)
+		sc := server.NewCommanderSingle()
 		sl := logger.NewLoggerSingle()
+
 		ss, err := storage.NewStorageContainer(config.Storage.StartingID)
 		if err != nil {
-			slog.Error("Unable to initialize storage")
+			slog.Error("Unable to initialize server storage")
+			os.Exit(1)
+		}
+
+		qp, err := qpstore.NewStore(config.Storage.StartingID)
+		if err != nil {
+			slog.Error("Unable to initialize query pack storage")
+			os.Exit(1)
+		}
+
+		ql, err := storage.NewQLDBStore()
+		if err != nil {
+			slog.Error("Unable to initialize ql database storage")
 			os.Exit(1)
 		}
 
 		sr := agent.NewRunnerSingle(2, sq) // FIXME take value from configuration
 
-		state := server.State{
-			Commander: sc,
-			Logger:    sl,
-			Queue:     sq,
-			Storage:   ss,
-			Runner:    sr,
-		}
+		sc.Setup(&server.Visibles{
+			Logger:         sl,
+			Queue:          sq,
+			ServerStore:    ss,
+			QueryPackStore: qp,
+			QLDBStore:      ql,
+		})
 
-		sc.Setup(&state) // sc is part of state and dereferences it
+		sl.Setup(&logger.Visibles{})
+
+		sq.Setup(&queue.Visibles{
+			Logger: sl,
+		})
+
+		ss.Setup(&storage.Visibles{})
+
+		sr.Setup(&agent.Visibles{
+			Logger:         sl,
+			Queue:          sq,
+			QueryPackStore: qp,
+			QLDBStore:      ql,
+		})
 
 	case "cluster":
 		// Assemble cccluster

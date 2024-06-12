@@ -1,9 +1,10 @@
-package storage
+package qpstore
 
 import (
 	"fmt"
 	"log/slog"
 	"mrvacommander/pkg/common"
+	"mrvacommander/pkg/qldbstore"
 	"sync"
 
 	"gorm.io/driver/postgres"
@@ -13,6 +14,38 @@ import (
 var (
 	DBmutex sync.Mutex
 )
+
+type StorageVisibles struct{}
+
+type StorageContainer struct {
+	// Database version of StorageSingle
+	RequestID int
+	DB        *gorm.DB
+	modules   *StorageVisibles
+}
+
+type DBSpec struct {
+	Host     string
+	Port     int
+	User     string
+	Password string
+	DBname   string
+}
+
+func (s *StorageContainer) SetupDB() error {
+	// TODO set up query pack storage
+	return nil
+}
+
+func (s *StorageContainer) LoadState() error {
+	// TODO load the state
+	return nil
+}
+
+func (s *StorageContainer) hasTables() bool {
+	// TODO query to check for tables
+	return false
+}
 
 func (s *StorageContainer) NextID() int {
 	// TODO update via db
@@ -24,21 +57,42 @@ func (s *StorageContainer) SaveQueryPack(tgz []byte, sessionID int) (storagePath
 	return "todo:no-path-yet", nil
 }
 
-func (s *StorageContainer) FindAvailableDBs(analysisReposRequested []common.OwnerRepo) (notFoundRepos []common.OwnerRepo, analysisRepos *map[common.OwnerRepo]DBLocation) {
+func (s *StorageContainer) FindAvailableDBs(analysisReposRequested []common.OwnerRepo) (notFoundRepos []common.OwnerRepo, analysisRepos *map[common.OwnerRepo]qldbstore.DBLocation) {
 	// TODO  s.FindAvailableDBs() via postgres
-	analysisRepos = &map[common.OwnerRepo]DBLocation{}
+	analysisRepos = &map[common.OwnerRepo]qldbstore.DBLocation{}
 	notFoundRepos = []common.OwnerRepo{}
 
 	return notFoundRepos, analysisRepos
 }
 
-func (s *StorageContainer) Setup(v *Visibles) {
+func (s *StorageContainer) Setup(v *StorageVisibles) {
 	s.modules = v
 }
 
-func NewQLDBStore() (*StorageContainer, error) {
-	// TODO set up qldb_db
-	return nil, nil
+func NewStore(startingID int) (Storage, error) {
+	// TODO drop the startingID
+
+	db, err := ConnectDB(DBSpec{
+		Host:     "postgres",
+		Port:     5432,
+		User:     "exampleuser",
+		Password: "examplepass",
+		DBname:   "querypack_db",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	s := StorageContainer{RequestID: startingID, DB: db}
+	if err := s.SetupDB(); err != nil {
+		return nil, err
+	}
+
+	if err = s.loadState(); err != nil {
+		return nil, err
+	}
+
+	return &s, nil
 }
 
 func NewStorageContainer(startingID int) (*StorageContainer, error) {
@@ -78,35 +132,7 @@ func ConnectDB(s DBSpec) (*gorm.DB, error) {
 	return db, nil
 }
 
-func (s *StorageContainer) SetupDB() error {
-	msg := "Failed to initialize database "
-
-	if err := s.DB.AutoMigrate(&DBInfo{}); err != nil {
-		slog.Error(msg, "table", "dbinfo")
-		return err
-	}
-	if err := s.DB.AutoMigrate(&DBJobs{}); err != nil {
-		slog.Error(msg, "table", "dbjobs")
-		return err
-	}
-	if err := s.DB.AutoMigrate(&DBResult{}); err != nil {
-		slog.Error(msg, "table", "dbresult")
-		return err
-	}
-	if err := s.DB.AutoMigrate(&DBStatus{}); err != nil {
-		slog.Error(msg, "table", "dbstatus")
-		return err
-	}
-
-	return nil
-}
-
 func (s *StorageContainer) loadState() error {
 	// TODO load the state
 	return nil
-}
-
-func (s *StorageContainer) hasTables() bool {
-	// TODO sql query to check for tables
-	return false
 }

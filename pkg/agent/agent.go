@@ -2,6 +2,8 @@ package agent
 
 import (
 	"mrvacommander/pkg/common"
+	"mrvacommander/pkg/logger"
+	"mrvacommander/pkg/qpstore"
 	"mrvacommander/pkg/queue"
 	"mrvacommander/pkg/storage"
 
@@ -29,6 +31,19 @@ func NewRunnerSingle(numWorkers int, queue queue.Queue) *RunnerSingle {
 		go r.worker(id)
 	}
 	return &r
+}
+
+type Visibles struct {
+	Logger logger.Logger
+	Queue  queue.Queue
+	// TODO extra package for query pack storage
+	QueryPackStore qpstore.Storage
+	// TODO extra package for ql db storage
+	QLDBStore storage.Storage
+}
+
+func (c *RunnerSingle) Setup(st *Visibles) {
+	return
 }
 
 func (r *RunnerSingle) worker(wid int) {
@@ -67,21 +82,20 @@ func (r *RunnerSingle) RunAnalysis(job common.AnalyzeJob) (string, error) {
 	queryPackID, dbOwner, dbRepo :=
 		job.QueryPackId, job.ORepo.Owner, job.ORepo.Repo
 
-	// FIXME Provide this via environment or explicit argument
-	gmsRoot := "/Users/hohn/work-gh/mrva/mrvacommander/cmd/server"
+	serverRoot := os.Getenv("MRVA_SERVER_ROOT")
 
 	// Set up derived paths
-	dbPath := filepath.Join(gmsRoot, "var/codeql/dbs", dbOwner, dbRepo)
-	dbZip := filepath.Join(gmsRoot, "codeql/dbs", dbOwner, dbRepo,
+	dbPath := filepath.Join(serverRoot, "var/codeql/dbs", dbOwner, dbRepo)
+	dbZip := filepath.Join(serverRoot, "codeql/dbs", dbOwner, dbRepo,
 		fmt.Sprintf("%s_%s_db.zip", dbOwner, dbRepo))
-	dbExtract := filepath.Join(gmsRoot, "var/codeql/dbs", dbOwner, dbRepo)
+	dbExtract := filepath.Join(serverRoot, "var/codeql/dbs", dbOwner, dbRepo)
 
-	queryPack := filepath.Join(gmsRoot,
+	queryPack := filepath.Join(serverRoot,
 		"var/codeql/querypacks", fmt.Sprintf("qp-%d.tgz", queryPackID))
-	queryExtract := filepath.Join(gmsRoot,
+	queryExtract := filepath.Join(serverRoot,
 		"var/codeql/querypacks", fmt.Sprintf("qp-%d", queryPackID))
 
-	queryOutDir := filepath.Join(gmsRoot,
+	queryOutDir := filepath.Join(serverRoot,
 		"var/codeql/sarif/localrun", dbOwner, dbRepo)
 	queryOutFile := filepath.Join(queryOutDir,
 		fmt.Sprintf("%s_%s.sarif", dbOwner, dbRepo))
@@ -93,7 +107,7 @@ func (r *RunnerSingle) RunAnalysis(job common.AnalyzeJob) (string, error) {
 	}
 
 	if err := unzipFile(dbZip, dbExtract); err != nil {
-		slog.Error("Failed to unzip DB %s: %v", dbZip, err)
+		slog.Error("Failed to unzip DB", dbZip, err)
 		return "", err
 	}
 
@@ -118,7 +132,7 @@ func (r *RunnerSingle) RunAnalysis(job common.AnalyzeJob) (string, error) {
 	cmd := exec.Command("codeql", "database", "analyze",
 		"--format=sarif-latest", "--rerun", "--output", queryOutFile,
 		"-j8", dbPath, queryExtract)
-	cmd.Dir = gmsRoot
+	cmd.Dir = serverRoot
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
