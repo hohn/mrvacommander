@@ -15,6 +15,7 @@ These are simple steps using a single container.
 
 2.  build docker image
 
+        cd cmd/server
         docker build -t server-image .
 
 3.  Start container with shared directory
@@ -31,6 +32,8 @@ These are simple steps using a single container.
 
 ## Using docker-compose
 ### Steps to build and run the server in a multi-container environment set up by docker-compose.
+
+1.  Built the server-image, above
 
 1.  Build server on host
 

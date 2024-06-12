@@ -115,6 +115,9 @@ func ArtifactURL(js common.JobSpec, vaid int) (string, error) {
 		slog.Error("Error packaging results:", "error", err)
 		return "", err
 	}
+	// TODO Need url valid in container network and externally
+	// For now, we assume the container port 8080 is port 8080 on user's machine
+	hostname = "localhost"
 	au := fmt.Sprintf("http://%s:8080/download-server/%s", hostname, zfpath)
 	return au, nil
 }
