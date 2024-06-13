@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: examplepass
       POSTGRES_DB: exampledb
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./postgres-data:/var/lib/postgresql/data
       - ./postgres-init-scripts:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432" # Exposing PostgreSQL to the host
@@ -33,17 +33,17 @@ services:
     networks:
       - backend
 
-
   server:
     image: server-image
     container_name: server
+    stop_grace_period: 1s  # Reduce the timeout period for testing
     environment:
       - MRVA_SERVER_ROOT=/mrva/mrvacommander/cmd/server
     command: sh -c "tail -f /dev/null"
     ports:
       - "8080:8080" 
     volumes:
-      - /Users/hohn/work-gh/mrva/mrvacommander:/mrva/mrvacommander
+      - ./:/mrva/mrvacommander
     depends_on:
       - postgres
       - rabbitmq
@@ -58,15 +58,17 @@ services:
       - "9001:9001"
     environment:
       MINIO_ROOT_USER: user
-      MINIO_ROOT_PASSWORD: musty-coke
+      MINIO_ROOT_PASSWORD: mmusty8432
+
     command: server /data --console-address ":9001"
     volumes:
-      - minio-data:/data
+      - ./minio-data:/data
 
-volumes:
-  minio-data:
-  postgres_data:
-    driver: local
+# Remove named volumes to use bind mounts
+# volumes:
+#   minio-data:
+#   postgres_data:
+#     driver: local
 
 networks:
   backend:

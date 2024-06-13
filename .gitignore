@@ -3,3 +3,13 @@ cmd/server/var/
 
 # vscode project dir
 .vscode/
+
+# Compiled binary
+cmd/server/server
+
+# host storage for container
+minio-data/
+postgres-data/
+
+# Scratch space
+scratch/

@@ -158,3 +158,19 @@ The steps:
          owner |  repo
         -------+---------
          foo   | foo/bar
+
+### Use the minio ql db
+
+1.  Web access via
+
+        open http://localhost:9001/login
+
+    username / password are in `docker-compose.yml` for now.  The ql db listing 
+    will be at
+
+        http://localhost:9001/browser/qldb
+
+1.  The names use `owner_repo` format for now, e.g. `google_flatbuffers_db.zip`.  
+    TODO This will be enhanced to include other data later
+
+    
