@@ -34,6 +34,15 @@ func NewCommanderSingle() *CommanderSingle {
 	return &c
 }
 
+type CommanderContainer struct {
+	st *Visibles
+}
+
+func NewCommanderContainer() *CommanderContainer {
+	c := CommanderContainer{}
+	return &c
+}
+
 // type State struct {
 // 	Commander Commander
 // 	Logger    logger.Logger

@@ -24,7 +24,7 @@ type RunnerSingle struct {
 	queue queue.Queue
 }
 
-func NewRunnerSingle(numWorkers int, queue queue.Queue) *RunnerSingle {
+func NewAgentSingle(numWorkers int, queue queue.Queue) *RunnerSingle {
 	r := RunnerSingle{queue: queue}
 
 	for id := 1; id <= numWorkers; id++ {

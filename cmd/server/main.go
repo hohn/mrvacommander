@@ -68,12 +68,19 @@ func main() {
 	// Apply 'mode' flag
 	switch *mode {
 	case "standalone":
+		// XX: combine New/Setup functions?
+
 		// Assemble single-process version
-		sq := queue.NewQueueSingle(2) // FIXME take value from configuration
-		sc := server.NewCommanderSingle()
 		sl := logger.NewLoggerSingle()
+		sl.Setup(&logger.Visibles{})
+
+		sq := queue.NewQueueSingle(2) // FIXME take value from configuration
+		sq.Setup(&queue.Visibles{
+			Logger: sl,
+		})
+
 		ss := storage.NewStorageSingle(config.Storage.StartingID)
-		sr := agent.NewRunnerSingle(2, sq) // FIXME take value from configuration
+		ss.Setup(&storage.Visibles{})
 
 		qp, err := qpstore.NewStore(config.Storage.StartingID)
 		if err != nil {
@@ -81,12 +88,13 @@ func main() {
 			os.Exit(1)
 		}
 
-		ql, err := storage.NewQLDBStore()
+		ql, err := storage.NewQLDBStore(config.Storage.StartingID)
 		if err != nil {
 			slog.Error("Unable to initialize ql database storage")
 			os.Exit(1)
 		}
 
+		sc := server.NewCommanderSingle()
 		sc.Setup(&server.Visibles{
 			Logger:         sl,
 			Queue:          sq,
@@ -95,14 +103,7 @@ func main() {
 			QLDBStore:      ql,
 		})
 
-		sl.Setup(&logger.Visibles{})
-
-		sq.Setup(&queue.Visibles{
-			Logger: sl,
-		})
-
-		ss.Setup(&storage.Visibles{})
-
+		sr := agent.NewAgentSingle(2, sq) // FIXME take value from configuration
 		sr.Setup(&agent.Visibles{
 			Logger:         sl,
 			Queue:          sq,
@@ -111,16 +112,23 @@ func main() {
 		})
 
 	case "container":
-		// Assemble container version
-		sq := queue.NewQueueSingle(2) // FIXME take value from configuration
-		sc := server.NewCommanderSingle()
-		sl := logger.NewLoggerSingle()
+		// XX: combine New/Setup functions?
 
-		ss, err := storage.NewStorageContainer(config.Storage.StartingID)
+		// Assemble container version
+		sl := logger.NewLoggerSingle()
+		sl.Setup(&logger.Visibles{})
+
+		sq := queue.NewQueueSingle(2) // FIXME take value from configuration
+		sq.Setup(&queue.Visibles{
+			Logger: sl,
+		})
+
+		ss, err := storage.NewServerStore(config.Storage.StartingID)
 		if err != nil {
 			slog.Error("Unable to initialize server storage")
 			os.Exit(1)
 		}
+		ss.Setup(&storage.Visibles{})
 
 		qp, err := qpstore.NewStore(config.Storage.StartingID)
 		if err != nil {
@@ -128,33 +136,26 @@ func main() {
 			os.Exit(1)
 		}
 
-		ql, err := storage.NewQLDBStore()
+		ql, err := storage.NewQLDBStore(config.Storage.StartingID)
 		if err != nil {
 			slog.Error("Unable to initialize ql database storage")
 			os.Exit(1)
 		}
+		ql.Setup(&storage.Visibles{})
 
-		sr := agent.NewRunnerSingle(2, sq) // FIXME take value from configuration
-
-		sc.Setup(&server.Visibles{
+		sr := agent.NewAgentSingle(2, sq) // FIXME take value from configuration
+		sr.Setup(&agent.Visibles{
 			Logger:         sl,
 			Queue:          sq,
-			ServerStore:    ss,
 			QueryPackStore: qp,
 			QLDBStore:      ql,
 		})
 
-		sl.Setup(&logger.Visibles{})
-
-		sq.Setup(&queue.Visibles{
-			Logger: sl,
-		})
-
-		ss.Setup(&storage.Visibles{})
-
-		sr.Setup(&agent.Visibles{
+		sc := server.NewCommanderContainer()
+		sc.Setup(&server.Visibles{
 			Logger:         sl,
 			Queue:          sq,
+			ServerStore:    ss,
 			QueryPackStore: qp,
 			QLDBStore:      ql,
 		})

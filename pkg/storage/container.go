@@ -33,16 +33,38 @@ func (s *StorageContainer) FindAvailableDBs(analysisReposRequested []common.Owne
 }
 
 func (s *StorageContainer) Setup(v *Visibles) {
+	// TODO XX: set up qldb_db
 	s.modules = v
+
 }
 
-func NewQLDBStore() (*StorageContainer, error) {
-	// TODO set up qldb_db
-	return nil, nil
+func NewQLDBStore(startingID int) (*StorageContainer, error) {
+	// TODO drop the startingID
+	db, err := ConnectDB(DBSpec{
+		Host:     "postgres",
+		Port:     5432,
+		User:     "exampleuser",
+		Password: "examplepass",
+		DBname:   "querypack_db",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	s := StorageContainer{RequestID: startingID, DB: db}
+	// TODO XX: set up qldb_db tables
+	if err := s.SetupTables(); err != nil {
+		return nil, err
+	}
+
+	if err = s.loadState(); err != nil {
+		return nil, err
+	}
+
+	return &s, nil
 }
 
-func NewStorageContainer(startingID int) (*StorageContainer, error) {
-
+func NewServerStore(startingID int) (*StorageContainer, error) {
 	db, err := ConnectDB(DBSpec{
 		Host:     "postgres",
 		Port:     5432,
@@ -55,7 +77,7 @@ func NewStorageContainer(startingID int) (*StorageContainer, error) {
 	}
 
 	s := StorageContainer{RequestID: startingID, DB: db}
-	if err := s.SetupDB(); err != nil {
+	if err := s.SetupTables(); err != nil {
 		return nil, err
 	}
 
@@ -78,7 +100,7 @@ func ConnectDB(s DBSpec) (*gorm.DB, error) {
 	return db, nil
 }
 
-func (s *StorageContainer) SetupDB() error {
+func (s *StorageContainer) SetupTables() error {
 	msg := "Failed to initialize database "
 
 	if err := s.DB.AutoMigrate(&DBInfo{}); err != nil {
@@ -102,11 +124,13 @@ func (s *StorageContainer) SetupDB() error {
 }
 
 func (s *StorageContainer) loadState() error {
+	// XX:
 	// TODO load the state
 	return nil
 }
 
 func (s *StorageContainer) hasTables() bool {
+	// XX:
 	// TODO sql query to check for tables
 	return false
 }

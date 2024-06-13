@@ -32,7 +32,7 @@ type DBSpec struct {
 	DBname   string
 }
 
-func (s *StorageContainer) SetupDB() error {
+func (s *StorageContainer) SetupTables() error {
 	// TODO set up query pack storage
 	return nil
 }
@@ -84,7 +84,7 @@ func NewStore(startingID int) (Storage, error) {
 	}
 
 	s := StorageContainer{RequestID: startingID, DB: db}
-	if err := s.SetupDB(); err != nil {
+	if err := s.SetupTables(); err != nil {
 		return nil, err
 	}
 
@@ -95,7 +95,7 @@ func NewStore(startingID int) (Storage, error) {
 	return &s, nil
 }
 
-func NewStorageContainer(startingID int) (*StorageContainer, error) {
+func NewServerStore(startingID int) (*StorageContainer, error) {
 
 	db, err := ConnectDB(DBSpec{
 		Host:     "postgres",
@@ -109,7 +109,7 @@ func NewStorageContainer(startingID int) (*StorageContainer, error) {
 	}
 
 	s := StorageContainer{RequestID: startingID, DB: db}
-	if err := s.SetupDB(); err != nil {
+	if err := s.SetupTables(); err != nil {
 		return nil, err
 	}
 

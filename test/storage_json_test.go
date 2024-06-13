@@ -6,7 +6,7 @@ import (
 	"mrvacommander/pkg/storage"
 )
 
-func TestSetupDB(t *testing.T) {
+func TestSetupTables(t *testing.T) {
 
 	db, err := storage.ConnectDB(storage.DBSpec{
 		Host:     "localhost",
@@ -22,7 +22,7 @@ func TestSetupDB(t *testing.T) {
 
 	// Check and set up the database
 	s := storage.StorageContainer{RequestID: 12345, DB: db}
-	if err := s.SetupDB(); err != nil {
+	if err := s.SetupTables(); err != nil {
 		t.Errorf("Cannot set up db")
 	}
 
