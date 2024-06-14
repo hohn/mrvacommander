@@ -6,14 +6,11 @@ import (
 	"mrvacommander/pkg/qpstore"
 	"mrvacommander/pkg/queue"
 	"mrvacommander/pkg/storage"
+	"mrvacommander/utils"
 
 	"log/slog"
 
-	"archive/tar"
-	"archive/zip"
-	"compress/gzip"
 	"fmt"
-	"io"
 	"path/filepath"
 
 	"os"
@@ -106,7 +103,7 @@ func (r *RunnerSingle) RunAnalysis(job common.AnalyzeJob) (string, error) {
 		return "", err
 	}
 
-	if err := unzipFile(dbZip, dbExtract); err != nil {
+	if err := utils.UnzipFile(dbZip, dbExtract); err != nil {
 		slog.Error("Failed to unzip DB", dbZip, err)
 		return "", err
 	}
@@ -117,7 +114,7 @@ func (r *RunnerSingle) RunAnalysis(job common.AnalyzeJob) (string, error) {
 		return "", err
 	}
 
-	if err := untarGz(queryPack, queryExtract); err != nil {
+	if err := utils.UntarGz(queryPack, queryExtract); err != nil {
 		slog.Error("Failed to extract querypack %s: %v", queryPack, err)
 		return "", err
 	}
@@ -144,105 +141,4 @@ func (r *RunnerSingle) RunAnalysis(job common.AnalyzeJob) (string, error) {
 
 	// Return result path
 	return queryOutFile, nil
-}
-
-// unzipFile extracts a zip file to the specified destination
-func unzipFile(zipFile, dest string) error {
-	r, err := zip.OpenReader(zipFile)
-	if err != nil {
-		return err
-	}
-	defer r.Close()
-
-	for _, f := range r.File {
-		fPath := filepath.Join(dest, f.Name)
-		if f.FileInfo().IsDir() {
-			if err := os.MkdirAll(fPath, os.ModePerm); err != nil {
-				return err
-			}
-			continue
-		}
-
-		if err := os.MkdirAll(filepath.Dir(fPath), os.ModePerm); err != nil {
-			return err
-		}
-
-		outFile, err := os.OpenFile(fPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-		if err != nil {
-			return err
-		}
-
-		rc, err := f.Open()
-		if err != nil {
-			outFile.Close()
-			return err
-		}
-
-		_, err = io.Copy(outFile, rc)
-
-		outFile.Close()
-		rc.Close()
-
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// untarGz extracts a tar.gz file to the specified destination.
-func untarGz(tarGzFile, dest string) error {
-	file, err := os.Open(tarGzFile)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	gzr, err := gzip.NewReader(file)
-	if err != nil {
-		return err
-	}
-	defer gzr.Close()
-
-	return untar(gzr, dest)
-}
-
-// untar extracts a tar archive to the specified destination.
-func untar(r io.Reader, dest string) error {
-	tr := tar.NewReader(r)
-
-	for {
-		header, err := tr.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
-
-		fPath := filepath.Join(dest, header.Name)
-		if header.Typeflag == tar.TypeDir {
-			if err := os.MkdirAll(fPath, os.ModePerm); err != nil {
-				return err
-			}
-		} else {
-			if err := os.MkdirAll(filepath.Dir(fPath), os.ModePerm); err != nil {
-				return err
-			}
-
-			outFile, err := os.OpenFile(fPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.FileMode(header.Mode))
-			if err != nil {
-				return err
-			}
-
-			if _, err := io.Copy(outFile, tr); err != nil {
-				outFile.Close()
-				return err
-			}
-
-			outFile.Close()
-		}
-	}
-
-	return nil
 }
