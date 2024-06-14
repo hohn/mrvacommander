@@ -1,5 +1,5 @@
 # Use the ubuntu 22.04 base image
-FROM ubuntu:22.04
+FROM ubuntu:24.10
 
 # Set architecture to arm64
 ARG ARCH=arm64
