@@ -159,7 +159,7 @@ The steps:
         -------+---------
          foo   | foo/bar
 
-### Use the minio ql db
+### Use the minio ql database db
 
 1.  Web access via
 
@@ -172,5 +172,16 @@ The steps:
 
 1.  The names use `owner_repo` format for now, e.g. `google_flatbuffers_db.zip`.  
     TODO This will be enhanced to include other data later
+
+### Use the minio query pack db
+
+1.  Web access via
+
+        open http://localhost:19001/login
+
+    username / password are in `docker-compose.yml` for now.  The ql db listing 
+    will be at
+
+        http://localhost:19001/browser/qpstore
 
     
