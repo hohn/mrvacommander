@@ -10,7 +10,7 @@ services:
       POSTGRES_DB: exampledb
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./postgres-init-scripts:/docker-entrypoint-initdb.d
+      - ./init/postgres:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432" # Exposing PostgreSQL to the host
     expose:
