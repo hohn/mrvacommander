@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"log/slog"
 	"os"
@@ -129,10 +128,10 @@ func GetResult(js common.JobSpec) common.AnalyzeResult {
 	return ar
 }
 
-func SetResult(sessionid int, orl common.NameWithOwner, ar common.AnalyzeResult) {
+func SetResult(sessionid int, nwo common.NameWithOwner, ar common.AnalyzeResult) {
 	mutex.Lock()
 	defer mutex.Unlock()
-	result[common.JobSpec{JobID: sessionid, NameWithOwner: orl}] = ar
+	result[common.JobSpec{JobID: sessionid, NameWithOwner: nwo}] = ar
 }
 
 func PackageResults(ar common.AnalyzeResult, owre common.NameWithOwner, vaid int) (zipPath string, e error) {
@@ -166,29 +165,31 @@ func PackageResults(ar common.AnalyzeResult, owre common.NameWithOwner, vaid int
 	defer zwriter.Close()
 
 	// Add each result file to the zip archive
-	names := []([]string){{ar.RunAnalysisSARIF, "results.sarif"}}
-	for _, fpath := range names {
-		file, err := os.Open(fpath[0])
-		if err != nil {
-			return "", err
-		}
-		defer file.Close()
+	/*
+		names := []([]string){{ar.RunAnalysisSARIF, "results.sarif"}}
+		for _, fpath := range names {
+			file, err := os.Open(fpath[0])
+			if err != nil {
+				return "", err
+			}
+			defer file.Close()
 
-		// Create a new file in the zip archive with custom name
-		// The client is very specific:
-		// if zf.Name != "results.sarif" && zf.Name != "results.bqrs" { continue }
+			// Create a new file in the zip archive with custom name
+			// The client is very specific:
+			// if zf.Name != "results.sarif" && zf.Name != "results.bqrs" { continue }
 
-		zipEntry, err := zwriter.Create(fpath[1])
-		if err != nil {
-			return "", err
-		}
+			zipEntry, err := zwriter.Create(fpath[1])
+			if err != nil {
+				return "", err
+			}
 
-		// Copy the contents of the file to the zip entry
-		_, err = io.Copy(zipEntry, file)
-		if err != nil {
-			return "", err
+			// Copy the contents of the file to the zip entry
+			_, err = io.Copy(zipEntry, file)
+			if err != nil {
+				return "", err
+			}
 		}
-	}
+	*/
 	return zpath, nil
 }
 
@@ -210,10 +211,10 @@ func SetJobInfo(js common.JobSpec, ji common.JobInfo) {
 	info[js] = ji
 }
 
-func GetStatus(sessionid int, orl common.NameWithOwner) common.Status {
+func GetStatus(sessionid int, nwo common.NameWithOwner) common.Status {
 	mutex.Lock()
 	defer mutex.Unlock()
-	return status[common.JobSpec{JobID: sessionid, NameWithOwner: orl}]
+	return status[common.JobSpec{JobID: sessionid, NameWithOwner: nwo}]
 }
 
 func ResultAsFile(path string) (string, []byte, error) {
@@ -231,10 +232,10 @@ func ResultAsFile(path string) (string, []byte, error) {
 	return fpath, file, nil
 }
 
-func SetStatus(sessionid int, orl common.NameWithOwner, s common.Status) {
+func SetStatus(sessionid int, nwo common.NameWithOwner, s common.Status) {
 	mutex.Lock()
 	defer mutex.Unlock()
-	status[common.JobSpec{JobID: sessionid, NameWithOwner: orl}] = s
+	status[common.JobSpec{JobID: sessionid, NameWithOwner: nwo}] = s
 }
 
 func AddJob(sessionid int, job common.AnalyzeJob) {

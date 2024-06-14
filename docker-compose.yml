@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16.3-bookworm
@@ -18,32 +16,32 @@ services:
     networks:
       - backend
 
-
   rabbitmq:
-    image: rabbitmq:3.13-management
+    image: rabbitmq:3-management
+    hostname: rabbitmq
     container_name: rabbitmq
-    environment:
-      RABBITMQ_DEFAULT_USER: user
-      RABBITMQ_DEFAULT_PASS: password
+    volumes:
+      - ./init/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./init/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
     expose:
       - "5672"
       - "15672"
     ports:
+      - "5672:5672"
       - "15672:15672"
     networks:
       - backend
-
+    healthcheck:
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 1s
 
   server:
-    image: server-image
+    build:
+      context: ./cmd/server
+      dockerfile: Dockerfile
     container_name: server
-    environment:
-      - MRVA_SERVER_ROOT=/mrva/mrvacommander/cmd/server
-    command: sh -c "tail -f /dev/null"
     ports:
-      - "8080:8080" 
-    volumes:
-      - /Users/hohn/work-gh/mrva/mrvacommander:/mrva/mrvacommander
+      - "8080:8080"
     depends_on:
       - postgres
       - rabbitmq
@@ -63,6 +61,22 @@ services:
     volumes:
       - minio-data:/data
 
+  agent:
+    build:
+      context: .
+      dockerfile: ./cmd/agent/Dockerfile
+    container_name: agent
+    depends_on:
+      - rabbitmq
+      - minio
+    environment:
+      MRVA_RABBITMQ_HOST: rabbitmq
+      MRVA_RABBITMQ_PORT: 5672
+      MRVA_RABBITMQ_USER: user
+      MRVA_RABBITMQ_PASSWORD: password
+    networks:
+      - backend
+
 volumes:
   minio-data:
   postgres_data:
@@ -71,7 +85,3 @@ volumes:
 networks:
   backend:
     driver: bridge
-    
-
-
-

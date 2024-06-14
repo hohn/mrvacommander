@@ -54,17 +54,14 @@ func (r *RunnerSingle) worker(wid int) {
 		slog.Debug("Analysis: running", "job", job)
 		storage.SetStatus(job.QueryPackId, job.NWO, common.StatusQueued)
 
-		resultFile, err := r.RunAnalysis(job)
+		_, err := RunAnalysis(job)
 		if err != nil {
 			continue
 		}
 
 		slog.Debug("Analysis run finished", "job", job)
 
-		res := common.AnalyzeResult{
-			RunAnalysisSARIF: resultFile,
-			RunAnalysisBQRS:  "", // FIXME ?
-		}
+		res := common.AnalyzeResult{}
 		r.queue.Results() <- res
 		storage.SetStatus(job.QueryPackId, job.NWO, common.StatusSuccess)
 		storage.SetResult(job.QueryPackId, job.NWO, res)
@@ -72,7 +69,7 @@ func (r *RunnerSingle) worker(wid int) {
 	}
 }
 
-func (r *RunnerSingle) RunAnalysis(job common.AnalyzeJob) (string, error) {
+func RunAnalysis(job common.AnalyzeJob) (string, error) {
 	// TODO Add multi-language tests including queryLanguage
 	// queryPackID, queryLanguage, dbOwner, dbRepo :=
 	// 	job.QueryPackId, job.QueryLanguage, job.NWO.Owner, job.NWO.Repo
