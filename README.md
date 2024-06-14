@@ -170,8 +170,26 @@ The steps:
 
         http://localhost:9001/browser/qldb
 
-1.  The names use `owner_repo` format for now, e.g. `google_flatbuffers_db.zip`.  
+1.  Populate the database by running
+
+        ./populate-dbstore.sh
+        
+    from the host.
+
+1.  The names in the bucket use the `owner_repo` format for now,
+    e.g. `google_flatbuffers_db.zip`.
     TODO This will be enhanced to include other data later
+
+1.  Test Go's access to the dbstore -- from the host -- via
+
+        cd ./test
+        go test -v
+
+    This should produce
+
+        === RUN   TestDBListing
+        dbstore_test.go:44: Object Key: google_flatbuffers_db.zip
+        dbstore_test.go:44: Object Key: psycopg_psycopg2_db.zip
 
 ### Use the minio query pack db
 
@@ -185,3 +203,4 @@ The steps:
         http://localhost:19001/browser/qpstore
 
     
+### To run Use the minio query pack db
