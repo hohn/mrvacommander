@@ -22,11 +22,11 @@ func main() {
 	}
 
 	// Migrate the schema: create the 'owner_repo' table from the struct
-	err = db.AutoMigrate(&common.OwnerRepo{})
+	err = db.AutoMigrate(&common.NameWithOwner{})
 	if err != nil {
 		panic("failed to migrate database")
 	}
 
 	// Create an entry in the database
-	db.Create(&common.OwnerRepo{Owner: "foo", Repo: "foo/bar"})
+	db.Create(&common.NameWithOwner{Owner: "foo", Repo: "foo/bar"})
 }

@@ -23,33 +23,33 @@ import (
 
 func (c *CommanderSingle) Setup(st *Visibles) {
 	r := mux.NewRouter()
-	c.st = st
+	c.vis = st
 
 	//
 	// First are the API endpoints that mirror those used in the github API
 	//
-	r.HandleFunc("/repos/{owner}/{repo}/code-scanning/codeql/variant-analyses", c.MirvaRequest)
-	// 			  /repos/hohn   /mirva-controller/code-scanning/codeql/variant-analyses
+	r.HandleFunc("/repos/{owner}/{repo}/code-scanning/codeql/variant-analyses", c.MRVARequest)
+	// 			  /repos/hohn   /mrva-controller/code-scanning/codeql/variant-analyses
 	// Or via
-	r.HandleFunc("/{repository_id}/code-scanning/codeql/variant-analyses", c.MirvaRequestID)
+	r.HandleFunc("/{repository_id}/code-scanning/codeql/variant-analyses", c.MRVARequestID)
 
 	r.HandleFunc("/", c.RootHandler)
 
 	// This is the standalone status request.
 	// It's also the first request made when downloading; the difference is on the
 	// client side's handling.
-	r.HandleFunc("/repos/{owner}/{repo}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}", c.MirvaStatus)
+	r.HandleFunc("/repos/{owner}/{repo}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}", c.MRVAStatus)
 
-	r.HandleFunc("/repos/{controller_owner}/{controller_repo}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}/repos/{repo_owner}/{repo_name}", c.MirvaDownloadArtifact)
+	r.HandleFunc("/repos/{controller_owner}/{controller_repo}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}/repos/{repo_owner}/{repo_name}", c.MRVADownloadArtifact)
 
 	// Not implemented:
-	// r.HandleFunc("/codeql-query-console/codeql-variant-analysis-repo-tasks/{codeql_variant_analysis_id}/{repo_id}/{owner_id}/{controller_repo_id}", MirvaDownLoad3)
-	// r.HandleFunc("/github-codeql-query-console-prod/codeql-variant-analysis-repo-tasks/{codeql_variant_analysis_id}/{repo_id}", MirvaDownLoad4)
+	// r.HandleFunc("/codeql-query-console/codeql-variant-analysis-repo-tasks/{codeql_variant_analysis_id}/{repo_id}/{owner_id}/{controller_repo_id}", MRVADownLoad3)
+	// r.HandleFunc("/github-codeql-query-console-prod/codeql-variant-analysis-repo-tasks/{codeql_variant_analysis_id}/{repo_id}", MRVADownLoad4)
 
 	//
 	// Now some support API endpoints
 	//
-	r.HandleFunc("/download-server/{local_path:.*}", c.MirvaDownloadServe)
+	r.HandleFunc("/download-server/{local_path:.*}", c.MRVADownloadServe)
 
 	//
 	// Bind to a port and pass our router in
@@ -64,13 +64,13 @@ func (c *CommanderSingle) StatusResponse(w http.ResponseWriter, js common.JobSpe
 	all_scanned := []common.ScannedRepo{}
 	jobs := storage.GetJobList(js.JobID)
 	for _, job := range jobs {
-		astat := storage.GetStatus(js.JobID, job.ORepo).ToExternalString()
+		astat := storage.GetStatus(js.JobID, job.NWO).ToExternalString()
 		all_scanned = append(all_scanned,
 			common.ScannedRepo{
 				Repository: common.Repository{
 					ID:              0,
-					Name:            job.ORepo.Repo,
-					FullName:        fmt.Sprintf("%s/%s", job.ORepo.Owner, job.ORepo.Repo),
+					Name:            job.NWO.Repo,
+					FullName:        fmt.Sprintf("%s/%s", job.NWO.Owner, job.NWO.Repo),
 					Private:         false,
 					StargazersCount: 0,
 					UpdatedAt:       ji.UpdatedAt,
@@ -82,7 +82,7 @@ func (c *CommanderSingle) StatusResponse(w http.ResponseWriter, js common.JobSpe
 		)
 	}
 
-	astat := storage.GetStatus(js.JobID, js.OwnerRepo).ToExternalString()
+	astat := storage.GetStatus(js.JobID, js.NameWithOwner).ToExternalString()
 
 	status := common.StatusResponse{
 		SessionId:            js.JobID,
@@ -116,9 +116,9 @@ func (c *CommanderSingle) RootHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Request on /")
 }
 
-func (c *CommanderSingle) MirvaStatus(w http.ResponseWriter, r *http.Request) {
+func (c *CommanderSingle) MRVAStatus(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	slog.Info("mrva status request for ",
+	slog.Info("MRVA status request for ",
 		"owner", vars["owner"],
 		"repo", vars["repo"],
 		"codeql_variant_analysis_id", vars["codeql_variant_analysis_id"])
@@ -142,8 +142,8 @@ func (c *CommanderSingle) MirvaStatus(w http.ResponseWriter, r *http.Request) {
 	job := spec[0]
 
 	js := common.JobSpec{
-		JobID:     job.QueryPackId,
-		OwnerRepo: job.ORepo,
+		JobID:         job.QueryPackId,
+		NameWithOwner: job.NWO,
 	}
 
 	ji := storage.GetJobInfo(js)
@@ -152,7 +152,7 @@ func (c *CommanderSingle) MirvaStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 // Download artifacts
-func (c *CommanderSingle) MirvaDownloadArtifact(w http.ResponseWriter, r *http.Request) {
+func (c *CommanderSingle) MRVADownloadArtifact(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	slog.Info("MRVA artifact download",
 		"controller_owner", vars["controller_owner"],
@@ -170,7 +170,7 @@ func (c *CommanderSingle) MirvaDownloadArtifact(w http.ResponseWriter, r *http.R
 	}
 	js := common.JobSpec{
 		JobID: vaid,
-		OwnerRepo: common.OwnerRepo{
+		NameWithOwner: common.NameWithOwner{
 			Owner: vars["repo_owner"],
 			Repo:  vars["repo_name"],
 		},
@@ -181,7 +181,7 @@ func (c *CommanderSingle) MirvaDownloadArtifact(w http.ResponseWriter, r *http.R
 func (c *CommanderSingle) DownloadResponse(w http.ResponseWriter, js common.JobSpec, vaid int) {
 	slog.Debug("Forming download response", "session", vaid, "job", js)
 
-	astat := storage.GetStatus(vaid, js.OwnerRepo)
+	astat := storage.GetStatus(vaid, js.NameWithOwner)
 
 	var dlr common.DownloadResponse
 	if astat == common.StatusSuccess {
@@ -234,7 +234,7 @@ func (c *CommanderSingle) DownloadResponse(w http.ResponseWriter, js common.JobS
 
 }
 
-func (c *CommanderSingle) MirvaDownloadServe(w http.ResponseWriter, r *http.Request) {
+func (c *CommanderSingle) MRVADownloadServe(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	slog.Info("File download request", "local_path", vars["local_path"])
 
@@ -266,16 +266,16 @@ func FileDownload(w http.ResponseWriter, path string) {
 
 }
 
-func (c *CommanderSingle) MirvaRequestID(w http.ResponseWriter, r *http.Request) {
+func (c *CommanderSingle) MRVARequestID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	slog.Info("New mrva using repository_id=%v\n", vars["repository_id"])
 }
 
-func (c *CommanderSingle) MirvaRequest(w http.ResponseWriter, r *http.Request) {
+func (c *CommanderSingle) MRVARequest(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	slog.Info("New mrva run ", "owner", vars["owner"], "repo", vars["repo"])
 
-	session_id := c.st.ServerStore.NextID()
+	session_id := c.vis.ServerStore.NextID()
 	session_owner := vars["owner"]
 	session_controller_repo := vars["repo"]
 	slog.Info("new run", "id: ", fmt.Sprint(session_id), session_owner, session_controller_repo)
@@ -284,9 +284,9 @@ func (c *CommanderSingle) MirvaRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	not_found_repos, analysisRepos := c.st.ServerStore.FindAvailableDBs(session_repositories)
+	not_found_repos, analysisRepos := c.vis.ServerStore.FindAvailableDBs(session_repositories)
 
-	c.st.Queue.StartAnalyses(analysisRepos, session_id, session_language)
+	c.vis.Queue.StartAnalyses(analysisRepos, session_id, session_language)
 
 	si := SessionInfo{
 		ID:             session_id,
@@ -316,10 +316,10 @@ func (c *CommanderSingle) MirvaRequest(w http.ResponseWriter, r *http.Request) {
 	w.Write(submit_response)
 }
 
-func ORToArr(aor []common.OwnerRepo) ([]string, int) {
+func nwoToNwoStringArray(nwo []common.NameWithOwner) ([]string, int) {
 	repos := []string{}
-	count := len(aor)
-	for _, repo := range aor {
+	count := len(nwo)
+	for _, repo := range nwo {
 		repos = append(repos, fmt.Sprintf("%s/%s", repo.Owner, repo.Repo))
 	}
 	return repos, count
@@ -330,17 +330,17 @@ func submit_response(sn SessionInfo) ([]byte, error) {
 	var m_cr common.ControllerRepo
 	var m_ac common.Actor
 
-	repos, count := ORToArr(sn.NotFoundRepos)
+	repos, count := nwoToNwoStringArray(sn.NotFoundRepos)
 	r_nfr := common.NotFoundRepos{RepositoryCount: count, RepositoryFullNames: repos}
 
-	repos, count = ORToArr(sn.AccessMismatchRepos)
+	repos, count = nwoToNwoStringArray(sn.AccessMismatchRepos)
 	r_amr := common.AccessMismatchRepos{RepositoryCount: count, Repositories: repos}
 
-	repos, count = ORToArr(sn.NoCodeqlDBRepos)
+	repos, count = nwoToNwoStringArray(sn.NoCodeqlDBRepos)
 	r_ncd := common.NoCodeqlDBRepos{RepositoryCount: count, Repositories: repos}
 
 	// TODO fill these with real values?
-	repos, count = ORToArr(sn.NoCodeqlDBRepos)
+	repos, count = nwoToNwoStringArray(sn.NoCodeqlDBRepos)
 	r_olr := common.OverLimitRepos{RepositoryCount: count, Repositories: repos}
 
 	m_skip := common.SkippedRepositories{
@@ -366,8 +366,8 @@ func submit_response(sn SessionInfo) ([]byte, error) {
 
 	for _, job := range joblist {
 		storage.SetJobInfo(common.JobSpec{
-			JobID:     sn.ID,
-			OwnerRepo: job.ORepo,
+			JobID:         sn.ID,
+			NameWithOwner: job.NWO,
 		}, common.JobInfo{
 			QueryLanguage:       sn.Language,
 			CreatedAt:           m_sr.CreatedAt,
@@ -387,28 +387,28 @@ func submit_response(sn SessionInfo) ([]byte, error) {
 
 }
 
-func (c *CommanderSingle) collectRequestInfo(w http.ResponseWriter, r *http.Request, sessionId int) (string, []common.OwnerRepo, string, error) {
+func (c *CommanderSingle) collectRequestInfo(w http.ResponseWriter, r *http.Request, sessionId int) (string, []common.NameWithOwner, string, error) {
 	slog.Debug("Collecting session info")
 
 	if r.Body == nil {
 		err := errors.New("missing request body")
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusNoContent)
-		return "", []common.OwnerRepo{}, "", err
+		return "", []common.NameWithOwner{}, "", err
 	}
 	buf, err := io.ReadAll(r.Body)
 	if err != nil {
 		var w http.ResponseWriter
 		slog.Error("Error reading MRVA submission body", "error", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return "", []common.OwnerRepo{}, "", err
+		return "", []common.NameWithOwner{}, "", err
 	}
 	msg, err := TrySubmitMsg(buf)
 	if err != nil {
 		// Unknown message
 		slog.Error("Unknown MRVA submission body format")
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return "", []common.OwnerRepo{}, "", err
+		return "", []common.NameWithOwner{}, "", err
 	}
 	// Decompose the SubmitMsg and keep information
 
@@ -417,19 +417,19 @@ func (c *CommanderSingle) collectRequestInfo(w http.ResponseWriter, r *http.Requ
 		slog.Error("MRVA submission body querypack has invalid format")
 		err := errors.New("MRVA submission body querypack has invalid format")
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return "", []common.OwnerRepo{}, "", err
+		return "", []common.NameWithOwner{}, "", err
 	}
 	session_tgz_ref, err := c.extract_tgz(msg.QueryPack, sessionId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return "", []common.OwnerRepo{}, "", err
+		return "", []common.NameWithOwner{}, "", err
 	}
 
 	// 2. Save the language
 	session_language := msg.Language
 
 	// 3. Save the repositories
-	var session_repositories []common.OwnerRepo
+	var session_repositories []common.NameWithOwner
 
 	for _, v := range msg.Repositories {
 		t := strings.Split(v, "/")
@@ -439,7 +439,7 @@ func (c *CommanderSingle) collectRequestInfo(w http.ResponseWriter, r *http.Requ
 			http.Error(w, err, http.StatusBadRequest)
 		}
 		session_repositories = append(session_repositories,
-			common.OwnerRepo{Owner: t[0], Repo: t[1]})
+			common.NameWithOwner{Owner: t[0], Repo: t[1]})
 	}
 	return session_language, session_repositories, session_tgz_ref, nil
 }
@@ -492,7 +492,7 @@ func (c *CommanderSingle) extract_tgz(qp string, sessionID int) (string, error) 
 		return "", err
 	}
 
-	session_query_pack_tgz_filepath, err := c.st.ServerStore.SaveQueryPack(tgz, sessionID)
+	session_query_pack_tgz_filepath, err := c.vis.ServerStore.SaveQueryPack(tgz, sessionID)
 	if err != nil {
 		return "", err
 	}

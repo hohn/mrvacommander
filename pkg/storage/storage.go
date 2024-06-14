@@ -67,8 +67,8 @@ func (s *StorageSingle) SaveQueryPack(tgz []byte, sessionId int) (string, error)
 //		Determine for which repositories codeql databases are available.
 //
 //	 Those will be the analysis_repos.  The rest will be skipped.
-func (s *StorageSingle) FindAvailableDBs(analysisReposRequested []common.OwnerRepo) (not_found_repos []common.OwnerRepo,
-	analysisRepos *map[common.OwnerRepo]DBLocation) {
+func (s *StorageSingle) FindAvailableDBs(analysisReposRequested []common.NameWithOwner) (not_found_repos []common.NameWithOwner,
+	analysisRepos *map[common.NameWithOwner]DBLocation) {
 	slog.Debug("Looking for available CodeQL databases")
 
 	cwd, err := os.Getwd()
@@ -77,9 +77,9 @@ func (s *StorageSingle) FindAvailableDBs(analysisReposRequested []common.OwnerRe
 		return
 	}
 
-	analysisRepos = &map[common.OwnerRepo]DBLocation{}
+	analysisRepos = &map[common.NameWithOwner]DBLocation{}
 
-	not_found_repos = []common.OwnerRepo{}
+	not_found_repos = []common.NameWithOwner{}
 
 	for _, rep := range analysisReposRequested {
 		dbPrefix := filepath.Join(cwd, "codeql", "dbs", rep.Owner, rep.Repo)
@@ -110,7 +110,7 @@ func ArtifactURL(js common.JobSpec, vaid int) (string, error) {
 		return "", nil
 	}
 
-	zfpath, err := PackageResults(ar, js.OwnerRepo, vaid)
+	zfpath, err := PackageResults(ar, js.NameWithOwner, vaid)
 	if err != nil {
 		slog.Error("Error packaging results:", "error", err)
 		return "", err
@@ -129,13 +129,13 @@ func GetResult(js common.JobSpec) common.AnalyzeResult {
 	return ar
 }
 
-func SetResult(sessionid int, orl common.OwnerRepo, ar common.AnalyzeResult) {
+func SetResult(sessionid int, orl common.NameWithOwner, ar common.AnalyzeResult) {
 	mutex.Lock()
 	defer mutex.Unlock()
-	result[common.JobSpec{JobID: sessionid, OwnerRepo: orl}] = ar
+	result[common.JobSpec{JobID: sessionid, NameWithOwner: orl}] = ar
 }
 
-func PackageResults(ar common.AnalyzeResult, owre common.OwnerRepo, vaid int) (zipPath string, e error) {
+func PackageResults(ar common.AnalyzeResult, owre common.NameWithOwner, vaid int) (zipPath string, e error) {
 	slog.Debug("Readying zip file with .sarif/.bqrs", "analyze-result", ar)
 
 	cwd, err := os.Getwd()
@@ -210,10 +210,10 @@ func SetJobInfo(js common.JobSpec, ji common.JobInfo) {
 	info[js] = ji
 }
 
-func GetStatus(sessionid int, orl common.OwnerRepo) common.Status {
+func GetStatus(sessionid int, orl common.NameWithOwner) common.Status {
 	mutex.Lock()
 	defer mutex.Unlock()
-	return status[common.JobSpec{JobID: sessionid, OwnerRepo: orl}]
+	return status[common.JobSpec{JobID: sessionid, NameWithOwner: orl}]
 }
 
 func ResultAsFile(path string) (string, []byte, error) {
@@ -231,10 +231,10 @@ func ResultAsFile(path string) (string, []byte, error) {
 	return fpath, file, nil
 }
 
-func SetStatus(sessionid int, orl common.OwnerRepo, s common.Status) {
+func SetStatus(sessionid int, orl common.NameWithOwner, s common.Status) {
 	mutex.Lock()
 	defer mutex.Unlock()
-	status[common.JobSpec{JobID: sessionid, OwnerRepo: orl}] = s
+	status[common.JobSpec{JobID: sessionid, NameWithOwner: orl}] = s
 }
 
 func AddJob(sessionid int, job common.AnalyzeJob) {

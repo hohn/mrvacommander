@@ -15,18 +15,18 @@ type SessionInfo struct {
 
 	QueryPack    string
 	Language     string
-	Repositories []common.OwnerRepo
+	Repositories []common.NameWithOwner
 
-	AccessMismatchRepos []common.OwnerRepo
-	NotFoundRepos       []common.OwnerRepo
-	NoCodeqlDBRepos     []common.OwnerRepo
-	OverLimitRepos      []common.OwnerRepo
+	AccessMismatchRepos []common.NameWithOwner
+	NotFoundRepos       []common.NameWithOwner
+	NoCodeqlDBRepos     []common.NameWithOwner
+	OverLimitRepos      []common.NameWithOwner
 
-	AnalysisRepos *map[common.OwnerRepo]storage.DBLocation
+	AnalysisRepos *map[common.NameWithOwner]storage.DBLocation
 }
 
 type CommanderSingle struct {
-	st *Visibles
+	vis *Visibles
 }
 
 func NewCommanderSingle() *CommanderSingle {

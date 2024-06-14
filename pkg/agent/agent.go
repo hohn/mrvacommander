@@ -52,7 +52,7 @@ func (r *RunnerSingle) worker(wid int) {
 		slog.Debug("Picking up job", "job", job, "worker", wid)
 
 		slog.Debug("Analysis: running", "job", job)
-		storage.SetStatus(job.QueryPackId, job.ORepo, common.StatusQueued)
+		storage.SetStatus(job.QueryPackId, job.NWO, common.StatusQueued)
 
 		resultFile, err := r.RunAnalysis(job)
 		if err != nil {
@@ -66,8 +66,8 @@ func (r *RunnerSingle) worker(wid int) {
 			RunAnalysisBQRS:  "", // FIXME ?
 		}
 		r.queue.Results() <- res
-		storage.SetStatus(job.QueryPackId, job.ORepo, common.StatusSuccess)
-		storage.SetResult(job.QueryPackId, job.ORepo, res)
+		storage.SetStatus(job.QueryPackId, job.NWO, common.StatusSuccess)
+		storage.SetResult(job.QueryPackId, job.NWO, res)
 
 	}
 }
@@ -75,9 +75,9 @@ func (r *RunnerSingle) worker(wid int) {
 func (r *RunnerSingle) RunAnalysis(job common.AnalyzeJob) (string, error) {
 	// TODO Add multi-language tests including queryLanguage
 	// queryPackID, queryLanguage, dbOwner, dbRepo :=
-	// 	job.QueryPackId, job.QueryLanguage, job.ORL.Owner, job.ORL.Repo
+	// 	job.QueryPackId, job.QueryLanguage, job.NWO.Owner, job.NWO.Repo
 	queryPackID, dbOwner, dbRepo :=
-		job.QueryPackId, job.ORepo.Owner, job.ORepo.Repo
+		job.QueryPackId, job.NWO.Owner, job.NWO.Repo
 
 	serverRoot := os.Getenv("MRVA_SERVER_ROOT")
 
@@ -135,7 +135,7 @@ func (r *RunnerSingle) RunAnalysis(job common.AnalyzeJob) (string, error) {
 
 	if err := cmd.Run(); err != nil {
 		slog.Error("codeql database analyze failed:", "error", err, "job", job)
-		storage.SetStatus(job.QueryPackId, job.ORepo, common.StatusError)
+		storage.SetStatus(job.QueryPackId, job.NWO, common.StatusError)
 		return "", err
 	}
 
