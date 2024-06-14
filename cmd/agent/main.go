@@ -100,10 +100,31 @@ func InitializeQueue(jobsQueueName, resultsQueueName string) (*RabbitMQQueue, er
 
 	rabbitMQURL := fmt.Sprintf("amqp://%s:%s@%s:%s/", rabbitMQUser, rabbitMQPassword, rabbitMQHost, rabbitMQPort)
 
-	conn, err := amqp.Dial(rabbitMQURL)
+	const (
+		tryCount      = 5
+		retryDelaySec = 3
+	)
+
+	var conn *amqp.Connection
+	var err error
+
+	for i := 0; i < tryCount; i++ {
+		slog.Info("Attempting to connect to RabbitMQ", slog.Int("attempt", i+1))
+		conn, err = amqp.Dial(rabbitMQURL)
+		if err != nil {
+			slog.Warn("Failed to connect to RabbitMQ: %w", err)
+			if i < tryCount-1 {
+				slog.Info("Retrying in %d seconds", retryDelaySec)
+				time.Sleep(retryDelaySec * time.Second)
+			}
+		}
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to RabbitMQ: %w", err)
 	}
+
+	slog.Info("Connected to RabbitMQ")
 
 	ch, err := conn.Channel()
 	if err != nil {
