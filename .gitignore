@@ -8,7 +8,7 @@ cmd/server/var/
 cmd/server/server
 
 # host storage for container
-minio-data/
+dbstore-data/
 postgres-data/
 
 # Scratch space

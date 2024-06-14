@@ -50,9 +50,9 @@ services:
     networks:
       - backend
 
-  minio:
+  dbstore:
     image: minio/minio:RELEASE.2024-06-11T03-13-30Z
-    container_name: minio
+    container_name: dbstore
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -62,7 +62,7 @@ services:
 
     command: server /data --console-address ":9001"
     volumes:
-      - ./minio-data:/data
+      - ./dbstore-data:/data
 
 # Remove named volumes to use bind mounts
 # volumes:

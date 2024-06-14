@@ -25,4 +25,4 @@ mc cp cmd/server/codeql/dbs/google/flatbuffers/google_flatbuffers_db.zip \
    $MINIO_ALIAS/$BUCKET_NAME
 
 # Check new diskuse
-du -k minio-data
+du -k dbstore-data
