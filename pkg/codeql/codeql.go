@@ -16,7 +16,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Helper Functions
 func contains(slice []string, item string) bool {
 	for _, s := range slice {
 		if s == item {
@@ -26,7 +25,6 @@ func contains(slice []string, item string) bool {
 	return false
 }
 
-// Main Functions
 func getCodeQLCLIPath() (string, error) {
 	// get the CODEQL_CLI_PATH environment variable
 	codeqlCliPath := os.Getenv("CODEQL_CLI_PATH")
