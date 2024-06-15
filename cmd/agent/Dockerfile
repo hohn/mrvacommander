@@ -39,7 +39,7 @@ ENV CODEQL_CLI_PATH=/opt/codeql
 
 # Set environment variable for CodeQL for `codeql database analyze` support on ARM
 # This env var has no functional effect on CodeQL when running on x86_64 linux
-ENV CODEQL_JAVA_HOME=/usr/lib/jvm/
+ENV CODEQL_JAVA_HOME=/usr/
 
 # Copy built agent binary from the builder stage
 WORKDIR /app
