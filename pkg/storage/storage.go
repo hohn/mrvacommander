@@ -23,13 +23,12 @@ var (
 	mutex  sync.Mutex
 )
 
-func NewStorageSingle(startingID int) *StorageSingle {
+func NewStorageSingle(startingID int, v *Visibles) *StorageSingle {
 	s := StorageSingle{currentID: startingID}
-	return &s
-}
 
-func (s *StorageSingle) Setup(v *Visibles) {
 	s.modules = v
+
+	return &s
 }
 
 func (s *StorageSingle) NextID() int {

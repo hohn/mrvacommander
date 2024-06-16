@@ -24,8 +24,8 @@ type RunnerSingle struct {
 	queue queue.Queue
 }
 
-func NewAgentSingle(numWorkers int, queue queue.Queue) *RunnerSingle {
-	r := RunnerSingle{queue: queue}
+func NewAgentSingle(numWorkers int, av *Visibles) *RunnerSingle {
+	r := RunnerSingle{queue: av.Queue}
 
 	for id := 1; id <= numWorkers; id++ {
 		go r.worker(id)
@@ -40,10 +40,6 @@ type Visibles struct {
 	QueryPackStore qpstore.Storage
 	// TODO extra package for ql db storage
 	QLDBStore storage.Storage
-}
-
-func (c *RunnerSingle) Setup(st *Visibles) {
-	return
 }
 
 func (r *RunnerSingle) worker(wid int) {

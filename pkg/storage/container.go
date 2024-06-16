@@ -32,13 +32,7 @@ func (s *StorageContainer) FindAvailableDBs(analysisReposRequested []common.Owne
 	return notFoundRepos, analysisRepos
 }
 
-func (s *StorageContainer) Setup(v *Visibles) {
-	// TODO XX: set up qldb_db
-	s.modules = v
-
-}
-
-func NewQLDBStore(startingID int) (*StorageContainer, error) {
+func NewQLDBStore(startingID int, v *Visibles) (*StorageContainer, error) {
 	// TODO drop the startingID
 	db, err := ConnectDB(DBSpec{
 		Host:     "postgres",
@@ -61,10 +55,13 @@ func NewQLDBStore(startingID int) (*StorageContainer, error) {
 		return nil, err
 	}
 
+	// TODO XX: set up qldb_db
+	s.modules = v
+
 	return &s, nil
 }
 
-func NewServerStore(startingID int) (*StorageContainer, error) {
+func NewServerStore(startingID int, v *Visibles) (*StorageContainer, error) {
 	db, err := ConnectDB(DBSpec{
 		Host:     "postgres",
 		Port:     5432,
@@ -84,6 +81,9 @@ func NewServerStore(startingID int) (*StorageContainer, error) {
 	if err = s.loadState(); err != nil {
 		return nil, err
 	}
+
+	// TODO XX: set up qldb_db
+	s.modules = v
 
 	return &s, nil
 }

@@ -4,13 +4,11 @@ type LoggerSingle struct {
 	modules *Visibles
 }
 
-func NewLoggerSingle() *LoggerSingle {
+func NewLoggerSingle(v *Visibles) *LoggerSingle {
 	l := LoggerSingle{}
+
+	l.modules = v
 	return &l
 }
 
 type Visibles struct{}
-
-func (l *LoggerSingle) Setup(v *Visibles) {
-	l.modules = v
-}

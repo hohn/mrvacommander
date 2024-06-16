@@ -16,14 +16,13 @@ type Visibles struct {
 	Logger logger.Logger
 }
 
-func (q *QueueSingle) Setup(v *Visibles) {
-	q.modules = v
-}
-
-func NewQueueSingle(numWorkers int) *QueueSingle {
+func NewQueueSingle(numWorkers int, v *Visibles) *QueueSingle {
 	q := QueueSingle{}
 	q.jobs = make(chan common.AnalyzeJob, 10)
 	q.results = make(chan common.AnalyzeResult, 10)
 	q.NumWorkers = numWorkers
+
+	q.modules = v
+
 	return &q
 }

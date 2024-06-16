@@ -21,11 +21,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func (c *CommanderSingle) Setup(st *Visibles) {
-	c.st = st
-	setupEndpoints(c)
-}
-
 func setupEndpoints(c CommanderAPI) {
 	r := mux.NewRouter()
 
