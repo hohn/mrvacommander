@@ -151,7 +151,7 @@ func (q *RabbitMQQueue) publishResult(queueName string, result interface{}) {
 		return
 	}
 
-	slog.Info("Publishing result", slog.String("result", string(resultBytes)))
+	slog.Debug("Publishing result", slog.String("result", string(resultBytes)))
 	err = q.channel.PublishWithContext(ctx, "", queueName, false, false,
 		amqp.Publishing{
 			ContentType: "application/json",

@@ -115,7 +115,7 @@ func RunQuery(database string, nwo string, queryPackPath string, tempDir string)
 		databaseSHA = *dbMetadata.CreationMetadata.SHA
 	}
 
-	cmd := exec.Command(codeql.Path, "database", "run-queries", "--ram=1024", "--additional-packs", queryPackPath, "--", databasePath, queryPackPath)
+	cmd := exec.Command(codeql.Path, "database", "run-queries", "--ram=2048", "--additional-packs", queryPackPath, "--", databasePath, queryPackPath)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return nil, fmt.Errorf("failed to run queries: %v\nOutput: %s", err, output)
 	}
@@ -133,9 +133,9 @@ func RunQuery(database string, nwo string, queryPackPath string, tempDir string)
 	shouldGenerateSarif := queryPackSupportsSarif(queryPackRunResults)
 
 	if shouldGenerateSarif {
-		slog.Info("Query pack supports SARIF")
+		slog.Debug("Query pack supports SARIF")
 	} else {
-		slog.Info("Query pack does not support SARIF")
+		slog.Debug("Query pack does not support SARIF")
 	}
 
 	var resultCount int
@@ -147,17 +147,17 @@ func RunQuery(database string, nwo string, queryPackPath string, tempDir string)
 			return nil, fmt.Errorf("failed to generate SARIF: %v", err)
 		}
 		resultCount = getSarifResultCount(sarif)
-		slog.Info("Generated SARIF", "resultCount", resultCount)
+		slog.Debug("Generated SARIF", "resultCount", resultCount)
 		sarifFilePath = filepath.Join(resultsDir, "results.sarif")
 		if err := os.WriteFile(sarifFilePath, sarif, 0644); err != nil {
 			return nil, fmt.Errorf("failed to write SARIF file: %v", err)
 		}
 	} else {
 		resultCount = queryPackRunResults.TotalResultsCount
-		slog.Info("Did not generate SARIF", "resultCount", resultCount)
+		slog.Debug("Did not generate SARIF", "resultCount", resultCount)
 	}
 
-	slog.Info("Adjusting BQRS files")
+	slog.Debug("Adjusting BQRS files")
 	bqrsFilePaths, err := adjustBqrsFiles(queryPackRunResults, resultsDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to adjust BQRS files: %v", err)

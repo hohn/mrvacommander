@@ -1,24 +1,29 @@
 package main
 
 import (
-	"mrvacommander/pkg/agent"
-	"mrvacommander/pkg/queue"
-	"os/signal"
-	"strconv"
-	"syscall"
-
+	"context"
 	"flag"
 	"os"
+	"os/signal"
 	"runtime"
+	"strconv"
 	"sync"
+	"syscall"
+	"time"
 
 	"github.com/elastic/go-sysinfo"
 	"golang.org/x/exp/slog"
+
+	"mrvacommander/pkg/agent"
+	"mrvacommander/pkg/queue"
+)
+
+const (
+	workerMemoryMB     = 2048 // 2 GB
+	monitorIntervalSec = 10   // Monitor every 10 seconds
 )
 
 func calculateWorkers() int {
-	const workerMemoryMB = 2048 // 2 GB
-
 	host, err := sysinfo.Host()
 	if err != nil {
 		slog.Error("failed to get host info", "error", err)
@@ -49,6 +54,60 @@ func calculateWorkers() int {
 	return workers
 }
 
+func startAndMonitorWorkers(ctx context.Context, queue queue.Queue, desiredWorkerCount int, wg *sync.WaitGroup) {
+	currentWorkerCount := 0
+	stopChans := make([]chan struct{}, 0)
+
+	if desiredWorkerCount != 0 {
+		slog.Info("Starting workers", slog.Int("count", desiredWorkerCount))
+		for i := 0; i < desiredWorkerCount; i++ {
+			stopChan := make(chan struct{})
+			stopChans = append(stopChans, stopChan)
+			wg.Add(1)
+			go agent.RunWorker(ctx, stopChan, queue, wg)
+		}
+		return
+	}
+
+	slog.Info("Worker count not specified, managing based on available memory and CPU")
+
+	for {
+		select {
+		case <-ctx.Done():
+			// signal all workers to stop
+			for _, stopChan := range stopChans {
+				close(stopChan)
+			}
+			return
+		default:
+			newWorkerCount := calculateWorkers()
+
+			if newWorkerCount != currentWorkerCount {
+				slog.Info(
+					"Modifying worker count",
+					slog.Int("current", currentWorkerCount),
+					slog.Int("new", newWorkerCount))
+			}
+
+			if newWorkerCount > currentWorkerCount {
+				for i := currentWorkerCount; i < newWorkerCount; i++ {
+					stopChan := make(chan struct{})
+					stopChans = append(stopChans, stopChan)
+					wg.Add(1)
+					go agent.RunWorker(ctx, stopChan, queue, wg)
+				}
+			} else if newWorkerCount < currentWorkerCount {
+				for i := newWorkerCount; i < currentWorkerCount; i++ {
+					close(stopChans[i])
+				}
+				stopChans = stopChans[:newWorkerCount]
+			}
+			currentWorkerCount = newWorkerCount
+			time.Sleep(monitorIntervalSec * time.Second)
+		}
+	}
+}
+
 func main() {
 	slog.Info("Starting agent")
 
@@ -77,7 +136,6 @@ func main() {
 	rmqPass := os.Getenv("MRVA_RABBITMQ_PASSWORD")
 
 	rmqPortAsInt, err := strconv.Atoi(rmqPort)
-
 	if err != nil {
 		slog.Error("Failed to parse RabbitMQ port", slog.Any("error", err))
 		os.Exit(1)
@@ -92,29 +150,23 @@ func main() {
 	}
 	defer rabbitMQQueue.Close()
 
-	if *workerCount == 0 {
-		*workerCount = calculateWorkers()
-	}
-
-	slog.Info("Starting workers", slog.Int("count", *workerCount))
 	var wg sync.WaitGroup
-	for i := 0; i < *workerCount; i++ {
-		wg.Add(1)
-		go agent.RunWorker(rabbitMQQueue, &wg)
-	}
+	ctx, cancel := context.WithCancel(context.Background())
 
-	slog.Info("Agent startup complete")
+	go startAndMonitorWorkers(ctx, rabbitMQQueue, *workerCount, &wg)
 
-	// Gracefully exit on SIGINT/SIGTERM (TODO: add job cleanup)
+	slog.Info("Agent started")
+
+	// Gracefully exit on SIGINT/SIGTERM
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	go func() {
-		<-sigChan
-		slog.Info("Shutting down agent")
-		rabbitMQQueue.Close()
-		os.Exit(0)
-	}()
+	<-sigChan
+	slog.Info("Shutting down agent")
 
-	select {}
+	// TODO: fix this to gracefully terminate agent workers during jobs
+	cancel()
+	wg.Wait()
+
+	slog.Info("Agent shutdown complete")
 }

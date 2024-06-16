@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"mrvacommander/pkg/codeql"
@@ -111,8 +112,7 @@ func RunAnalysisJob(job common.AnalyzeJob) (common.AnalyzeResult, error) {
 	}
 
 	// TODO: Upload the archive to storage
-	slog.Info("Results archive size", slog.Int("size", len(resultsArchive)))
-	slog.Info("Analysis job successful.")
+	slog.Debug("Results archive size", slog.Int("size", len(resultsArchive)))
 
 	result = common.AnalyzeResult{
 		RequestId:        job.RequestId,
@@ -125,16 +125,43 @@ func RunAnalysisJob(job common.AnalyzeJob) (common.AnalyzeResult, error) {
 }
 
 // RunWorker runs a worker that processes jobs from queue
-func RunWorker(queue queue.Queue, wg *sync.WaitGroup) {
+func RunWorker(ctx context.Context, stopChan chan struct{}, queue queue.Queue, wg *sync.WaitGroup) {
+	const (
+		WORKER_COUNT_STOP_MESSAGE   = "Worker stopping due to reduction in worker count"
+		WORKER_CONTEXT_STOP_MESSAGE = "Worker stopping due to context cancellation"
+	)
+
 	defer wg.Done()
-	for job := range queue.Jobs() {
-		slog.Info("Running analysis job", slog.Any("job", job))
-		result, err := RunAnalysisJob(job)
-		if err != nil {
-			slog.Error("Failed to run analysis job", slog.Any("error", err))
-			continue
+	slog.Info("Worker started")
+	for {
+		select {
+		case <-stopChan:
+			slog.Info(WORKER_COUNT_STOP_MESSAGE)
+			return
+		case <-ctx.Done():
+			slog.Info(WORKER_CONTEXT_STOP_MESSAGE)
+			return
+		default:
+			select {
+			case job, ok := <-queue.Jobs():
+				if !ok {
+					return
+				}
+				slog.Info("Running analysis job", slog.Any("job", job))
+				result, err := RunAnalysisJob(job)
+				if err != nil {
+					slog.Error("Failed to run analysis job", slog.Any("error", err))
+					continue
+				}
+				slog.Info("Analysis job completed", slog.Any("result", result))
+				queue.Results() <- result
+			case <-stopChan:
+				slog.Info(WORKER_COUNT_STOP_MESSAGE)
+				return
+			case <-ctx.Done():
+				slog.Info(WORKER_CONTEXT_STOP_MESSAGE)
+				return
+			}
 		}
-		slog.Info("Analysis job completed", slog.Any("result", result))
-		queue.Results() <- result
 	}
 }
