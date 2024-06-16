@@ -103,6 +103,7 @@ func startAndMonitorWorkers(ctx context.Context, queue queue.Queue, desiredWorke
 				stopChans = stopChans[:newWorkerCount]
 			}
 			currentWorkerCount = newWorkerCount
+
 			time.Sleep(monitorIntervalSec * time.Second)
 		}
 	}
@@ -125,7 +126,7 @@ func main() {
 
 	for _, envVar := range requiredEnvVars {
 		if _, ok := os.LookupEnv(envVar); !ok {
-			slog.Error("Missing required environment variable %s", envVar)
+			slog.Error("Missing required environment variable", "key", envVar)
 			os.Exit(1)
 		}
 	}
@@ -143,7 +144,7 @@ func main() {
 
 	slog.Info("Initializing RabbitMQ queue")
 
-	rabbitMQQueue, err := queue.InitializeRabbitMQQueue(rmqHost, int16(rmqPortAsInt), rmqUser, rmqPass)
+	rabbitMQQueue, err := queue.InitializeRabbitMQQueue(rmqHost, int16(rmqPortAsInt), rmqUser, rmqPass, false)
 	if err != nil {
 		slog.Error("failed to initialize RabbitMQ", slog.Any("error", err))
 		os.Exit(1)
@@ -160,7 +161,6 @@ func main() {
 	// Gracefully exit on SIGINT/SIGTERM
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
 	<-sigChan
 	slog.Info("Shutting down agent")
 

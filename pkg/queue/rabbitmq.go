@@ -21,11 +21,19 @@ type RabbitMQQueue struct {
 	channel *amqp.Channel
 }
 
+// InitializeRabbitMQQueue initializes a RabbitMQ queue.
+// It returns a pointer to a RabbitMQQueue and an error.
+//
+// If isAgent is true, the queue is initialized to be used by an agent.
+// Otherwise, the queue is initialized to be used by the server.
+// The difference in behaviour is that the agent consumes jobs and publishes results,
+// while the server publishes jobs and consumes results.
 func InitializeRabbitMQQueue(
 	host string,
 	port int16,
 	user string,
 	password string,
+	isAgent bool,
 ) (*RabbitMQQueue, error) {
 	const (
 		tryCount         = 5
@@ -90,11 +98,19 @@ func InitializeRabbitMQQueue(
 		results: make(chan common.AnalyzeResult),
 	}
 
-	slog.Info("Starting tasks consumer")
-	go result.ConsumeJobs(jobsQueueName)
+	if isAgent {
+		slog.Info("Starting tasks consumer")
+		go result.ConsumeJobs(jobsQueueName)
 
-	slog.Info("Starting results publisher")
-	go result.PublishResults(resultsQueueName)
+		slog.Info("Starting results publisher")
+		go result.PublishResults(resultsQueueName)
+	} else {
+		slog.Info("Starting jobs publisher")
+		go result.PublishJobs(jobsQueueName)
+
+		slog.Info("Starting results consumer")
+		go result.ConsumeResults(resultsQueueName)
+	}
 
 	return &result, nil
 }
@@ -141,7 +157,7 @@ func (q *RabbitMQQueue) PublishResults(queueName string) {
 	}
 }
 
-func (q *RabbitMQQueue) publishResult(queueName string, result interface{}) {
+func (q *RabbitMQQueue) publishResult(queueName string, result common.AnalyzeResult) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
@@ -160,4 +176,49 @@ func (q *RabbitMQQueue) publishResult(queueName string, result interface{}) {
 	if err != nil {
 		slog.Error("failed to publish result", slog.Any("error", err))
 	}
+}
+
+func (q *RabbitMQQueue) publishJob(queueName string, job common.AnalyzeJob) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	jobBytes, err := json.Marshal(job)
+	if err != nil {
+		slog.Error("failed to marshal job", slog.Any("error", err))
+		return
+	}
+
+	slog.Debug("Publishing job", slog.String("job", string(jobBytes)))
+	err = q.channel.PublishWithContext(ctx, "", queueName, false, false,
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        jobBytes,
+		})
+	if err != nil {
+		slog.Error("failed to publish job", slog.Any("error", err))
+	}
+}
+
+func (q *RabbitMQQueue) PublishJobs(queueName string) {
+	for job := range q.jobs {
+		q.publishJob(queueName, job)
+	}
+}
+
+func (q *RabbitMQQueue) ConsumeResults(queueName string) {
+	msgs, err := q.channel.Consume(queueName, "", true, false, false, false, nil)
+	if err != nil {
+		slog.Error("failed to register a consumer", slog.Any("error", err))
+	}
+
+	for msg := range msgs {
+		result := common.AnalyzeResult{}
+		err := json.Unmarshal(msg.Body, &result)
+		if err != nil {
+			slog.Error("failed to unmarshal result", slog.Any("error", err))
+			continue
+		}
+		q.results <- result
+	}
+	close(q.results)
 }
