@@ -57,10 +57,10 @@ func (s *StorageContainer) SaveQueryPack(tgz []byte, sessionID int) (storagePath
 	return "todo:no-path-yet", nil
 }
 
-func (s *StorageContainer) FindAvailableDBs(analysisReposRequested []common.OwnerRepo) (notFoundRepos []common.OwnerRepo, analysisRepos *map[common.OwnerRepo]qldbstore.DBLocation) {
+func (s *StorageContainer) FindAvailableDBs(analysisReposRequested []common.NameWithOwner) (notFoundRepos []common.NameWithOwner, analysisRepos *map[common.NameWithOwner]qldbstore.DBLocation) {
 	// TODO  s.FindAvailableDBs() via postgres
-	analysisRepos = &map[common.OwnerRepo]qldbstore.DBLocation{}
-	notFoundRepos = []common.OwnerRepo{}
+	analysisRepos = &map[common.NameWithOwner]qldbstore.DBLocation{}
+	notFoundRepos = []common.NameWithOwner{}
 
 	return notFoundRepos, analysisRepos
 }

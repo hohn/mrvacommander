@@ -1,0 +1,43 @@
+{
+    "users": [
+        {
+            "name": "user",
+            "password": "password",
+            "tags": "administrator"
+        }
+    ],
+    "vhosts": [
+        {
+            "name": "/"
+        }
+    ],
+    "queues": [
+        {
+            "name": "tasks",
+            "vhost": "/",
+            "durable": false,
+            "persistent": false,
+            "arguments": {
+                "x-queue-type": "classic"
+            }
+        },
+        {
+            "name": "results",
+            "vhost": "/",
+            "durable": false,
+            "persistent": false,
+            "arguments": {
+                "x-queue-type": "classic"
+            }
+        }
+    ],
+    "permissions": [
+        {
+            "user": "user",
+            "vhost": "/",
+            "configure": ".*",
+            "write": ".*",
+            "read": ".*"
+        }
+    ]
+}
