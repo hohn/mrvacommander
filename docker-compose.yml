@@ -7,37 +7,35 @@ services:
     volumes:
       - ./init/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
       - ./init/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
-    expose:
-      - "5672"
-      - "15672"
     ports:
       - "5672:5672"
       - "15672:15672"
     networks:
       - backend
     healthcheck:
-      test: [ "CMD", "nc", "-z", "localhost", "5672" ]
-      interval: 5s
-      timeout: 15s
-      retries: 1
+      test: rabbitmq-diagnostics check_port_connectivity
+      interval: 30s
+      timeout: 30s
+      retries: 10
 
   server:
     build:
-      context: ./cmd/server
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./cmd/server/Dockerfile
+    command: [ '--mode=container', '--loglevel=debug' ]
     container_name: server
-    stop_grace_period: 1s  # Reduce the timeout period for testing
-    environment:
-      - MRVA_SERVER_ROOT=/mrva/mrvacommander/cmd/server
-    command: sh -c "tail -f /dev/null"
+    stop_grace_period: 1s
     ports:
-      - "8080:8080" 
-    volumes:
-      - ./:/mrva/mrvacommander
+      - "8080:8080"
     depends_on:
       - rabbitmq
+      - dbstore
+      - artifactstore
     networks:
       - backend
+    env_file:
+      - path: ./.env.container
+        required: true
 
   dbstore:
     image: minio/minio:RELEASE.2024-06-11T03-13-30Z
@@ -45,52 +43,46 @@ services:
     ports:
       - "9000:9000"
       - "9001:9001"
-    environment:
-      MINIO_ROOT_USER: user
-      MINIO_ROOT_PASSWORD: mmusty8432
-
+    env_file:
+      - path: .env.container
+        required: true
     command: server /data --console-address ":9001"
     volumes:
       - ./dbstore-data:/data
+    networks:
+      - backend
 
-
-  qpstore:
+  artifactstore:
     image: minio/minio:RELEASE.2024-06-11T03-13-30Z
-    container_name: qpstore
+    container_name: artifactstore
     ports:
       - "19000:9000" # host:container
       - "19001:9001"
-    environment:
-      MINIO_ROOT_USER: user
-      MINIO_ROOT_PASSWORD: mmusty8432
-
+    env_file:
+      - path: ./.env.container
+        required: true
     command: server /data --console-address ":9001"
     volumes:
       - ./qpstore-data:/data
-      
+    networks:
+      - backend
 
   agent:
     build:
       context: .
       dockerfile: ./cmd/agent/Dockerfile
+    command: [ '--loglevel=debug' ]
     container_name: agent
     depends_on:
       - rabbitmq
-      - minio
-    environment:
-      MRVA_RABBITMQ_HOST: rabbitmq
-      MRVA_RABBITMQ_PORT: 5672
-      MRVA_RABBITMQ_USER: user
-      MRVA_RABBITMQ_PASSWORD: password
+      - dbstore
+      - artifactstore
+    env_file:
+      - path: ./.env.container
+        required: true
     networks:
       - backend
-
 
 networks:
   backend:
     driver: bridge
-
-# Remove named volumes to use bind mounts
-# volumes:
-#   minio-data:
-    

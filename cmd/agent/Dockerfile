@@ -23,7 +23,8 @@ ARG CODEQL_VERSION=latest
 RUN apt-get update && apt-get install --no-install-recommends --assume-yes \
     unzip \
     curl \
-    ca-certificates
+    ca-certificates \
+    default-jdk
 
 # If the version is 'latest', lsget the latest release version from GitHub, unzip the bundle into /opt, and delete the archive
 RUN if [ "$CODEQL_VERSION" = "latest" ]; then \
@@ -32,14 +33,15 @@ RUN if [ "$CODEQL_VERSION" = "latest" ]; then \
     echo "Using CodeQL version $CODEQL_VERSION" && \
     curl -L "https://github.com/github/codeql-cli-binaries/releases/download/$CODEQL_VERSION/codeql-linux64.zip" -o /tmp/codeql.zip && \
     unzip /tmp/codeql.zip -d /opt && \
-    rm /tmp/codeql.zip
+    rm /tmp/codeql.zip && \
+    chmod -R +x /opt/codeql
 
 # Set environment variables for CodeQL
-ENV CODEQL_CLI_PATH=/opt/codeql
+ENV CODEQL_CLI_PATH=/opt/codeql/codeql
 
 # Set environment variable for CodeQL for `codeql database analyze` support on ARM
 # This env var has no functional effect on CodeQL when running on x86_64 linux
-ENV CODEQL_JAVA_HOME=/usr/
+ENV CODEQL_JAVA_HOME=/usr
 
 # Copy built agent binary from the builder stage
 WORKDIR /app

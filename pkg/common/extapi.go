@@ -1,10 +1,9 @@
 package common
 
 type JobInfo struct {
-	QueryLanguage string
-	CreatedAt     string
-	UpdatedAt     string
-
+	QueryLanguage       string
+	CreatedAt           string
+	UpdatedAt           string
 	SkippedRepositories SkippedRepositories
 }
 
@@ -16,8 +15,8 @@ type SkippedRepositories struct {
 }
 
 type AccessMismatchRepos struct {
-	RepositoryCount int      `json:"repository_count"`
-	Repositories    []string `json:"repositories"`
+	RepositoryCount int          `json:"repository_count"`
+	Repositories    []Repository `json:"repositories"`
 }
 
 type NotFoundRepos struct {
@@ -26,13 +25,13 @@ type NotFoundRepos struct {
 }
 
 type NoCodeqlDBRepos struct {
-	RepositoryCount int      `json:"repository_count"`
-	Repositories    []string `json:"repositories"`
+	RepositoryCount int          `json:"repository_count"`
+	Repositories    []Repository `json:"repositories"`
 }
 
 type OverLimitRepos struct {
-	RepositoryCount int      `json:"repository_count"`
-	Repositories    []string `json:"repositories"`
+	RepositoryCount int          `json:"repository_count"`
+	Repositories    []Repository `json:"repositories"`
 }
 
 type StatusResponse struct {

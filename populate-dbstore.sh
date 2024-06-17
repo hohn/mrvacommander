@@ -10,19 +10,22 @@ BUCKET_NAME="qldb"
 # Check for MinIO client
 if ! command -v mc &> /dev/null
 then
-    echo "MinIO client (mc) not found.  "
+    echo "MinIO client (mc) not found."
+    exit 1
 fi
 
 # Configure MinIO client
 mc alias set $MINIO_ALIAS $MINIO_URL $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD
 
-# Create ql db bucket
+# Create qldb bucket
 mc mb $MINIO_ALIAS/$BUCKET_NAME
 
-# Upload the two sample DBs
+# Upload the two sample DBs with new names
 mc cp cmd/server/codeql/dbs/google/flatbuffers/google_flatbuffers_db.zip \
-   cmd/server/codeql/dbs/psycopg/psycopg2/psycopg_psycopg2_db.zip \
-   $MINIO_ALIAS/$BUCKET_NAME
+    $MINIO_ALIAS/$BUCKET_NAME/google\$flatbuffers.zip
 
-# Check new diskuse
+mc cp cmd/server/codeql/dbs/psycopg/psycopg2/psycopg_psycopg2_db.zip \
+    $MINIO_ALIAS/$BUCKET_NAME/psycopg\$psycopg2.zip
+
+# Check new disk use
 du -k dbstore-data

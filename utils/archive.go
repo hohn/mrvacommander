@@ -3,9 +3,12 @@ package utils
 import (
 	"archive/tar"
 	"archive/zip"
+	"bytes"
 	"compress/gzip"
+	"encoding/base64"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -122,4 +125,29 @@ func Untar(r io.Reader, dest string) error {
 	}
 
 	return nil
+}
+
+// IsBase64Gzip checks the request body up to the `gunzip` part.
+//
+// Some important payloads can be listed via
+// base64 -d < foo1 | gunzip | tar t|head -20
+func IsBase64Gzip(val []byte) bool {
+	if len(val) >= 4 {
+		// Extract header
+		hdr := make([]byte, base64.StdEncoding.DecodedLen(4))
+		_, err := base64.StdEncoding.Decode(hdr, []byte(val[0:4]))
+		if err != nil {
+			log.Println("WARNING: IsBase64Gzip decode error:", err)
+			return false
+		}
+		// Check for gzip heading
+		magic := []byte{0x1f, 0x8b}
+		if bytes.Equal(hdr[0:2], magic) {
+			return true
+		} else {
+			return false
+		}
+	} else {
+		return false
+	}
 }

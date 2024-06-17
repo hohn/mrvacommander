@@ -1,13 +1,9 @@
 package queue
 
 import (
-	"mrvacommander/pkg/common"
-	"mrvacommander/pkg/storage"
-
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -15,20 +11,20 @@ import (
 )
 
 type RabbitMQQueue struct {
-	jobs    chan common.AnalyzeJob
-	results chan common.AnalyzeResult
+	jobs    chan AnalyzeJob
+	results chan AnalyzeResult
 	conn    *amqp.Connection
 	channel *amqp.Channel
 }
 
-// InitializeRabbitMQQueue initializes a RabbitMQ queue.
+// NewRabbitMQQueue initializes a RabbitMQ queue.
 // It returns a pointer to a RabbitMQQueue and an error.
 //
 // If isAgent is true, the queue is initialized to be used by an agent.
 // Otherwise, the queue is initialized to be used by the server.
 // The difference in behaviour is that the agent consumes jobs and publishes results,
 // while the server publishes jobs and consumes results.
-func InitializeRabbitMQQueue(
+func NewRabbitMQQueue(
 	host string,
 	port int16,
 	user string,
@@ -94,8 +90,8 @@ func InitializeRabbitMQQueue(
 	result := RabbitMQQueue{
 		conn:    conn,
 		channel: ch,
-		jobs:    make(chan common.AnalyzeJob),
-		results: make(chan common.AnalyzeResult),
+		jobs:    make(chan AnalyzeJob),
+		results: make(chan AnalyzeResult),
 	}
 
 	if isAgent {
@@ -115,17 +111,12 @@ func InitializeRabbitMQQueue(
 	return &result, nil
 }
 
-func (q *RabbitMQQueue) Jobs() chan common.AnalyzeJob {
+func (q *RabbitMQQueue) Jobs() chan AnalyzeJob {
 	return q.jobs
 }
 
-func (q *RabbitMQQueue) Results() chan common.AnalyzeResult {
+func (q *RabbitMQQueue) Results() chan AnalyzeResult {
 	return q.results
-}
-
-func (q *RabbitMQQueue) StartAnalyses(analysis_repos *map[common.NameWithOwner]storage.DBLocation, session_id int, session_language string) {
-	// TODO: Implement
-	log.Fatal("unimplemented")
 }
 
 func (q *RabbitMQQueue) Close() {
@@ -140,7 +131,7 @@ func (q *RabbitMQQueue) ConsumeJobs(queueName string) {
 	}
 
 	for msg := range msgs {
-		job := common.AnalyzeJob{}
+		job := AnalyzeJob{}
 		err := json.Unmarshal(msg.Body, &job)
 		if err != nil {
 			slog.Error("failed to unmarshal job", slog.Any("error", err))
@@ -157,7 +148,7 @@ func (q *RabbitMQQueue) PublishResults(queueName string) {
 	}
 }
 
-func (q *RabbitMQQueue) publishResult(queueName string, result common.AnalyzeResult) {
+func (q *RabbitMQQueue) publishResult(queueName string, result AnalyzeResult) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
@@ -178,7 +169,7 @@ func (q *RabbitMQQueue) publishResult(queueName string, result common.AnalyzeRes
 	}
 }
 
-func (q *RabbitMQQueue) publishJob(queueName string, job common.AnalyzeJob) {
+func (q *RabbitMQQueue) publishJob(queueName string, job AnalyzeJob) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
@@ -212,7 +203,7 @@ func (q *RabbitMQQueue) ConsumeResults(queueName string) {
 	}
 
 	for msg := range msgs {
-		result := common.AnalyzeResult{}
+		result := AnalyzeResult{}
 		err := json.Unmarshal(msg.Body, &result)
 		if err != nil {
 			slog.Error("failed to unmarshal result", slog.Any("error", err))

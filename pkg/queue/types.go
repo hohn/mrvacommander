@@ -1,28 +1,28 @@
 package queue
 
 import (
+	"mrvacommander/pkg/artifactstore"
 	"mrvacommander/pkg/common"
-	"mrvacommander/pkg/logger"
 )
 
-type QueueSingle struct {
-	NumWorkers int
-	jobs       chan common.AnalyzeJob
-	results    chan common.AnalyzeResult
-	modules    *Visibles
+// AnalyzeJob represents a job specifying a repository and a query pack to analyze it with.
+// This is the message format that the agent receives from the queue.
+// TODO: make query_pack_location query_pack_url with a presigned URL
+type AnalyzeJob struct {
+	Spec              common.JobSpec                 // json:"job_spec"
+	QueryPackLocation artifactstore.ArtifactLocation // json:"query_pack_location"
+	QueryLanguage     string                         // json:"query_language"
 }
 
-type Visibles struct {
-	Logger logger.Logger
-}
-
-func NewQueueSingle(numWorkers int, v *Visibles) *QueueSingle {
-	q := QueueSingle{}
-	q.jobs = make(chan common.AnalyzeJob, 10)
-	q.results = make(chan common.AnalyzeResult, 10)
-	q.NumWorkers = numWorkers
-
-	q.modules = v
-
-	return &q
+// AnalyzeResult represents the result of an analysis job.
+// This is the message format that the agent sends to the queue.
+// Status will only ever be StatusSuccess or StatusError when sent in a result.
+// TODO: make result_location result_archive_url with a presigned URL
+type AnalyzeResult struct {
+	Spec                 common.JobSpec                 // json:"job_spec"
+	Status               common.Status                  // json:"status"
+	ResultCount          int                            // json:"result_count"
+	ResultLocation       artifactstore.ArtifactLocation // json:"result_location"
+	SourceLocationPrefix string                         // json:"source_location_prefix"
+	DatabaseSHA          string                         // json:"database_sha"
 }

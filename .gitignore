@@ -41,3 +41,5 @@ go.work.sum
 
 # env file
 .env
+/artifactstore-data/.minio.sys
+/qldbminio/qldb

@@ -4,26 +4,29 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"mrvacommander/pkg/artifactstore"
 	"mrvacommander/pkg/codeql"
 	"mrvacommander/pkg/common"
-	"mrvacommander/pkg/logger"
 	"mrvacommander/pkg/qldbstore"
-	"mrvacommander/pkg/qpstore"
 	"mrvacommander/pkg/queue"
 	"mrvacommander/utils"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
+	"time"
 
+	"github.com/elastic/go-sysinfo"
 	"github.com/google/uuid"
 )
 
+/*
 type RunnerSingle struct {
 	queue queue.Queue
 }
 
-func NewAgentSingle(numWorkers int, av *Visibles) *RunnerSingle {
-	r := RunnerSingle{queue: av.Queue}
+func NewAgentSingle(numWorkers int, v *Visibles) *RunnerSingle {
+	r := RunnerSingle{queue: v.Queue}
 
 	for id := 1; id <= numWorkers; id++ {
 		go r.worker(id)
@@ -31,72 +34,175 @@ func NewAgentSingle(numWorkers int, av *Visibles) *RunnerSingle {
 	return &r
 }
 
-type Visibles struct {
-	Logger logger.Logger
-	Queue  queue.Queue
-	// TODO extra package for query pack storage
-	QueryPackStore qpstore.Storage
-	// TODO extra package for ql db storage
-	QLDBStore qldbstore.Storage
+func (r *RunnerSingle) worker(wid int) {
+	var job common.AnalyzeJob
+
+	for {
+		job = <-r.queue.Jobs()
+		result, err := RunAnalysisJob(job)
+		if err != nil {
+			slog.Error("Failed to run analysis job", slog.Any("error", err))
+			continue
+		}
+		r.queue.Results() <- result
+	}
+}
+*/
+
+const (
+	workerMemoryMB     = 2048 // 2 GB
+	monitorIntervalSec = 10   // Monitor every 10 seconds
+)
+
+func calculateWorkers() int {
+	host, err := sysinfo.Host()
+	if err != nil {
+		slog.Error("failed to get host info", "error", err)
+		os.Exit(1)
+	}
+
+	memInfo, err := host.Memory()
+	if err != nil {
+		slog.Error("failed to get memory info", "error", err)
+		os.Exit(1)
+	}
+
+	// Get available memory in MB
+	totalMemoryMB := memInfo.Available / (1024 * 1024)
+
+	// Ensure we have at least one worker
+	workers := int(totalMemoryMB / workerMemoryMB)
+	if workers < 1 {
+		workers = 1
+	}
+
+	// Limit the number of workers to the number of CPUs
+	cpuCount := runtime.NumCPU()
+	if workers > cpuCount {
+		workers = max(cpuCount, 1)
+	}
+
+	return workers
 }
 
-func (r *RunnerSingle) worker(wid int) {
-	// TODO: reimplement this later
-	/*
-		var job common.AnalyzeJob
+func StartAndMonitorWorkers(ctx context.Context,
+	artifacts artifactstore.Store,
+	databases qldbstore.Store,
+	queue queue.Queue,
+	desiredWorkerCount int,
+	wg *sync.WaitGroup) {
 
-		for {
-			job = <-r.queue.Jobs()
+	currentWorkerCount := 0
+	stopChans := make([]chan struct{}, 0)
 
-			slog.Debug("Picking up job", "job", job, "worker", wid)
-
-			slog.Debug("Analysis: running", "job", job)
-			storage.SetStatus(job.QueryPackId, job.NWO, common.StatusQueued)
-
-			resultFile, err := RunAnalysis(job)
-			if err != nil {
-				continue
-			}
-
-			slog.Debug("Analysis run finished", "job", job)
-
-			// TODO: FIX THIS
-			res := common.AnalyzeResult{
-				RunAnalysisSARIF: resultFile,
-				RunAnalysisBQRS:  "", // FIXME ?
-			}
-			r.queue.Results() <- res
-			storage.SetStatus(job.QueryPackId, job.NWO, common.StatusSuccess)
-			storage.SetResult(job.QueryPackId, job.NWO, res)
-
+	if desiredWorkerCount != 0 {
+		slog.Info("Starting workers", slog.Int("count", desiredWorkerCount))
+		for i := 0; i < desiredWorkerCount; i++ {
+			stopChan := make(chan struct{})
+			stopChans = append(stopChans, stopChan)
+			wg.Add(1)
+			go RunWorker(ctx, artifacts, databases, queue, stopChan, wg)
 		}
-	*/
+		return
+	}
+
+	slog.Info("Worker count not specified, managing based on available memory and CPU")
+
+	for {
+		select {
+		case <-ctx.Done():
+			// signal all workers to stop
+			for _, stopChan := range stopChans {
+				close(stopChan)
+			}
+			return
+		default:
+			newWorkerCount := calculateWorkers()
+
+			if newWorkerCount != currentWorkerCount {
+				slog.Info(
+					"Modifying worker count",
+					slog.Int("current", currentWorkerCount),
+					slog.Int("new", newWorkerCount))
+			}
+
+			if newWorkerCount > currentWorkerCount {
+				for i := currentWorkerCount; i < newWorkerCount; i++ {
+					stopChan := make(chan struct{})
+					stopChans = append(stopChans, stopChan)
+					wg.Add(1)
+					go RunWorker(ctx, artifacts, databases, queue, stopChan, wg)
+				}
+			} else if newWorkerCount < currentWorkerCount {
+				for i := newWorkerCount; i < currentWorkerCount; i++ {
+					close(stopChans[i])
+				}
+				stopChans = stopChans[:newWorkerCount]
+			}
+			currentWorkerCount = newWorkerCount
+
+			time.Sleep(monitorIntervalSec * time.Second)
+		}
+	}
 }
 
 // RunAnalysisJob runs a CodeQL analysis job (AnalyzeJob) returning an AnalyzeResult
-func RunAnalysisJob(job common.AnalyzeJob) (common.AnalyzeResult, error) {
-	var result = common.AnalyzeResult{
-		RequestId:        job.RequestId,
-		ResultCount:      0,
-		ResultArchiveURL: "",
-		Status:           common.StatusError,
+func RunAnalysisJob(
+	job queue.AnalyzeJob, artifacts artifactstore.Store, dbs qldbstore.Store) (queue.AnalyzeResult, error) {
+	var result = queue.AnalyzeResult{
+		Spec:           job.Spec,
+		ResultCount:    0,
+		ResultLocation: artifactstore.ArtifactLocation{},
+		Status:         common.StatusError,
 	}
 
 	// Create a temporary directory
 	tempDir := filepath.Join(os.TempDir(), uuid.New().String())
-	if err := os.MkdirAll(tempDir, 0755); err != nil {
+	if err := os.MkdirAll(tempDir, 0600); err != nil {
 		return result, fmt.Errorf("failed to create temporary directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Extract the query pack
-	// TODO: download from the 'job' query pack URL
-	// utils.downloadFile
-	queryPackPath := filepath.Join(tempDir, "qp-54674")
-	utils.UntarGz("qp-54674.tgz", queryPackPath)
+	// Download the query pack as a byte slice
+	queryPackData, err := artifacts.GetQueryPack(job.QueryPackLocation)
+	if err != nil {
+		return result, fmt.Errorf("failed to download query pack: %w", err)
+	}
+
+	// Write the query pack data to the filesystem
+	queryPackArchivePath := filepath.Join(tempDir, "query-pack.tar.gz")
+	if err := os.WriteFile(queryPackArchivePath, queryPackData, 0600); err != nil {
+		return result, fmt.Errorf("failed to write query pack archive to disk: %w", err)
+	}
+
+	// Make a directory and extract the query pack
+	queryPackPath := filepath.Join(tempDir, "pack")
+	if err := os.Mkdir(queryPackPath, 0600); err != nil {
+		return result, fmt.Errorf("failed to create query pack directory: %w", err)
+	}
+	if err := utils.UntarGz(queryPackArchivePath, queryPackPath); err != nil {
+		return result, fmt.Errorf("failed to extract query pack: %w", err)
+	}
+
+	// Download the CodeQL database as a byte slice
+	location, err := dbs.GetDatabaseLocationByNWO(job.Spec.NameWithOwner)
+	if err != nil {
+		return result, fmt.Errorf("failed to get database location: %w", err)
+	}
+
+	databaseData, err := dbs.GetDatabase(location)
+	if err != nil {
+		return result, fmt.Errorf("failed to get database: %w", err)
+	}
+
+	// Write the CodeQL database data to the filesystem
+	databasePath := filepath.Join(tempDir, "database.zip")
+	if err := os.WriteFile(databasePath, databaseData, 0600); err != nil {
+		return result, fmt.Errorf("failed to write CodeQL database to disk: %w", err)
+	}
 
 	// Perform the CodeQL analysis
-	runResult, err := codeql.RunQuery("google_flatbuffers_db.zip", "cpp", queryPackPath, tempDir)
+	runResult, err := codeql.RunQuery(databasePath, job.QueryLanguage, queryPackPath, tempDir)
 	if err != nil {
 		return result, fmt.Errorf("failed to run analysis: %w", err)
 	}
@@ -107,21 +213,32 @@ func RunAnalysisJob(job common.AnalyzeJob) (common.AnalyzeResult, error) {
 		return result, fmt.Errorf("failed to generate results archive: %w", err)
 	}
 
-	// TODO: Upload the archive to storage
+	// Upload the archive to storage
 	slog.Debug("Results archive size", slog.Int("size", len(resultsArchive)))
+	resultsLocation, err := artifacts.SaveResult(job.Spec, resultsArchive)
+	if err != nil {
+		return result, fmt.Errorf("failed to save results archive: %w", err)
+	}
 
-	result = common.AnalyzeResult{
-		RequestId:        job.RequestId,
-		ResultCount:      runResult.ResultCount,
-		ResultArchiveURL: "REPLACE_THIS_WITH_STORED_RESULTS_ARCHIVE", // TODO
-		Status:           common.StatusSuccess,
+	result = queue.AnalyzeResult{
+		Spec:                 job.Spec,
+		ResultCount:          runResult.ResultCount,
+		ResultLocation:       resultsLocation,
+		Status:               common.StatusSuccess,
+		SourceLocationPrefix: runResult.SourceLocationPrefix,
+		DatabaseSHA:          runResult.DatabaseSHA,
 	}
 
 	return result, nil
 }
 
 // RunWorker runs a worker that processes jobs from queue
-func RunWorker(ctx context.Context, stopChan chan struct{}, queue queue.Queue, wg *sync.WaitGroup) {
+func RunWorker(ctx context.Context,
+	artifacts artifactstore.Store,
+	databases qldbstore.Store,
+	queue queue.Queue,
+	stopChan chan struct{},
+	wg *sync.WaitGroup) {
 	const (
 		WORKER_COUNT_STOP_MESSAGE   = "Worker stopping due to reduction in worker count"
 		WORKER_CONTEXT_STOP_MESSAGE = "Worker stopping due to context cancellation"
@@ -144,7 +261,7 @@ func RunWorker(ctx context.Context, stopChan chan struct{}, queue queue.Queue, w
 					return
 				}
 				slog.Info("Running analysis job", slog.Any("job", job))
-				result, err := RunAnalysisJob(job)
+				result, err := RunAnalysisJob(job, artifacts, databases)
 				if err != nil {
 					slog.Error("Failed to run analysis job", slog.Any("error", err))
 					continue

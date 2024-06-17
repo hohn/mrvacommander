@@ -1,57 +1,41 @@
 package server
 
 import (
+	"mrvacommander/pkg/artifactstore"
 	"mrvacommander/pkg/common"
-	"mrvacommander/pkg/logger"
 	"mrvacommander/pkg/qldbstore"
-	"mrvacommander/pkg/qpstore"
 	"mrvacommander/pkg/queue"
-	"mrvacommander/pkg/storage"
+	"mrvacommander/pkg/state"
 )
 
 type SessionInfo struct {
-	ID             int
-	Owner          string
-	ControllerRepo string
-
-	QueryPack    string
-	Language     string
-	Repositories []common.NameWithOwner
-
+	ID                  int
+	Owner               string
+	ControllerRepo      string
+	QueryPack           string
+	Language            string
+	Repositories        []common.NameWithOwner
 	AccessMismatchRepos []common.NameWithOwner
 	NotFoundRepos       []common.NameWithOwner
 	NoCodeqlDBRepos     []common.NameWithOwner
 	OverLimitRepos      []common.NameWithOwner
-
-	AnalysisRepos *map[common.NameWithOwner]storage.DBLocation
+	AnalysisRepos       *map[common.NameWithOwner]qldbstore.CodeQLDatabaseLocation
 }
 
 type CommanderSingle struct {
-	vis *Visibles
+	v *Visibles
 }
 
 func NewCommanderSingle(st *Visibles) *CommanderSingle {
-	c := CommanderSingle{}
-
+	c := CommanderSingle{v: st}
 	setupEndpoints(&c)
-
+	go c.ConsumeResults()
 	return &c
 }
 
-// type State struct {
-// 	Commander Commander
-// 	Logger    logger.Logger
-// 	Queue     queue.Queue
-// 	Storage   storage.Storage
-// 	Runner    agent.Runner
-// }
-
 type Visibles struct {
-	Logger      logger.Logger
-	Queue       queue.Queue
-	ServerStore storage.Storage
-	// TODO extra package for query pack storage
-	QueryPackStore qpstore.Storage
-	// TODO extra package for ql db storage
-	QLDBStore qldbstore.Storage
+	Queue         queue.Queue
+	State         state.ServerState
+	Artifacts     artifactstore.Store
+	CodeQLDBStore qldbstore.Store
 }
