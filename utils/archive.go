@@ -4,9 +4,11 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // UnzipFile extracts a zip file to the specified destination
@@ -19,6 +21,12 @@ func UnzipFile(zipFile, dest string) error {
 
 	for _, f := range r.File {
 		fPath := filepath.Join(dest, f.Name)
+
+		// mitigate ZipSlip
+		if !strings.HasPrefix(filepath.Clean(fPath), filepath.Clean(dest)+string(os.PathSeparator)) {
+			return fmt.Errorf("illegal file path: %s", fPath)
+		}
+
 		if f.FileInfo().IsDir() {
 			if err := os.MkdirAll(fPath, os.ModePerm); err != nil {
 				return err
@@ -84,6 +92,12 @@ func Untar(r io.Reader, dest string) error {
 		}
 
 		fPath := filepath.Join(dest, header.Name)
+
+		// mitigate ZipSlip
+		if !strings.HasPrefix(filepath.Clean(fPath), filepath.Clean(dest)+string(os.PathSeparator)) {
+			return fmt.Errorf("illegal file path: %s", fPath)
+		}
+
 		if header.Typeflag == tar.TypeDir {
 			if err := os.MkdirAll(fPath, os.ModePerm); err != nil {
 				return err
