@@ -26,12 +26,12 @@ services:
       context: ./cmd/server
       dockerfile: Dockerfile
     container_name: server
-    stop_grace_period: 1s  # Reduce the timeout period for testing
+    stop_grace_period: 1s # Reduce the timeout period for testing
     environment:
       - MRVA_SERVER_ROOT=/mrva/mrvacommander/cmd/server
     command: sh -c "tail -f /dev/null"
     ports:
-      - "8080:8080" 
+      - "8080:8080"
     volumes:
       - ./:/mrva/mrvacommander
     depends_on:
@@ -53,7 +53,6 @@ services:
     volumes:
       - ./dbstore-data:/data
 
-
   qpstore:
     image: minio/minio:RELEASE.2024-06-11T03-13-30Z
     container_name: qpstore
@@ -67,7 +66,6 @@ services:
     command: server /data --console-address ":9001"
     volumes:
       - ./qpstore-data:/data
-      
 
   agent:
     build:
@@ -76,7 +74,8 @@ services:
     container_name: agent
     depends_on:
       - rabbitmq
-      - minio
+      - dbstore
+      - qpstore
     environment:
       MRVA_RABBITMQ_HOST: rabbitmq
       MRVA_RABBITMQ_PORT: 5672
@@ -85,7 +84,6 @@ services:
     networks:
       - backend
 
-
 networks:
   backend:
     driver: bridge
@@ -93,4 +91,3 @@ networks:
 # Remove named volumes to use bind mounts
 # volumes:
 #   minio-data:
-    
