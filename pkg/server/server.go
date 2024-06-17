@@ -24,36 +24,32 @@ import (
 func setupEndpoints(c CommanderAPI) {
 	r := mux.NewRouter()
 
-	//
-	// First are the API endpoints that mirror those used in the github API
-	//
+	// API endpoints that mirror those used in the GitHub API
 	r.HandleFunc("/repos/{owner}/{repo}/code-scanning/codeql/variant-analyses", c.MRVARequest)
-	// 			  /repos/hohn   /mrva-controller/code-scanning/codeql/variant-analyses
-	// Or via
+	// Example: /repos/hohn/mrva-controller/code-scanning/codeql/variant-analyses
+
+	// Endpoint using repository ID
 	r.HandleFunc("/{repository_id}/code-scanning/codeql/variant-analyses", c.MRVARequestID)
 
+	// Root handler
 	r.HandleFunc("/", c.RootHandler)
 
-	// This is the standalone status request.
-	// It's also the first request made when downloading; the difference is on the
-	// client side's handling.
+	// Standalone status request
+	// This is also the first request made when downloading; the difference is in the client-side handling.
 	r.HandleFunc("/repos/{owner}/{repo}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}", c.MRVAStatus)
 
+	// Endpoint for downloading artifacts
 	r.HandleFunc("/repos/{controller_owner}/{controller_repo}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}/repos/{repo_owner}/{repo_name}", c.MRVADownloadArtifact)
 
 	// Not implemented:
 	// r.HandleFunc("/codeql-query-console/codeql-variant-analysis-repo-tasks/{codeql_variant_analysis_id}/{repo_id}/{owner_id}/{controller_repo_id}", MRVADownLoad3)
 	// r.HandleFunc("/github-codeql-query-console-prod/codeql-variant-analysis-repo-tasks/{codeql_variant_analysis_id}/{repo_id}", MRVADownLoad4)
 
-	//
-	// Now some support API endpoints
-	//
+	// Support API endpoint
 	r.HandleFunc("/download-server/{local_path:.*}", c.MRVADownloadServe)
 
-	//
 	// Bind to a port and pass our router in
-	//
-	// TODO make this a configuration entry
+	// TODO: Make this a configuration entry
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
