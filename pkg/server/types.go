@@ -32,20 +32,6 @@ type CommanderSingle struct {
 func NewCommanderSingle(st *Visibles) *CommanderSingle {
 	c := CommanderSingle{}
 
-	c.st = st
-	setupEndpoints(&c)
-
-	return &c
-}
-
-type CommanderContainer struct {
-	st *Visibles
-}
-
-func NewCommanderContainer(st *Visibles) *CommanderContainer {
-	c := CommanderContainer{}
-
-	c.st = st
 	setupEndpoints(&c)
 
 	return &c

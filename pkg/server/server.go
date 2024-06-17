@@ -23,7 +23,6 @@ import (
 
 func setupEndpoints(c CommanderAPI) {
 	r := mux.NewRouter()
-	c.vis = st
 
 	//
 	// First are the API endpoints that mirror those used in the github API

@@ -141,7 +141,7 @@ func main() {
 			QLDBStore:      ql,
 		})
 
-		server.NewCommanderContainer(&server.Visibles{
+		server.NewCommanderSingle(&server.Visibles{
 			Logger:         sl,
 			Queue:          sq,
 			ServerStore:    ss,
