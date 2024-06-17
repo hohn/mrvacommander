@@ -13,6 +13,7 @@ import (
 
 	"mrvacommander/pkg/agent"
 	"mrvacommander/pkg/logger"
+	"mrvacommander/pkg/qldbstore"
 	"mrvacommander/pkg/qpstore"
 	"mrvacommander/pkg/queue"
 	"mrvacommander/pkg/server"
@@ -79,13 +80,13 @@ func main() {
 
 		ss := storage.NewStorageSingle(config.Storage.StartingID, &storage.Visibles{})
 
-		qp, err := qpstore.NewStore(config.Storage.StartingID)
+		qp, err := qpstore.NewStore(&qpstore.Visibles{})
 		if err != nil {
 			slog.Error("Unable to initialize query pack storage")
 			os.Exit(1)
 		}
 
-		ql, err := storage.NewQLDBStore(config.Storage.StartingID, &storage.Visibles{})
+		ql, err := qldbstore.NewStore(&qldbstore.Visibles{})
 		if err != nil {
 			slog.Error("Unable to initialize ql database storage")
 			os.Exit(1)
@@ -116,19 +117,15 @@ func main() {
 			Logger: sl,
 		})
 
-		ss, err := storage.NewServerStore(config.Storage.StartingID, &storage.Visibles{})
-		if err != nil {
-			slog.Error("Unable to initialize server storage")
-			os.Exit(1)
-		}
+		ss := storage.NewStorageSingle(config.Storage.StartingID, &storage.Visibles{})
 
-		qp, err := qpstore.NewStore(config.Storage.StartingID)
+		qp, err := qpstore.NewStore(&qpstore.Visibles{})
 		if err != nil {
 			slog.Error("Unable to initialize query pack storage")
 			os.Exit(1)
 		}
 
-		ql, err := storage.NewQLDBStore(config.Storage.StartingID, &storage.Visibles{})
+		ql, err := qldbstore.NewStore(&qldbstore.Visibles{})
 		if err != nil {
 			slog.Error("Unable to initialize ql database storage")
 			os.Exit(1)

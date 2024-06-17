@@ -3,6 +3,7 @@ package server
 import (
 	"mrvacommander/pkg/common"
 	"mrvacommander/pkg/logger"
+	"mrvacommander/pkg/qldbstore"
 	"mrvacommander/pkg/qpstore"
 	"mrvacommander/pkg/queue"
 	"mrvacommander/pkg/storage"
@@ -52,5 +53,5 @@ type Visibles struct {
 	// TODO extra package for query pack storage
 	QueryPackStore qpstore.Storage
 	// TODO extra package for ql db storage
-	QLDBStore storage.Storage
+	QLDBStore qldbstore.Storage
 }
