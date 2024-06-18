@@ -1,6 +1,9 @@
 package state
 
 import (
+	"log/slog"
+	"os"
+	"path/filepath"
 	"sync"
 
 	"mrvacommander/pkg/common"
@@ -83,4 +86,20 @@ func (s *LocalState) AddJob(jobID int, job common.AnalyzeJob) {
 	s.mutex.Lock()
 	s.jobs[jobID] = append(s.jobs[jobID], job)
 	s.mutex.Unlock()
+}
+
+// TODO: @hohn
+func ResultAsFile(path string) (string, []byte, error) {
+	fpath := path
+	if !filepath.IsAbs(path) {
+		fpath = "/" + path
+	}
+
+	file, err := os.ReadFile(fpath)
+	if err != nil {
+		slog.Warn("Failed to read results file", fpath, err)
+		return "", nil, err
+	}
+
+	return fpath, file, nil
 }

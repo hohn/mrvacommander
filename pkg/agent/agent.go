@@ -102,7 +102,7 @@ func RunAnalysisJob(job common.AnalyzeJob) (common.AnalyzeResult, error) {
 	result = common.AnalyzeResult{
 		RequestId:      job.RequestId,
 		ResultCount:    runResult.ResultCount,
-		ResultLocation: "REPLACE_THIS_WITH_STORED_RESULTS_ARCHIVE", // TODO
+		ResultLocation: artifactstore.ArtifactLocation{}, // TODO "REPLACE_THIS_WITH_STORED_RESULTS_ARCHIVE"
 		Status:         common.StatusSuccess,
 	}
 

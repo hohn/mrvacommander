@@ -12,7 +12,7 @@ type SessionInfo struct {
 	ID                  int
 	Owner               string
 	ControllerRepo      string
-	QueryPack           string
+	QueryPack           artifactstore.ArtifactLocation
 	Language            string
 	Repositories        []common.NameWithOwner
 	AccessMismatchRepos []common.NameWithOwner
@@ -34,7 +34,7 @@ func NewCommanderSingle(st *Visibles) *CommanderSingle {
 
 type Visibles struct {
 	Queue         queue.Queue
-	State         state.ServerState
+	State         *state.LocalState
 	Artifacts     artifactstore.ArtifactStore
 	CodeQLDBStore qldbstore.CodeQLDatabaseStore
 }

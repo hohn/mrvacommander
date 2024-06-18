@@ -8,6 +8,7 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"strconv"
 
 	"mrvacommander/config/mcc"
 
@@ -90,7 +91,19 @@ func main() {
 
 	case "container":
 		// TODO: take value from configuration
-		sq, err := queue.NewRabbitMQQueue(2)
+
+		rmqHost := os.Getenv("MRVA_RABBITMQ_HOST")
+		rmqPort := os.Getenv("MRVA_RABBITMQ_PORT")
+		rmqUser := os.Getenv("MRVA_RABBITMQ_USER")
+		rmqPass := os.Getenv("MRVA_RABBITMQ_PASSWORD")
+
+		rmqPortAsInt, err := strconv.ParseInt(rmqPort, 10, 16)
+		if err != nil {
+			slog.Error("Failed to parse RabbitMQ port", slog.Any("error", err))
+			os.Exit(1)
+		}
+
+		sq, err := queue.NewRabbitMQQueue(rmqHost, int16(rmqPortAsInt), rmqUser, rmqPass, false)
 		if err != nil {
 			slog.Error("Unable to initialize RabbitMQ queue")
 			os.Exit(1)

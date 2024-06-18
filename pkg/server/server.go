@@ -19,6 +19,7 @@ import (
 	"mrvacommander/pkg/artifactstore"
 	"mrvacommander/pkg/common"
 	"mrvacommander/pkg/qldbstore"
+	"mrvacommander/pkg/state"
 
 	"github.com/gorilla/mux"
 )
@@ -265,8 +266,7 @@ func (c *CommanderSingle) MRVADownloadServe(w http.ResponseWriter, r *http.Reque
 func FileDownload(w http.ResponseWriter, path string) {
 	slog.Debug("Sending zip file with .sarif/.bqrs", "path", path)
 
-	// TODO: @hohn
-	fpath, res, err := ResultAsFile(path)
+	fpath, res, err := state.ResultAsFile(path)
 	if err != nil {
 		http.Error(w, "Failed to read results", http.StatusInternalServerError)
 		return
@@ -327,7 +327,7 @@ func (c *CommanderSingle) MRVARequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Debug("Forming and sending response for submitted analysis job", "id", si.ID)
-	submit_response, err := submitResponse(si)
+	submit_response, err := c.submitResponse(si)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -346,7 +346,24 @@ func nwoToNwoStringArray(nwo []common.NameWithOwner) ([]string, int) {
 	return repos, count
 }
 
-func submitResponse(si SessionInfo) ([]byte, error) {
+func nwoToDummyRepositoryArray(nwo []common.NameWithOwner) ([]common.Repository, int) {
+	repos := []common.Repository{}
+	for _, repo := range nwo {
+		repos = append(repos, common.Repository{
+			ID:              0,
+			Name:            repo.Repo,
+			FullName:        fmt.Sprintf("%s/%s", repo.Owner, repo.Repo),
+			Private:         false,
+			StargazersCount: 0,
+			UpdatedAt:       time.Now().Format(time.RFC3339),
+		})
+	}
+	count := len(nwo)
+
+	return repos, count
+}
+
+func (c *CommanderSingle) submitResponse(si SessionInfo) ([]byte, error) {
 	// Construct the response bottom-up
 	var m_cr common.ControllerRepo
 	var m_ac common.Actor
@@ -354,15 +371,15 @@ func submitResponse(si SessionInfo) ([]byte, error) {
 	repos, count := nwoToNwoStringArray(si.NotFoundRepos)
 	r_nfr := common.NotFoundRepos{RepositoryCount: count, RepositoryFullNames: repos}
 
-	repos, count = nwoToNwoStringArray(si.AccessMismatchRepos)
-	r_amr := common.AccessMismatchRepos{RepositoryCount: count, Repositories: repos}
+	ra, rac := nwoToDummyRepositoryArray(si.AccessMismatchRepos)
+	r_amr := common.AccessMismatchRepos{RepositoryCount: rac, Repositories: ra}
 
-	repos, count = nwoToNwoStringArray(si.NoCodeqlDBRepos)
-	r_ncd := common.NoCodeqlDBRepos{RepositoryCount: count, Repositories: repos}
+	ra, rac = nwoToDummyRepositoryArray(si.NoCodeqlDBRepos)
+	r_ncd := common.NoCodeqlDBRepos{RepositoryCount: rac, Repositories: ra}
 
 	// TODO fill these with real values?
-	repos, count = nwoToNwoStringArray(si.NoCodeqlDBRepos)
-	r_olr := common.OverLimitRepos{RepositoryCount: count, Repositories: repos}
+	ra, rac = nwoToDummyRepositoryArray(si.NoCodeqlDBRepos)
+	r_olr := common.OverLimitRepos{RepositoryCount: rac, Repositories: ra}
 
 	m_skip := common.SkippedRepositories{
 		AccessMismatchRepos: r_amr,
@@ -371,11 +388,12 @@ func submitResponse(si SessionInfo) ([]byte, error) {
 		OverLimitRepos:      r_olr}
 
 	m_sr := common.SubmitResponse{
-		Actor:               m_ac,
-		ControllerRepo:      m_cr,
-		ID:                  si.ID,
-		QueryLanguage:       si.Language,
-		QueryPackURL:        si.QueryPack,
+		Actor:          m_ac,
+		ControllerRepo: m_cr,
+		ID:             si.ID,
+		QueryLanguage:  si.Language,
+		// TODO: broken, need proper URL using si.data
+		QueryPackURL:        "broken-for-now",
 		CreatedAt:           time.Now().Format(time.RFC3339),
 		UpdatedAt:           time.Now().Format(time.RFC3339),
 		Status:              "in_progress",
@@ -383,10 +401,12 @@ func submitResponse(si SessionInfo) ([]byte, error) {
 	}
 
 	// Store data needed later
-	joblist := storage.GetJobList(si.ID)
+	// joblist := state.GetJobList(si.ID)
+	// (si.JobID)?
+	joblist := c.v.State.GetJobList(si.ID)
 
 	for _, job := range joblist {
-		storage.SetJobInfo(common.JobSpec{
+		c.v.State.SetJobInfo(common.JobSpec{
 			JobID:         si.ID,
 			NameWithOwner: job.NWO,
 		}, common.JobInfo{
@@ -401,35 +421,35 @@ func submitResponse(si SessionInfo) ([]byte, error) {
 	// Encode the response as JSON
 	submit_response, err := json.Marshal(m_sr)
 	if err != nil {
-		slog.Warn("Error encoding response as JSON:", err)
+		slog.Warn("Error encoding response as JSON:", err.Error())
 		return nil, err
 	}
 	return submit_response, nil
 
 }
 
-func (c *CommanderSingle) collectRequestInfo(w http.ResponseWriter, r *http.Request, sessionId int) (string, []common.NameWithOwner, string, error) {
+func (c *CommanderSingle) collectRequestInfo(w http.ResponseWriter, r *http.Request, sessionId int) (string, []common.NameWithOwner, artifactstore.ArtifactLocation, error) {
 	slog.Debug("Collecting session info")
 
 	if r.Body == nil {
 		err := errors.New("missing request body")
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusNoContent)
-		return "", []common.NameWithOwner{}, "", err
+		return "", []common.NameWithOwner{}, artifactstore.ArtifactLocation{}, err
 	}
 	buf, err := io.ReadAll(r.Body)
 	if err != nil {
 		var w http.ResponseWriter
 		slog.Error("Error reading MRVA submission body", "error", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return "", []common.NameWithOwner{}, "", err
+		return "", []common.NameWithOwner{}, artifactstore.ArtifactLocation{}, err
 	}
 	msg, err := TrySubmitMsg(buf)
 	if err != nil {
 		// Unknown message
 		slog.Error("Unknown MRVA submission body format")
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return "", []common.NameWithOwner{}, "", err
+		return "", []common.NameWithOwner{}, artifactstore.ArtifactLocation{}, err
 	}
 	// Decompose the SubmitMsg and keep information
 
@@ -438,12 +458,12 @@ func (c *CommanderSingle) collectRequestInfo(w http.ResponseWriter, r *http.Requ
 		slog.Error("MRVA submission body querypack has invalid format")
 		err := errors.New("MRVA submission body querypack has invalid format")
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return "", []common.NameWithOwner{}, "", err
+		return "", []common.NameWithOwner{}, artifactstore.ArtifactLocation{}, err
 	}
 	session_tgz_ref, err := c.processQueryPackArchive(msg.QueryPack, sessionId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return "", []common.NameWithOwner{}, "", err
+		return "", []common.NameWithOwner{}, artifactstore.ArtifactLocation{}, err
 	}
 
 	// 2. Save the language
