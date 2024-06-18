@@ -26,15 +26,25 @@ type CommanderSingle struct {
 	v *Visibles
 }
 
+type CommanderContainer struct {
+	v *Visibles
+}
+
 func NewCommanderSingle(st *Visibles) *CommanderSingle {
 	c := CommanderSingle{}
 	setupEndpoints(&c)
 	return &c
 }
 
+func NewCommanderContainer(st *Visibles) *CommanderContainer {
+	c := CommanderContainer{}
+	setupEndpoints(&c)
+	return &c
+}
+
 type Visibles struct {
 	Queue         queue.Queue
-	State         *state.LocalState
+	State         state.CommonState
 	Artifacts     artifactstore.ArtifactStore
 	CodeQLDBStore qldbstore.CodeQLDatabaseStore
 }

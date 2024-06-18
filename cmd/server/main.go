@@ -90,8 +90,6 @@ func main() {
 		})
 
 	case "container":
-		// TODO: take value from configuration
-
 		rmqHost := os.Getenv("MRVA_RABBITMQ_HOST")
 		rmqPort := os.Getenv("MRVA_RABBITMQ_PORT")
 		rmqUser := os.Getenv("MRVA_RABBITMQ_USER")
@@ -109,21 +107,23 @@ func main() {
 			os.Exit(1)
 		}
 
-		ss := state.NewLocalState(config.Storage.StartingID)
+		ss := state.NewContainerState(config.Storage.StartingID)
 
-		as, err := artifactstore.NewMinIOArtifactStore("", "", "") // TODO: add arguments
+		// TODO: add arguments
+		as, err := artifactstore.NewMinIOArtifactStore("", "", "")
 		if err != nil {
 			slog.Error("Unable to initialize artifact store")
 			os.Exit(1)
 		}
 
+		// TODO: add arguments
 		ql, err := qldbstore.NewMinIOCodeQLDatabaseStore("", "", "", "")
 		if err != nil {
 			slog.Error("Unable to initialize ql database storage")
 			os.Exit(1)
 		}
 
-		server.NewCommanderSingle(&server.Visibles{
+		server.NewCommanderContainer(&server.Visibles{
 			Queue:         sq,
 			State:         ss,
 			Artifacts:     as,

@@ -35,3 +35,16 @@ type ServerState interface {
 	// AddJob adds an analysis job to the list of jobs for the specified session ID.
 	AddJob(jobID int, job common.AnalyzeJob)
 }
+
+type CommonState interface {
+	NextID() int
+	GetArtifactURL(js common.JobSpec, vaid int) (string, error)
+	GetResult(js common.JobSpec) common.AnalyzeResult
+	SetResult(jobID int, nwo common.NameWithOwner, analyzeResult common.AnalyzeResult)
+	GetJobList(jobID int) []common.AnalyzeJob
+	GetJobInfo(js common.JobSpec) common.JobInfo
+	SetJobInfo(js common.JobSpec, ji common.JobInfo)
+	GetStatus(jobID int, nwo common.NameWithOwner) common.Status
+	SetStatus(jobID int, nwo common.NameWithOwner, status common.Status)
+	AddJob(jobID int, job common.AnalyzeJob)
+}
