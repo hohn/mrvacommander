@@ -12,12 +12,11 @@ import (
 	"mrvacommander/config/mcc"
 
 	"mrvacommander/pkg/agent"
-	"mrvacommander/pkg/logger"
+	"mrvacommander/pkg/artifactstore"
 	"mrvacommander/pkg/qldbstore"
-	"mrvacommander/pkg/qpstore"
 	"mrvacommander/pkg/queue"
 	"mrvacommander/pkg/server"
-	"mrvacommander/pkg/storage"
+	"mrvacommander/pkg/state"
 )
 
 func main() {
@@ -70,80 +69,52 @@ func main() {
 	switch *mode {
 	case "standalone":
 		// Assemble single-process version
-
-		sl := logger.NewLoggerSingle(&logger.Visibles{})
-
-		// FIXME take value from configuration
-		sq := queue.NewQueueSingle(2, &queue.Visibles{
-			Logger: sl,
-		})
-
-		ss := storage.NewStorageSingle(config.Storage.StartingID, &storage.Visibles{})
-
-		qp, err := qpstore.NewStore(&qpstore.Visibles{})
-		if err != nil {
-			slog.Error("Unable to initialize query pack storage")
-			os.Exit(1)
-		}
-
-		ql, err := qldbstore.NewStore(&qldbstore.Visibles{})
-		if err != nil {
-			slog.Error("Unable to initialize ql database storage")
-			os.Exit(1)
-		}
+		sq := queue.NewQueueSingle(2)
+		ss := state.NewLocalState(config.Storage.StartingID)
+		as := artifactstore.NewInMemoryArtifactStore()
+		ql := qldbstore.NewLocalFilesystemCodeQLDatabaseStore("")
 
 		server.NewCommanderSingle(&server.Visibles{
-			Logger:         sl,
-			Queue:          sq,
-			ServerStore:    ss,
-			QueryPackStore: qp,
-			QLDBStore:      ql,
+			Queue:         sq,
+			State:         ss,
+			Artifacts:     as,
+			CodeQLDBStore: ql,
 		})
 
 		// FIXME take value from configuration
 		agent.NewAgentSingle(2, &agent.Visibles{
-			Logger:         sl,
-			Queue:          sq,
-			QueryPackStore: qp,
-			QLDBStore:      ql,
+			Queue:         sq,
+			Artifacts:     as,
+			CodeQLDBStore: ql,
 		})
 
 	case "container":
-		// Assemble container version
-		sl := logger.NewLoggerSingle(&logger.Visibles{})
-
-		// FIXME take value from configuration
-		sq := queue.NewQueueSingle(2, &queue.Visibles{
-			Logger: sl,
-		})
-
-		ss := storage.NewStorageSingle(config.Storage.StartingID, &storage.Visibles{})
-
-		qp, err := qpstore.NewStore(&qpstore.Visibles{})
+		// TODO: take value from configuration
+		sq, err := queue.NewRabbitMQQueue(2)
 		if err != nil {
-			slog.Error("Unable to initialize query pack storage")
+			slog.Error("Unable to initialize RabbitMQ queue")
 			os.Exit(1)
 		}
 
-		ql, err := qldbstore.NewStore(&qldbstore.Visibles{})
+		ss := state.NewLocalState(config.Storage.StartingID)
+
+		as, err := artifactstore.NewMinIOArtifactStore("", "", "") // TODO: add arguments
+		if err != nil {
+			slog.Error("Unable to initialize artifact store")
+			os.Exit(1)
+		}
+
+		ql, err := qldbstore.NewMinIOCodeQLDatabaseStore("", "", "", "")
 		if err != nil {
 			slog.Error("Unable to initialize ql database storage")
 			os.Exit(1)
 		}
 
-		agent.NewAgentSingle(2, &agent.Visibles{
-			Logger:         sl,
-			Queue:          sq,
-			QueryPackStore: qp,
-			QLDBStore:      ql,
-		})
-
 		server.NewCommanderSingle(&server.Visibles{
-			Logger:         sl,
-			Queue:          sq,
-			ServerStore:    ss,
-			QueryPackStore: qp,
-			QLDBStore:      ql,
+			Queue:         sq,
+			State:         ss,
+			Artifacts:     as,
+			CodeQLDBStore: ql,
 		})
 
 	case "cluster":

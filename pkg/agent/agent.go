@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"mrvacommander/pkg/artifactstore"
 	"mrvacommander/pkg/codeql"
 	"mrvacommander/pkg/common"
-	"mrvacommander/pkg/logger"
-	"mrvacommander/pkg/qldbstore"
-	"mrvacommander/pkg/qpstore"
 	"mrvacommander/pkg/queue"
 	"mrvacommander/utils"
 	"os"
@@ -22,22 +20,13 @@ type RunnerSingle struct {
 	queue queue.Queue
 }
 
-func NewAgentSingle(numWorkers int, av *Visibles) *RunnerSingle {
-	r := RunnerSingle{queue: av.Queue}
+func NewAgentSingle(numWorkers int, v *Visibles) *RunnerSingle {
+	r := RunnerSingle{queue: v.Queue}
 
 	for id := 1; id <= numWorkers; id++ {
 		go r.worker(id)
 	}
 	return &r
-}
-
-type Visibles struct {
-	Logger logger.Logger
-	Queue  queue.Queue
-	// TODO extra package for query pack storage
-	QueryPackStore qpstore.Storage
-	// TODO extra package for ql db storage
-	QLDBStore qldbstore.Storage
 }
 
 func (r *RunnerSingle) worker(wid int) {
@@ -76,10 +65,10 @@ func (r *RunnerSingle) worker(wid int) {
 // RunAnalysisJob runs a CodeQL analysis job (AnalyzeJob) returning an AnalyzeResult
 func RunAnalysisJob(job common.AnalyzeJob) (common.AnalyzeResult, error) {
 	var result = common.AnalyzeResult{
-		RequestId:        job.RequestId,
-		ResultCount:      0,
-		ResultArchiveURL: "",
-		Status:           common.StatusError,
+		RequestId:      job.RequestId,
+		ResultCount:    0,
+		ResultLocation: artifactstore.ArtifactLocation{},
+		Status:         common.StatusError,
 	}
 
 	// Create a temporary directory
@@ -111,10 +100,10 @@ func RunAnalysisJob(job common.AnalyzeJob) (common.AnalyzeResult, error) {
 	slog.Debug("Results archive size", slog.Int("size", len(resultsArchive)))
 
 	result = common.AnalyzeResult{
-		RequestId:        job.RequestId,
-		ResultCount:      runResult.ResultCount,
-		ResultArchiveURL: "REPLACE_THIS_WITH_STORED_RESULTS_ARCHIVE", // TODO
-		Status:           common.StatusSuccess,
+		RequestId:      job.RequestId,
+		ResultCount:    runResult.ResultCount,
+		ResultLocation: "REPLACE_THIS_WITH_STORED_RESULTS_ARCHIVE", // TODO
+		Status:         common.StatusSuccess,
 	}
 
 	return result, nil

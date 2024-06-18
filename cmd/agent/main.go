@@ -113,6 +113,7 @@ func main() {
 	slog.Info("Starting agent")
 
 	workerCount := flag.Int("workers", 0, "number of workers")
+
 	flag.Parse()
 
 	requiredEnvVars := []string{
@@ -144,7 +145,7 @@ func main() {
 
 	slog.Info("Initializing RabbitMQ queue")
 
-	rabbitMQQueue, err := queue.InitializeRabbitMQQueue(rmqHost, int16(rmqPortAsInt), rmqUser, rmqPass, false)
+	rabbitMQQueue, err := queue.NewRabbitMQQueue(rmqHost, int16(rmqPortAsInt), rmqUser, rmqPass, false)
 	if err != nil {
 		slog.Error("failed to initialize RabbitMQ", slog.Any("error", err))
 		os.Exit(1)

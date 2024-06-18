@@ -2,12 +2,10 @@ package queue
 
 import (
 	"mrvacommander/pkg/common"
-	"mrvacommander/pkg/storage"
 
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -21,14 +19,14 @@ type RabbitMQQueue struct {
 	channel *amqp.Channel
 }
 
-// InitializeRabbitMQQueue initializes a RabbitMQ queue.
+// NewRabbitMQQueue initializes a RabbitMQ queue.
 // It returns a pointer to a RabbitMQQueue and an error.
 //
 // If isAgent is true, the queue is initialized to be used by an agent.
 // Otherwise, the queue is initialized to be used by the server.
 // The difference in behaviour is that the agent consumes jobs and publishes results,
 // while the server publishes jobs and consumes results.
-func InitializeRabbitMQQueue(
+func NewRabbitMQQueue(
 	host string,
 	port int16,
 	user string,
@@ -121,11 +119,6 @@ func (q *RabbitMQQueue) Jobs() chan common.AnalyzeJob {
 
 func (q *RabbitMQQueue) Results() chan common.AnalyzeResult {
 	return q.results
-}
-
-func (q *RabbitMQQueue) StartAnalyses(analysis_repos *map[common.NameWithOwner]storage.DBLocation, session_id int, session_language string) {
-	// TODO: Implement
-	log.Fatal("unimplemented")
 }
 
 func (q *RabbitMQQueue) Close() {

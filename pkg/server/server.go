@@ -10,16 +10,36 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
+	"mrvacommander/pkg/artifactstore"
 	"mrvacommander/pkg/common"
-	"mrvacommander/pkg/storage"
+	"mrvacommander/pkg/qldbstore"
 
 	"github.com/gorilla/mux"
 )
+
+func (c *CommanderSingle) startAnalyses(
+	analysisRepos *map[common.NameWithOwner]qldbstore.CodeQLDatabaseLocation,
+	jobID int,
+	queryLanguage string) {
+	slog.Debug("Queueing analysis jobs")
+
+	for nwo := range *analysisRepos {
+		info := common.AnalyzeJob{
+			QueryPackId:   jobID,
+			QueryLanguage: queryLanguage,
+			NWO:           nwo,
+		}
+		c.v.Queue.Jobs() <- info
+		c.v.State.SetStatus(jobID, nwo, common.StatusQueued)
+		c.v.State.AddJob(jobID, info)
+	}
+}
 
 func setupEndpoints(c CommanderAPI) {
 	r := mux.NewRouter()
@@ -50,16 +70,20 @@ func setupEndpoints(c CommanderAPI) {
 
 	// Bind to a port and pass our router in
 	// TODO: Make this a configuration entry
-	log.Fatal(http.ListenAndServe(":8080", r))
+	err := http.ListenAndServe(":8080", r)
+	if err != nil {
+		slog.Error("Error starting server:", "error", err)
+		os.Exit(1)
+	}
 }
 
 func (c *CommanderSingle) StatusResponse(w http.ResponseWriter, js common.JobSpec, ji common.JobInfo, vaid int) {
 	slog.Debug("Submitting status response", "session", vaid)
 
 	all_scanned := []common.ScannedRepo{}
-	jobs := storage.GetJobList(js.JobID)
+	jobs := c.v.State.GetJobList(js.JobID)
 	for _, job := range jobs {
-		astat := storage.GetStatus(js.JobID, job.NWO).ToExternalString()
+		astat := c.v.State.GetStatus(js.JobID, job.NWO).ToExternalString()
 		all_scanned = append(all_scanned,
 			common.ScannedRepo{
 				Repository: common.Repository{
@@ -77,7 +101,7 @@ func (c *CommanderSingle) StatusResponse(w http.ResponseWriter, js common.JobSpe
 		)
 	}
 
-	astat := storage.GetStatus(js.JobID, js.NameWithOwner).ToExternalString()
+	astat := c.v.State.GetStatus(js.JobID, js.NameWithOwner).ToExternalString()
 
 	status := common.StatusResponse{
 		SessionId:            js.JobID,
@@ -126,7 +150,7 @@ func (c *CommanderSingle) MRVAStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	// The status reports one status for all jobs belonging to an id.
 	// So we simply report the status of a job as the status of all.
-	spec := storage.GetJobList(id)
+	spec := c.v.State.GetJobList(id)
 	if spec == nil {
 		msg := "No jobs found for given job id"
 		slog.Error(msg, "id", vars["codeql_variant_analysis_id"])
@@ -141,7 +165,7 @@ func (c *CommanderSingle) MRVAStatus(w http.ResponseWriter, r *http.Request) {
 		NameWithOwner: job.NWO,
 	}
 
-	ji := storage.GetJobInfo(js)
+	ji := c.v.State.GetJobInfo(js)
 
 	c.StatusResponse(w, js, ji, id)
 }
@@ -173,39 +197,41 @@ func (c *CommanderSingle) MRVADownloadArtifact(w http.ResponseWriter, r *http.Re
 	c.DownloadResponse(w, js, vaid)
 }
 
-func (c *CommanderSingle) DownloadResponse(w http.ResponseWriter, js common.JobSpec, vaid int) {
-	slog.Debug("Forming download response", "session", vaid, "job", js)
+func (c *CommanderSingle) DownloadResponse(w http.ResponseWriter, js common.JobSpec, jobID int) {
+	var response common.DownloadResponse
 
-	astat := storage.GetStatus(vaid, js.NameWithOwner)
+	slog.Debug("Forming download response", "id", jobID, "job", js)
 
-	var dlr common.DownloadResponse
-	if astat == common.StatusSuccess {
+	jobStatus := c.v.State.GetStatus(jobID, js.NameWithOwner)
 
-		au, err := storage.ArtifactURL(js, vaid)
+	if jobStatus == common.StatusSuccess {
+		jobResult := c.v.State.GetResult(js)
+		// TODO: return this as a URL @hohn
+		jobResultData, err := c.v.Artifacts.GetResult(jobResult.ResultLocation)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		dlr = common.DownloadResponse{
+		response = common.DownloadResponse{
 			Repository: common.DownloadRepo{
 				Name:     js.Repo,
 				FullName: fmt.Sprintf("%s/%s", js.Owner, js.Repo),
 			},
-			AnalysisStatus:       astat.ToExternalString(),
-			ResultCount:          123, // FIXME
-			ArtifactSizeBytes:    123, // FIXME
+			AnalysisStatus:       jobStatus.ToExternalString(),
+			ResultCount:          jobResult.ResultCount,
+			ArtifactSizeBytes:    len(jobResultData),
 			DatabaseCommitSha:    "do-we-use-dcs-p",
 			SourceLocationPrefix: "do-we-use-slp-p",
-			ArtifactURL:          au,
+			ArtifactURL:          "TODO", // @hohn
 		}
 	} else {
-		dlr = common.DownloadResponse{
+		response = common.DownloadResponse{
 			Repository: common.DownloadRepo{
 				Name:     js.Repo,
 				FullName: fmt.Sprintf("%s/%s", js.Owner, js.Repo),
 			},
-			AnalysisStatus:       astat.ToExternalString(),
+			AnalysisStatus:       jobStatus.ToExternalString(),
 			ResultCount:          0,
 			ArtifactSizeBytes:    0,
 			DatabaseCommitSha:    "",
@@ -215,7 +241,7 @@ func (c *CommanderSingle) DownloadResponse(w http.ResponseWriter, js common.JobS
 	}
 
 	// Encode the response as JSON
-	jdlr, err := json.Marshal(dlr)
+	responseJson, err := json.Marshal(response)
 	if err != nil {
 		slog.Error("Error encoding response as JSON:",
 			"error", err)
@@ -225,7 +251,7 @@ func (c *CommanderSingle) DownloadResponse(w http.ResponseWriter, js common.JobS
 
 	// Send analysisReposJSON via ResponseWriter
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(jdlr)
+	w.Write(responseJson)
 
 }
 
@@ -239,7 +265,8 @@ func (c *CommanderSingle) MRVADownloadServe(w http.ResponseWriter, r *http.Reque
 func FileDownload(w http.ResponseWriter, path string) {
 	slog.Debug("Sending zip file with .sarif/.bqrs", "path", path)
 
-	fpath, res, err := storage.ResultAsFile(path)
+	// TODO: @hohn
+	fpath, res, err := ResultAsFile(path)
 	if err != nil {
 		http.Error(w, "Failed to read results", http.StatusInternalServerError)
 		return
@@ -258,19 +285,18 @@ func FileDownload(w http.ResponseWriter, path string) {
 	}
 
 	slog.Debug("Uploaded file", "path", fpath)
-
 }
 
 func (c *CommanderSingle) MRVARequestID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	slog.Info("New mrva using repository_id=%v\n", vars["repository_id"])
+	slog.Info("New mrva run using repository ID", "id", vars["repository_id"])
 }
 
 func (c *CommanderSingle) MRVARequest(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	slog.Info("New mrva run ", "owner", vars["owner"], "repo", vars["repo"])
+	slog.Info("New mrva run", "owner", vars["owner"], "repo", vars["repo"])
 
-	session_id := c.vis.ServerStore.NextID()
+	session_id := c.v.State.NextID()
 	session_owner := vars["owner"]
 	session_controller_repo := vars["repo"]
 	slog.Info("new run", "id: ", fmt.Sprint(session_id), session_owner, session_controller_repo)
@@ -279,9 +305,9 @@ func (c *CommanderSingle) MRVARequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	not_found_repos, analysisRepos := c.vis.ServerStore.FindAvailableDBs(session_repositories)
+	not_found_repos, analysisRepos := c.v.CodeQLDBStore.FindAvailableDBs(session_repositories)
 
-	c.vis.Queue.StartAnalyses(analysisRepos, session_id, session_language)
+	c.startAnalyses(analysisRepos, session_id, session_language)
 
 	si := SessionInfo{
 		ID:             session_id,
@@ -301,7 +327,7 @@ func (c *CommanderSingle) MRVARequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Debug("Forming and sending response for submitted analysis job", "id", si.ID)
-	submit_response, err := submit_response(si)
+	submit_response, err := submitResponse(si)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -320,22 +346,22 @@ func nwoToNwoStringArray(nwo []common.NameWithOwner) ([]string, int) {
 	return repos, count
 }
 
-func submit_response(sn SessionInfo) ([]byte, error) {
+func submitResponse(si SessionInfo) ([]byte, error) {
 	// Construct the response bottom-up
 	var m_cr common.ControllerRepo
 	var m_ac common.Actor
 
-	repos, count := nwoToNwoStringArray(sn.NotFoundRepos)
+	repos, count := nwoToNwoStringArray(si.NotFoundRepos)
 	r_nfr := common.NotFoundRepos{RepositoryCount: count, RepositoryFullNames: repos}
 
-	repos, count = nwoToNwoStringArray(sn.AccessMismatchRepos)
+	repos, count = nwoToNwoStringArray(si.AccessMismatchRepos)
 	r_amr := common.AccessMismatchRepos{RepositoryCount: count, Repositories: repos}
 
-	repos, count = nwoToNwoStringArray(sn.NoCodeqlDBRepos)
+	repos, count = nwoToNwoStringArray(si.NoCodeqlDBRepos)
 	r_ncd := common.NoCodeqlDBRepos{RepositoryCount: count, Repositories: repos}
 
 	// TODO fill these with real values?
-	repos, count = nwoToNwoStringArray(sn.NoCodeqlDBRepos)
+	repos, count = nwoToNwoStringArray(si.NoCodeqlDBRepos)
 	r_olr := common.OverLimitRepos{RepositoryCount: count, Repositories: repos}
 
 	m_skip := common.SkippedRepositories{
@@ -347,9 +373,9 @@ func submit_response(sn SessionInfo) ([]byte, error) {
 	m_sr := common.SubmitResponse{
 		Actor:               m_ac,
 		ControllerRepo:      m_cr,
-		ID:                  sn.ID,
-		QueryLanguage:       sn.Language,
-		QueryPackURL:        sn.QueryPack,
+		ID:                  si.ID,
+		QueryLanguage:       si.Language,
+		QueryPackURL:        si.QueryPack,
 		CreatedAt:           time.Now().Format(time.RFC3339),
 		UpdatedAt:           time.Now().Format(time.RFC3339),
 		Status:              "in_progress",
@@ -357,14 +383,14 @@ func submit_response(sn SessionInfo) ([]byte, error) {
 	}
 
 	// Store data needed later
-	joblist := storage.GetJobList(sn.ID)
+	joblist := storage.GetJobList(si.ID)
 
 	for _, job := range joblist {
 		storage.SetJobInfo(common.JobSpec{
-			JobID:         sn.ID,
+			JobID:         si.ID,
 			NameWithOwner: job.NWO,
 		}, common.JobInfo{
-			QueryLanguage:       sn.Language,
+			QueryLanguage:       si.Language,
 			CreatedAt:           m_sr.CreatedAt,
 			UpdatedAt:           m_sr.UpdatedAt,
 			SkippedRepositories: m_skip,
@@ -414,7 +440,7 @@ func (c *CommanderSingle) collectRequestInfo(w http.ResponseWriter, r *http.Requ
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return "", []common.NameWithOwner{}, "", err
 	}
-	session_tgz_ref, err := c.extract_tgz(msg.QueryPack, sessionId)
+	session_tgz_ref, err := c.processQueryPackArchive(msg.QueryPack, sessionId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return "", []common.NameWithOwner{}, "", err
@@ -475,7 +501,7 @@ func isBase64Gzip(val []byte) bool {
 	}
 }
 
-func (c *CommanderSingle) extract_tgz(qp string, sessionID int) (string, error) {
+func (c *CommanderSingle) processQueryPackArchive(qp string, sessionID int) (artifactstore.ArtifactLocation, error) {
 	// These are decoded manually via
 	//    base64 -d < foo1 | gunzip | tar t | head -20
 	// base64 decode the body
@@ -484,12 +510,12 @@ func (c *CommanderSingle) extract_tgz(qp string, sessionID int) (string, error) 
 	tgz, err := base64.StdEncoding.DecodeString(qp)
 	if err != nil {
 		slog.Error("querypack body decoding error:", err)
-		return "", err
+		return artifactstore.ArtifactLocation{}, err
 	}
 
-	session_query_pack_tgz_filepath, err := c.vis.ServerStore.SaveQueryPack(tgz, sessionID)
+	session_query_pack_tgz_filepath, err := c.v.Artifacts.SaveQueryPack(sessionID, tgz)
 	if err != nil {
-		return "", err
+		return artifactstore.ArtifactLocation{}, err
 	}
 
 	return session_query_pack_tgz_filepath, err
