@@ -31,13 +31,13 @@ type CommanderContainer struct {
 }
 
 func NewCommanderSingle(st *Visibles) *CommanderSingle {
-	c := CommanderSingle{}
+	c := CommanderSingle{v: st}
 	setupEndpoints(&c)
 	return &c
 }
 
 func NewCommanderContainer(st *Visibles) *CommanderContainer {
-	c := CommanderContainer{}
+	c := CommanderContainer{v: st}
 	setupEndpoints(&c)
 	return &c
 }
