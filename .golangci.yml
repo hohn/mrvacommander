@@ -1,0 +1,5 @@
+# config for https://golangci-lint.run/
+linters:
+  enable:
+    - exhaustruct
+    # deprecated: - structcheck

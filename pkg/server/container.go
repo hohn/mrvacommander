@@ -30,6 +30,7 @@ func (c *CommanderContainer) startAnalyses(
 
 	for nwo := range *analysisRepos {
 		info := common.AnalyzeJob{
+			// TODO provide all fields
 			QueryPackId:   jobID,
 			QueryLanguage: queryLanguage,
 			NWO:           nwo,

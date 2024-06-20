@@ -8,7 +8,9 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 
 	"mrvacommander/config/mcc"
 
@@ -137,5 +139,10 @@ func main() {
 		slog.Error("Invalid value for --mode. Allowed values are: standalone, container, cluster\n")
 		os.Exit(1)
 	}
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	<-sigChan
+	slog.Info("Shutting down server")
 
 }

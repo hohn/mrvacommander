@@ -7,3 +7,5 @@ fullbuild:
 sendsubmit:
 	cd tools && sh ./submit-request.curl
 
+lint:
+	golangci-lint run cmd/... pkg/...

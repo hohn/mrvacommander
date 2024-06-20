@@ -24,10 +24,13 @@ type AnalyzeJob struct {
 // Status will only ever be StatusSuccess or StatusError when sent in a result.
 // TODO: make result_location result_archive_url with a presigned URL
 type AnalyzeResult struct {
+	// XX: A result is fully specified by (RequestId, owner, name)
+
 	Status         Status                         // json:"status"
 	RequestId      int                            // json:"request_id"
 	ResultCount    int                            // json:"result_count"
 	ResultLocation artifactstore.ArtifactLocation // json:"result_location"
+	NWO            NameWithOwner                  // json:"nwo"
 }
 
 // Status represents the status of a job.

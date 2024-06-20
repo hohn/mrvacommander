@@ -32,9 +32,11 @@ func (c *CommanderSingle) startAnalyses(
 
 	for nwo := range *analysisRepos {
 		info := common.AnalyzeJob{
-			QueryPackId:   jobID,
-			QueryLanguage: queryLanguage,
-			NWO:           nwo,
+			RequestId:         jobID,
+			QueryPackId:       jobID,                            // TODO This may change
+			QueryPackLocation: artifactstore.ArtifactLocation{}, // TODO XX: proper value
+			QueryLanguage:     queryLanguage,
+			NWO:               nwo,
 		}
 		c.v.Queue.Jobs() <- info
 		c.v.State.SetStatus(jobID, nwo, common.StatusQueued)
@@ -69,6 +71,11 @@ func setupEndpoints(c CommanderAPI) {
 	// Support API endpoint
 	r.HandleFunc("/download-server/{local_path:.*}", c.MRVADownloadServe)
 
+	go ListenAndServe(r)
+
+}
+
+func ListenAndServe(r *mux.Router) {
 	// Bind to a port and pass our router in
 	// TODO: Make this a configuration entry
 	err := http.ListenAndServe(":8080", r)
@@ -84,7 +91,8 @@ func (c *CommanderSingle) StatusResponse(w http.ResponseWriter, js common.JobSpe
 	all_scanned := []common.ScannedRepo{}
 	jobs := c.v.State.GetJobList(js.JobID)
 	for _, job := range jobs {
-		astat := c.v.State.GetStatus(js.JobID, job.NWO).ToExternalString()
+		// XX: The status is set by the agent via queue to avoid direct storage access.
+		astat := c.v.State.GetStatus(vaid, job.NWO).ToExternalString()
 		all_scanned = append(all_scanned,
 			common.ScannedRepo{
 				Repository: common.Repository{
@@ -103,6 +111,8 @@ func (c *CommanderSingle) StatusResponse(w http.ResponseWriter, js common.JobSpe
 	}
 
 	astat := c.v.State.GetStatus(js.JobID, js.NameWithOwner).ToExternalString()
+	// XX: drop
+	slog.Debug("	status:", "astat", astat)
 
 	status := common.StatusResponse{
 		SessionId:            js.JobID,
@@ -310,7 +320,7 @@ func (c *CommanderSingle) MRVARequest(w http.ResponseWriter, r *http.Request) {
 	if len(*analysisRepos) == 0 {
 		slog.Debug("WARNING: No repositories found for analysis")
 	}
-	// XX: id is the query pack ref
+	// XX: session_is is separate from the query pack ref.  Value may be equal
 	c.startAnalyses(analysisRepos, session_id, session_language)
 
 	si := SessionInfo{
@@ -330,6 +340,11 @@ func (c *CommanderSingle) MRVARequest(w http.ResponseWriter, r *http.Request) {
 		AnalysisRepos: analysisRepos,
 	}
 
+	// XX: drop
+	// j := common.JobSpec{
+	// 	JobID:         session_id,
+	// 	NameWithOwner: common.NameWithOwner{Owner: session_owner, Repo: session_}
+	// }
 	slog.Debug("Forming and sending response for submitted analysis job", "id", si.ID)
 	submit_response, err := c.submitResponse(si)
 	if err != nil {
@@ -367,6 +382,27 @@ func nwoToDummyRepositoryArray(nwo []common.NameWithOwner) ([]common.Repository,
 	return repos, count
 }
 
+func (c *CommanderSingle) CollectResults() {
+	// This function moves results from the (go) queue to server storage and
+	// needs access to both.  The commander has that access.
+
+	slog.Debug("	XX: Starting CollectResults")
+	// XX: check
+	// XX: this is the counterpart to r.v.Queue.Results()
+	for {
+		r := <-c.v.Queue.Results()
+		slog.Debug("	XX result queue pickup:", "r", r, "status", r.Status.ToExternalString())
+		c.v.State.SetStatus(r.RequestId, r.NWO, r.Status)
+	}
+
+	// XX: drop
+	// for r := range c.v.Queue.Results() {
+	// 	slog.Debug("	result queue pickup:", "r", r)
+	// 	// XX: need nwo:
+	// 	c.v.State.SetStatus(r.RequestId, r.NWO, r.Status)
+	// }
+}
+
 func (c *CommanderSingle) submitResponse(si SessionInfo) ([]byte, error) {
 	// Construct the response bottom-up
 	var m_cr common.ControllerRepo
@@ -396,11 +432,13 @@ func (c *CommanderSingle) submitResponse(si SessionInfo) ([]byte, error) {
 		ControllerRepo: m_cr,
 		ID:             si.ID,
 		QueryLanguage:  si.Language,
-		// TODO: broken, need proper URL using si.data
-		QueryPackURL:        "broken-for-now",
-		CreatedAt:           time.Now().Format(time.RFC3339),
-		UpdatedAt:           time.Now().Format(time.RFC3339),
-		Status:              "in_progress",
+		// XX TODO: broken, need proper URL
+		QueryPackURL: "broken-for-now",
+		CreatedAt:    time.Now().Format(time.RFC3339),
+		UpdatedAt:    time.Now().Format(time.RFC3339),
+		// XX TODO: broken?  The status is for the request as whole, not indiviual owner/repo pairs
+		Status: "in_progress",
+		// Status:              c.v.State.GetStatus(si.ID, )
 		SkippedRepositories: m_skip,
 	}
 

@@ -47,8 +47,6 @@ func (r *RunnerSingle) worker(wid int) {
 		slog.Debug("Picked up job", "job", job, "worker", wid)
 
 		slog.Debug("Analysis: running", "job", job)
-		// TODO via queue or drop?
-		// storage.SetStatus(job.QueryPackId, job.NWO, common.StatusQueued)
 
 		result, err := r.RunAnalysisJob(job)
 		if err != nil {
@@ -63,13 +61,12 @@ func (r *RunnerSingle) worker(wid int) {
 			// TODO get rid of string->string map
 			ResultLocation: result.ResultLocation,
 			Status:         common.StatusSuccess,
+			NWO:            job.NWO,
 		}
 		r.v.Queue.Results() <- res
-
-		//  TODO via queue or drop?
-		// storage.SetStatus(job.QueryPackId, job.NWO, common.StatusSuccess)
-		// storage.SetResult(job.QueryPackId, job.NWO, res)
-
+		slog.Debug("	XX: result queue push:", "res", res)
+		// XX: StatusResponse needs to pick up this ^^^^ info.
+		// XX: so astat := c.v.State.GetStatus(js.JobID, js.NameWithOwner).ToExternalString() works
 	}
 }
 
@@ -79,6 +76,7 @@ func (r *RunnerSingle) RunAnalysisJob(job common.AnalyzeJob) (common.AnalyzeResu
 		ResultCount:    0,
 		ResultLocation: artifactstore.ArtifactLocation{},
 		Status:         common.StatusError,
+		NWO:            job.NWO,
 	}
 
 	// Create a temporary directory
@@ -107,8 +105,18 @@ func (r *RunnerSingle) RunAnalysisJob(job common.AnalyzeJob) (common.AnalyzeResu
 
 	// XX: check
 	// Generate a ZIP archive containing SARIF and BQRS files
+	sarif, err := os.ReadFile(resultFile)
+	if err != nil {
+		slog.Error("Failed to read SARIF file", "err", err)
+	}
+	resultCount := codeql.GetSarifResultCount(sarif)
+
 	runResult := codeql.RunQueryResult{
-		SarifFilePath: resultFile,
+		ResultCount:          resultCount,
+		DatabaseSHA:          "TODO dbsha",
+		SourceLocationPrefix: "TODO slp",
+		BqrsFilePaths:        codeql.BqrsFilePaths{}, // TODO empty ok?
+		SarifFilePath:        resultFile,
 	}
 	resultsArchive, err := codeql.GenerateResultsZipArchive(&runResult)
 	if err != nil {
@@ -133,6 +141,7 @@ func (r *RunnerSingle) RunAnalysisJob(job common.AnalyzeJob) (common.AnalyzeResu
 		ResultCount:    runResult.ResultCount,
 		ResultLocation: *s,
 		Status:         common.StatusSuccess,
+		NWO:            job.NWO,
 	}
 
 	return result, nil
@@ -259,6 +268,7 @@ func RunAnalysisJob(job common.AnalyzeJob) (common.AnalyzeResult, error) {
 		ResultCount:    0,
 		ResultLocation: artifactstore.ArtifactLocation{},
 		Status:         common.StatusError,
+		// TODO add nwo
 	}
 
 	// Create a temporary directory
@@ -296,6 +306,7 @@ func RunAnalysisJob(job common.AnalyzeJob) (common.AnalyzeResult, error) {
 		ResultLocation: artifactstore.ArtifactLocation{},
 		// "REPLACE_THIS_WITH_STORED_RESULTS_ARCHIVE", // TODO
 		Status: common.StatusSuccess,
+		// TODO add NWO
 	}
 
 	return result, nil

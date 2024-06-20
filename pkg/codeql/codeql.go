@@ -147,7 +147,7 @@ func RunQuery(database string, nwo string, queryPackPath string, tempDir string)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate SARIF: %v", err)
 		}
-		resultCount = getSarifResultCount(sarif)
+		resultCount = GetSarifResultCount(sarif)
 		slog.Debug("Generated SARIF", "resultCount", resultCount)
 		sarifFilePath = filepath.Join(resultsDir, "results.sarif")
 		if err := os.WriteFile(sarifFilePath, sarif, 0644); err != nil {
@@ -383,8 +383,8 @@ func injectVersionControlInfo(sarif *Sarif, nwo, databaseSHA string) {
 	}
 }
 
-// getSarifResultCount returns the number of results in the SARIF file.
-func getSarifResultCount(sarif []byte) int {
+// GetSarifResultCount returns the number of results in the SARIF file.
+func GetSarifResultCount(sarif []byte) int {
 	var sarifData Sarif
 	if err := json.Unmarshal(sarif, &sarifData); err != nil {
 		log.Printf("failed to unmarshal SARIF for result count: %v", err)

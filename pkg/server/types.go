@@ -35,7 +35,13 @@ type CommanderContainer struct {
 func NewCommanderSingle(st *Visibles) *CommanderSingle {
 	slog.Debug("Commander started")
 	c := CommanderSingle{v: st}
+	slog.Debug("	XX really")
 	setupEndpoints(&c)
+
+	// XX:
+	slog.Debug("Starting results collector")
+	go c.CollectResults()
+
 	return &c
 }
 
