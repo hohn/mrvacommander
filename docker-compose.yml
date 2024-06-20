@@ -29,6 +29,8 @@ services:
     stop_grace_period: 1s # Reduce the timeout period for testing
     environment:
       - MRVA_SERVER_ROOT=/mrva/mrvacommander/cmd/server
+      - MRVA_QP_ROOT=/mrva/mrvacommander/cmd/server/var/codeql/querypacks
+      - MRVA_QLDB_ROOT=/mrva/mrvacommander/cmd/server/codeql/dbs
     command: sh -c "tail -f /dev/null"
     ports:
       - "8080:8080"

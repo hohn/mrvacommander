@@ -14,6 +14,12 @@ type MinIOArtifactStore struct {
 	client *minio.Client
 }
 
+func (store *MinIOArtifactStore) QPKeyFromID(sessionID int) string {
+	// TODO key should still be valid here...
+	qpKey := fmt.Sprintf("qp-%d.tgz", sessionID)
+	return qpKey
+}
+
 func NewMinIOArtifactStore(endpoint, id, secret string) (*MinIOArtifactStore, error) {
 	minioClient, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(id, secret, ""),
@@ -45,8 +51,8 @@ func (store *MinIOArtifactStore) SaveResult(sessionID int, data []byte) (Artifac
 }
 
 func (store *MinIOArtifactStore) getArtifact(location ArtifactLocation) ([]byte, error) {
-	bucket := location.data["bucket"]
-	key := location.data["key"]
+	bucket := location.afdata["bucket"]
+	key := location.afdata["key"]
 
 	object, err := store.client.GetObject(context.Background(), bucket, key, minio.GetObjectOptions{})
 	if err != nil {
@@ -72,7 +78,7 @@ func (store *MinIOArtifactStore) saveArtifact(bucket string, sessionID int, data
 	}
 
 	location := ArtifactLocation{
-		data: map[string]string{
+		afdata: map[string]string{
 			"bucket": bucket,
 			"key":    key,
 		},

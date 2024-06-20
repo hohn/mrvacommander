@@ -73,18 +73,18 @@ func main() {
 		sq := queue.NewQueueSingle(2)
 		ss := state.NewLocalState(config.Storage.StartingID)
 		as := artifactstore.NewInMemoryArtifactStore()
-		ql := qldbstore.NewLocalFilesystemCodeQLDatabaseStore("")
+		ql := qldbstore.NewLocalFilesystemCodeQLDatabaseStore(os.Getenv("MRVA_QLDB_ROOT"))
 
-		server.NewCommanderSingle(&server.Visibles{
+		// FIXME take num agents from configuration
+		agent.NewAgentSingle(2, &agent.Visibles{
 			Queue:         sq,
-			State:         ss,
 			Artifacts:     as,
 			CodeQLDBStore: ql,
 		})
 
-		// FIXME take value from configuration
-		agent.NewAgentSingle(2, &agent.Visibles{
+		server.NewCommanderSingle(&server.Visibles{
 			Queue:         sq,
+			State:         ss,
 			Artifacts:     as,
 			CodeQLDBStore: ql,
 		})
@@ -132,6 +132,7 @@ func main() {
 
 	case "cluster":
 		// Assemble cluster version
+
 	default:
 		slog.Error("Invalid value for --mode. Allowed values are: standalone, container, cluster\n")
 		os.Exit(1)

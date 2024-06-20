@@ -1,6 +1,7 @@
 package server
 
 import (
+	"log/slog"
 	"mrvacommander/pkg/artifactstore"
 	"mrvacommander/pkg/common"
 	"mrvacommander/pkg/qldbstore"
@@ -9,9 +10,10 @@ import (
 )
 
 type SessionInfo struct {
-	ID                  int
-	Owner               string
-	ControllerRepo      string
+	ID             int
+	Owner          string
+	ControllerRepo string
+	// XX: check
 	QueryPack           artifactstore.ArtifactLocation
 	Language            string
 	Repositories        []common.NameWithOwner
@@ -31,6 +33,7 @@ type CommanderContainer struct {
 }
 
 func NewCommanderSingle(st *Visibles) *CommanderSingle {
+	slog.Debug("Commander started")
 	c := CommanderSingle{v: st}
 	setupEndpoints(&c)
 	return &c

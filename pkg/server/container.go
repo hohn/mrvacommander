@@ -9,6 +9,7 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -25,7 +26,7 @@ func (c *CommanderContainer) startAnalyses(
 	analysisRepos *map[common.NameWithOwner]qldbstore.CodeQLDatabaseLocation,
 	jobID int,
 	queryLanguage string) {
-	slog.Debug("Queueing analysis jobs")
+	slog.Debug("Queueing analysis jobs", "count", len(*analysisRepos))
 
 	for nwo := range *analysisRepos {
 		info := common.AnalyzeJob{
@@ -34,6 +35,9 @@ func (c *CommanderContainer) startAnalyses(
 			NWO:           nwo,
 		}
 		c.v.Queue.Jobs() <- info
+		slog.Debug("Commander queue", "address",
+			reflect.ValueOf(c.v.Queue.Jobs()).Pointer())
+
 		c.v.State.SetStatus(jobID, nwo, common.StatusQueued)
 		c.v.State.AddJob(jobID, info)
 	}

@@ -13,6 +13,11 @@ These are simple steps using a single container.
 
         GOOS=linux GOARCH=arm64 go build
 
+1.  build server on host, force rebuild.  Useful when obvious changes -- like
+    logging additions -- don't show up 
+
+        GOOS=linux GOARCH=arm64 go build -a
+
 2.  build docker image
 
         cd cmd/server
@@ -46,12 +51,19 @@ These are simple steps using a single container.
         docker-compose down
         docker-compose up -d
     
-4.  Run server in its container
+4.  Run server in container mode
 
         cd ~/work-gh/mrva/mrvacommander/
         docker exec -it server bash
         cd /mrva/mrvacommander/cmd/server/ 
         ./server -loglevel=debug -mode=container
+
+1.  Run server in standalone mode
+
+        cd ~/work-gh/mrva/mrvacommander/
+        docker exec -it server bash
+        cd /mrva/mrvacommander/cmd/server/ 
+        ./server -loglevel=debug -mode=standalone
 
 1.  Test server from the host via
 

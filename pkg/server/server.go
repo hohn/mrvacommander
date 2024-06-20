@@ -28,7 +28,7 @@ func (c *CommanderSingle) startAnalyses(
 	analysisRepos *map[common.NameWithOwner]qldbstore.CodeQLDatabaseLocation,
 	jobID int,
 	queryLanguage string) {
-	slog.Debug("Queueing analysis jobs")
+	slog.Debug("Queueing analysis jobs", "count", len(*analysisRepos))
 
 	for nwo := range *analysisRepos {
 		info := common.AnalyzeJob{
@@ -305,8 +305,12 @@ func (c *CommanderSingle) MRVARequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO This returns 0 analysisRepos.  2024/06/19 02:26:47 DEBUG Queueing analysis jobs count=0
 	not_found_repos, analysisRepos := c.v.CodeQLDBStore.FindAvailableDBs(session_repositories)
-
+	if len(*analysisRepos) == 0 {
+		slog.Debug("WARNING: No repositories found for analysis")
+	}
+	// XX: id is the query pack ref
 	c.startAnalyses(analysisRepos, session_id, session_language)
 
 	si := SessionInfo{
@@ -533,6 +537,7 @@ func (c *CommanderSingle) processQueryPackArchive(qp string, sessionID int) (art
 		return artifactstore.ArtifactLocation{}, err
 	}
 
+	// XX: check
 	session_query_pack_tgz_filepath, err := c.v.Artifacts.SaveQueryPack(sessionID, tgz)
 	if err != nil {
 		return artifactstore.ArtifactLocation{}, err

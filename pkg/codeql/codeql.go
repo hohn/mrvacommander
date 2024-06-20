@@ -38,6 +38,7 @@ func GenerateResultsZipArchive(runQueryResult *RunQueryResult) ([]byte, error) {
 	buffer := new(bytes.Buffer)
 	zipWriter := zip.NewWriter(buffer)
 
+	// TODO if the path is empty, it's an error
 	if runQueryResult.SarifFilePath != "" {
 		err := addFileToZip(zipWriter, runQueryResult.SarifFilePath, "results.sarif")
 		if err != nil {
