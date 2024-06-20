@@ -116,7 +116,7 @@ func (r *RunnerSingle) RunAnalysisJob(job common.AnalyzeJob) (common.AnalyzeResu
 	}
 
 	// XX: Save the archive in storage
-	slog.Debug("Results archive size", slog.Int("size", len(resultsArchive)))
+	slog.Debug("Results archive info:", slog.Int("size", len(resultsArchive)))
 
 	// XX: check
 	serverRoot := os.Getenv("MRVA_SERVER_ROOT")
@@ -125,13 +125,13 @@ func (r *RunnerSingle) RunAnalysisJob(job common.AnalyzeJob) (common.AnalyzeResu
 	queryOutFName := fmt.Sprintf("results-%d.sarif", job.RequestId)
 	queryOutFPath := filepath.Join(queryOutDir, queryOutFName)
 
-	s := artifactstore.ArtifactLocation{}
+	s := artifactstore.NewArtifactLocation()
 	s.Add(queryOutFName, queryOutFPath)
 
 	result = common.AnalyzeResult{
 		RequestId:      job.RequestId,
 		ResultCount:    runResult.ResultCount,
-		ResultLocation: s,
+		ResultLocation: *s,
 		Status:         common.StatusSuccess,
 	}
 

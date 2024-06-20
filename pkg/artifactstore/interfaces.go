@@ -16,6 +16,11 @@ type ArtifactLocation struct {
 	afdata map[string]string
 }
 
+func NewArtifactLocation() *ArtifactLocation {
+	a := ArtifactLocation{afdata: map[string]string{}}
+	return &a
+}
+
 func (al *ArtifactLocation) PathFor(p string) string {
 	return al.afdata[p]
 }
