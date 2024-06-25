@@ -53,6 +53,17 @@ These are simple steps using a single container.
         cd /mrva/mrvacommander/cmd/server/ 
         ./server -loglevel=debug -mode=container
 
+1.  Test server from the host via
+
+        cd ~/work-gh/mrva/mrvacommander-1/tools
+        sh ./request_16-Jun-2024_11-33-16.curl
+
+1.  Follow server logging via
+
+        cd ~/work-gh/mrva/mrvacommander-1
+        docker-compose up -d
+        docker-compose logs -f server
+
 1.  Test server via remote client by following the steps in [gh-mrva](https://github.com/hohn/gh-mrva/blob/connection-redirect/README.org#compacted-edit-run-debug-cycle)
 
 ### Some general docker-compose commands
