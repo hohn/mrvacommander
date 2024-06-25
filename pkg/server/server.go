@@ -59,10 +59,11 @@ func setupEndpoints(c CommanderAPI) {
 
 	// Endpoints for status requests
 	// This is also the first request made when downloading; the difference is in the client-side handling.
+	// TODO: better document / standardize this: {codeql_variant_analysis_id} is the session ID
 	r.HandleFunc("/repos/{owner}/{repo}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}", c.MRVAStatus)
 	r.HandleFunc("/repositories/{controller_repo_id}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}", c.MRVAStatusID)
 
-	// Endpoints for downloading artifacts
+	// Endpoints for getting a URL to download artifacts
 	r.HandleFunc("/repos/{controller_owner}/{controller_repo}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}/repos/{repo_owner}/{repo_name}", c.MRVADownloadArtifact)
 	r.HandleFunc("/repositories/{controller_repo_id}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}/repositories/{repository_id}", c.MRVADownloadArtifactID)
 
@@ -93,6 +94,8 @@ func ListenAndServe(r *mux.Router) {
 	}
 }
 
+// TODO: fix this so that it can return partial results?? if possible?
+// TODO: check the caller as well so that it still returns statuses if no jobs exist (e.g. missing dbs)
 func (c *CommanderSingle) submitStatusResponse(w http.ResponseWriter, js common.JobSpec, ji common.JobInfo) {
 	slog.Debug("Submitting status response", "job_id", js.SessionID)
 
@@ -117,20 +120,28 @@ func (c *CommanderSingle) submitStatusResponse(w http.ResponseWriter, js common.
 			return
 		}
 
-		// Get the job result
-		result, err := c.v.State.GetResult(job.Spec)
-		if err != nil {
-			slog.Error("Error getting result", "error", err.Error())
-			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
-			return
-		}
+		// Get the job result if complete, otherwise return default values
+		var artifactSize int
+		var resultCount int
 
-		// Get the job result artifact size
-		artifactSize, err := c.v.Artifacts.GetResultSize(result.ResultLocation)
-		if err != nil {
-			slog.Error("Error getting artifact size", "error", err.Error())
-			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
-			return
+		if status != common.StatusSuccess {
+			// If the job is not successful, we don't need to get the result
+			artifactSize = 0
+			resultCount = 0
+		} else {
+			jobResult, err := c.v.State.GetResult(job.Spec)
+			if err != nil {
+				slog.Error("Error getting result", "error", err.Error())
+				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+				return
+			}
+			artifactSize, err = c.v.Artifacts.GetResultSize(jobResult.ResultLocation)
+			if err != nil {
+				slog.Error("Error getting artifact size", "error", err.Error())
+				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+				return
+			}
+			resultCount = jobResult.ResultCount
 		}
 
 		// Append all scanned (complete and incomplete) repos to the response
@@ -145,7 +156,7 @@ func (c *CommanderSingle) submitStatusResponse(w http.ResponseWriter, js common.
 					UpdatedAt:       ji.UpdatedAt,
 				},
 				AnalysisStatus:    status.ToExternalString(),
-				ResultCount:       result.ResultCount,
+				ResultCount:       resultCount,
 				ArtifactSizeBytes: int(artifactSize),
 			},
 		)
@@ -166,7 +177,7 @@ func (c *CommanderSingle) submitStatusResponse(w http.ResponseWriter, js common.
 		QueryPackURL:         "", // FIXME
 		CreatedAt:            ji.CreatedAt,
 		UpdatedAt:            ji.UpdatedAt,
-		ActionsWorkflowRunID: 0, // FIXME
+		ActionsWorkflowRunID: -1, // FIXME
 		Status:               jobStatus.ToExternalString(),
 		ScannedRepositories:  scannedRepos,
 		SkippedRepositories:  ji.SkippedRepositories,
@@ -196,7 +207,7 @@ func (c *CommanderSingle) MRVAStatusCommon(w http.ResponseWriter, r *http.Reques
 		"repo", repo,
 		"codeql_variant_analysis_id", variantAnalysisID)
 
-	id, err := strconv.ParseInt(variantAnalysisID, 10, 32)
+	sessionId, err := strconv.ParseInt(variantAnalysisID, 10, 32)
 	if err != nil {
 		slog.Error("Variant analysis ID is not integer", "id",
 			variantAnalysisID)
@@ -204,8 +215,8 @@ func (c *CommanderSingle) MRVAStatusCommon(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	spec, err := c.v.State.GetJobList(int(id))
-	if err != nil || len(spec) == 0 {
+	jobs, err := c.v.State.GetJobList(int(sessionId))
+	if err != nil || len(jobs) == 0 {
 		msg := "No jobs found for given session id"
 		slog.Error(msg, "id", variantAnalysisID)
 		http.Error(w, msg, http.StatusNotFound)
@@ -214,7 +225,8 @@ func (c *CommanderSingle) MRVAStatusCommon(w http.ResponseWriter, r *http.Reques
 
 	// The status reports one status for all jobs belonging to an id.
 	// So we simply report the status of a job as the status of all.
-	job := spec[0]
+	// TODO: verify this behaviour
+	job := jobs[0]
 
 	jobInfo, err := c.v.State.GetJobInfo(job.Spec)
 	if err != nil {
@@ -249,7 +261,7 @@ func (c *CommanderSingle) MRVADownloadArtifactCommon(w http.ResponseWriter, r *h
 		"repo_name", jobSpec.NameWithOwner.Repo,
 	)
 
-	c.sendDownloadResponse(w, jobRepoId, jobSpec)
+	c.sendArtifactDownloadResponse(w, jobRepoId, jobSpec)
 }
 
 func (c *CommanderSingle) MRVADownloadArtifactID(w http.ResponseWriter, r *http.Request) {
@@ -263,6 +275,7 @@ func (c *CommanderSingle) MRVADownloadArtifactID(w http.ResponseWriter, r *http.
 		return
 	}
 
+	// this must match the repo ID returned by the status request
 	repoId, err := strconv.ParseInt(vars["repository_id"], 10, 32)
 	if err != nil {
 		slog.Error("Repository ID is not an integer", "id", vars["repository_id"])
@@ -301,7 +314,7 @@ func (c *CommanderSingle) MRVADownloadArtifact(w http.ResponseWriter, r *http.Re
 	c.MRVADownloadArtifactCommon(w, r, -1, jobSpec)
 }
 
-func (c *CommanderSingle) sendDownloadResponse(w http.ResponseWriter, jobRepoId int, jobSpec common.JobSpec) {
+func (c *CommanderSingle) sendArtifactDownloadResponse(w http.ResponseWriter, jobRepoId int, jobSpec common.JobSpec) {
 	var response common.DownloadResponse
 
 	slog.Debug("Forming download response", "job", jobSpec)
@@ -334,6 +347,7 @@ func (c *CommanderSingle) sendDownloadResponse(w http.ResponseWriter, jobRepoId 
 			return
 		}
 
+		// TODO: document/make less hacky
 		host := os.Getenv("SERVER_HOST")
 		if host == "" {
 			host = "localhost"
@@ -361,6 +375,7 @@ func (c *CommanderSingle) sendDownloadResponse(w http.ResponseWriter, jobRepoId 
 			ArtifactURL:          artifactURL,
 		}
 	} else {
+		// not successful status
 		response = common.DownloadResponse{
 			Repository: common.DownloadRepo{
 				// TODO: fix jobRepoID coming from the NWO path. The MRVA extension uses repo ID.
@@ -427,7 +442,7 @@ func (c *CommanderSingle) MRVADownloadServe(w http.ResponseWriter, r *http.Reque
 func (c *CommanderSingle) MRVARequestCommon(w http.ResponseWriter, r *http.Request) {
 	sessionId := c.v.State.NextID()
 	slog.Info("New MRVA Request", "id", fmt.Sprint(sessionId))
-	queryLanguage, repoNWOs, queryPackLocation, err := c.collectRequestInfo(w, r, sessionId)
+	queryLanguage, repoNWOs, queryPackLocation, err := c.collectRequestInfoAndSaveQueryPack(w, r, sessionId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -435,7 +450,6 @@ func (c *CommanderSingle) MRVARequestCommon(w http.ResponseWriter, r *http.Reque
 
 	slog.Debug("Processed request info", "location", queryPackLocation, "language", queryLanguage)
 
-	// TODO This returns 0 analysisRepos.  2024/06/19 02:26:47 DEBUG Queueing analysis jobs count=0
 	notFoundRepos, analysisRepos := c.v.CodeQLDBStore.FindAvailableDBs(repoNWOs)
 
 	if len(*analysisRepos) == 0 {
@@ -445,7 +459,7 @@ func (c *CommanderSingle) MRVARequestCommon(w http.ResponseWriter, r *http.Reque
 	// XX: session_is is separate from the query pack ref.  Value may be equal
 	c.startAnalyses(analysisRepos, queryPackLocation, sessionId, queryLanguage)
 
-	si := SessionInfo{
+	sessionInfo := SessionInfo{
 		ID:             sessionId,
 		Owner:          "unused",
 		ControllerRepo: "unused",
@@ -462,8 +476,8 @@ func (c *CommanderSingle) MRVARequestCommon(w http.ResponseWriter, r *http.Reque
 		AnalysisRepos: analysisRepos,
 	}
 
-	slog.Debug("Forming and sending response for submitted analysis job", "id", si.ID)
-	submit_response, err := c.submitResponse(si)
+	slog.Debug("Forming and sending response for submitted analysis job", "id", sessionInfo.ID)
+	submitResponseJson, err := c.buildSessionInfoResponseJson(sessionInfo)
 	if err != nil {
 		slog.Error("Error forming submit response", "error", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -471,7 +485,7 @@ func (c *CommanderSingle) MRVARequestCommon(w http.ResponseWriter, r *http.Reque
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(submit_response)
+	w.Write(submitResponseJson)
 }
 
 func (c *CommanderSingle) MRVARequestID(w http.ResponseWriter, r *http.Request) {
@@ -521,7 +535,7 @@ func (c *CommanderSingle) ConsumeResults() {
 	}
 }
 
-func (c *CommanderSingle) submitResponse(si SessionInfo) ([]byte, error) {
+func (c *CommanderSingle) buildSessionInfoResponseJson(si SessionInfo) ([]byte, error) {
 	// Construct the response bottom-up
 	var controllerRepo common.ControllerRepo
 	var actor common.Actor
@@ -587,7 +601,7 @@ func (c *CommanderSingle) submitResponse(si SessionInfo) ([]byte, error) {
 
 }
 
-func (c *CommanderSingle) collectRequestInfo(w http.ResponseWriter, r *http.Request, sessionId int) (string, []common.NameWithOwner, artifactstore.ArtifactLocation, error) {
+func (c *CommanderSingle) collectRequestInfoAndSaveQueryPack(w http.ResponseWriter, r *http.Request, sessionId int) (string, []common.NameWithOwner, artifactstore.ArtifactLocation, error) {
 	slog.Debug("Collecting session info")
 
 	if r.Body == nil {
@@ -620,7 +634,7 @@ func (c *CommanderSingle) collectRequestInfo(w http.ResponseWriter, r *http.Requ
 		return "", []common.NameWithOwner{}, artifactstore.ArtifactLocation{}, err
 	}
 
-	queryPackLocation, err := c.processQueryPackArchive(msg.QueryPack, sessionId)
+	queryPackLocation, err := c.decodeAndSaveBase64QueryPack(msg.QueryPack, sessionId)
 	if err != nil {
 		slog.Error("Error processing query pack archive", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -658,7 +672,7 @@ func tryParseSubmitMsg(buf []byte) (common.SubmitMsg, error) {
 	return m, err
 }
 
-func (c *CommanderSingle) processQueryPackArchive(qp string, sessionId int) (artifactstore.ArtifactLocation, error) {
+func (c *CommanderSingle) decodeAndSaveBase64QueryPack(qp string, sessionId int) (artifactstore.ArtifactLocation, error) {
 	// These are decoded manually via
 	//    base64 -d < foo1 | gunzip | tar t | head -20
 	// base64 decode the body
