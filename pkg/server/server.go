@@ -223,9 +223,23 @@ func (c *CommanderSingle) MRVAStatusCommon(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if len(jobs) == 0 {
-		// TODO Empty joblist found; short-circuit the rest of this func
+		// TODO Empty joblist found.  Either return an error or a very special response -- there are several special cases to handle.
 		// c.submitStatusResponse(w, job.Spec, jobInfo)
 		slog.Error("TODO empty joblist found", "id", variantAnalysisID)
+		// js := queue.AnalyzeJob{
+		// 	Spec: common.JobSpec{
+		// 		SessionID: 0,
+		// 		NameWithOwner: common.NameWithOwner{
+		// 			Owner: "no-owner",
+		// 			Repo:  "no-repo",
+		// 		},
+		// 	},
+		// 	QueryPackLocation: artifactstore.ArtifactLocation{
+		// 		Data: nil,
+		// 	},
+		// 	QueryLanguage: "no-querylanguage",
+		// }
+
 		return
 	}
 
