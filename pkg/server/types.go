@@ -9,17 +9,20 @@ import (
 )
 
 type SessionInfo struct {
-	ID                  int
-	Owner               string
-	ControllerRepo      string
-	QueryPack           string
-	Language            string
-	Repositories        []common.NameWithOwner
+	// TODO verify: these fields are never used
+	// Owner               string
+	// ControllerRepo      string
+	// Repositories        []common.NameWithOwner
+	// OverLimitRepos      []common.NameWithOwner
+	// AnalysisRepos       *map[common.NameWithOwner]qldbstore.CodeQLDatabaseLocation
+
+	ID        int
+	QueryPack string
+	Language  string
+
 	AccessMismatchRepos []common.NameWithOwner
 	NotFoundRepos       []common.NameWithOwner
 	NoCodeqlDBRepos     []common.NameWithOwner
-	OverLimitRepos      []common.NameWithOwner
-	AnalysisRepos       *map[common.NameWithOwner]qldbstore.CodeQLDatabaseLocation
 }
 
 type CommanderSingle struct {
