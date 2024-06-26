@@ -1,0 +1,23 @@
+linters:
+  enable:
+    - staticcheck
+    - unused
+    - decorder
+    - errchkjson
+    - exhaustruct
+    - gochecknoinits
+    - gochecksumtype
+    - goconst
+    - gocritic
+    - godox
+    - lll
+    - loggercheck
+    - sloglint
+    - tagalign
+    - unparam
+    
+linters-settings:
+  staticcheck:
+    checks:
+      - "SA"
+      

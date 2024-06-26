@@ -12,6 +12,8 @@ fullbuild:
 sendsubmit:
 	cd tools && sh ./submit-request.curl
 
+# Requires
+#		go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 lint:
 	golangci-lint run cmd/... pkg/...
 
