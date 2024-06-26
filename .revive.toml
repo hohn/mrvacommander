@@ -1,0 +1,13 @@
+ignoreGeneratedHeader = true
+
+[rule.blank-imports]
+  Arguments = [true]
+
+[[rule]]
+  name = "max-public-identifier-length"
+  arguments = [15]  # Maximum length for public identifiers
+
+[[rule]]
+  name = "max-private-identifier-length"
+  arguments = [15]  # Maximum length for private identifiers
+

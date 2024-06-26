@@ -12,12 +12,18 @@ linters:
     - godox
     - lll
     - loggercheck
+    - revive
     - sloglint
     - tagalign
     - unparam
     
 linters-settings:
+  revive:
+    config: .revive.toml
   staticcheck:
     checks:
       - "SA"
       
+issues:
+  format: "format: {{.FromLinter}}: {{.Text}}"
+  
