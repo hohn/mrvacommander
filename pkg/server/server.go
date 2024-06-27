@@ -216,30 +216,10 @@ func (c *CommanderSingle) MRVAStatusCommon(w http.ResponseWriter, r *http.Reques
 	}
 
 	jobs, err := c.v.State.GetJobList(int(sessionId))
-	if err != nil {
+	if err != nil || len(jobs) == 0 {
 		msg := "No jobs found for given session id"
 		slog.Error(msg, "id", variantAnalysisID)
 		http.Error(w, msg, http.StatusNotFound)
-		return
-	}
-	if len(jobs) == 0 {
-		// TODO Empty joblist found.  Either return an error or a very special response -- there are several special cases to handle.
-		// c.submitStatusResponse(w, job.Spec, jobInfo)
-		slog.Error("TODO empty joblist found", "id", variantAnalysisID)
-		// js := queue.AnalyzeJob{
-		// 	Spec: common.JobSpec{
-		// 		SessionID: 0,
-		// 		NameWithOwner: common.NameWithOwner{
-		// 			Owner: "no-owner",
-		// 			Repo:  "no-repo",
-		// 		},
-		// 	},
-		// 	QueryPackLocation: artifactstore.ArtifactLocation{
-		// 		Data: nil,
-		// 	},
-		// 	QueryLanguage: "no-querylanguage",
-		// }
-
 		return
 	}
 
@@ -472,21 +452,23 @@ func (c *CommanderSingle) MRVARequestCommon(w http.ResponseWriter, r *http.Reque
 
 	notFoundRepos, analysisRepos := c.v.CodeQLDBStore.FindAvailableDBs(repoNWOs)
 
-	sessionInfo := SessionInfo{
-		// TODO verify: these fields are never used
-		// Owner:          "unused",
-		// ControllerRepo: "unused",
-		// Repositories:   repoNWOs,
-		// OverLimitRepos: nil, /* FIXME */
-		// AnalysisRepos:  analysisRepos,
+	if len(*analysisRepos) == 0 {
+		slog.Warn("No repositories found for analysis")
+	}
 
-		ID:        sessionId,
+	// XX: session_is is separate from the query pack ref.  Value may be equal
+	c.startAnalyses(analysisRepos, queryPackLocation, sessionId, queryLanguage)
+
+	sessionInfo := SessionInfo{
+		ID: sessionId,
+
 		QueryPack: strconv.Itoa(sessionId), // TODO
 		Language:  queryLanguage,
 
 		AccessMismatchRepos: nil, /* FIXME */
 		NotFoundRepos:       notFoundRepos,
 		NoCodeqlDBRepos:     nil, /* FIXME */
+
 	}
 
 	slog.Debug("Forming and sending response for submitted analysis job", "id", sessionInfo.ID)
@@ -496,15 +478,9 @@ func (c *CommanderSingle) MRVARequestCommon(w http.ResponseWriter, r *http.Reque
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(submitResponseJson)
-
-	// Start analysis only if repositories were found
-	if len(*analysisRepos) == 0 {
-		slog.Warn("No repositories found for analysis")
-		return
-	}
-	c.startAnalyses(analysisRepos, queryPackLocation, sessionId, queryLanguage)
 }
 
 func (c *CommanderSingle) MRVARequestID(w http.ResponseWriter, r *http.Request) {

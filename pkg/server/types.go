@@ -9,17 +9,9 @@ import (
 )
 
 type SessionInfo struct {
-	// TODO verify: these fields are never used
-	// Owner               string
-	// ControllerRepo      string
-	// Repositories        []common.NameWithOwner
-	// OverLimitRepos      []common.NameWithOwner
-	// AnalysisRepos       *map[common.NameWithOwner]qldbstore.CodeQLDatabaseLocation
-
-	ID        int
-	QueryPack string
-	Language  string
-
+	ID                  int
+	QueryPack           string
+	Language            string
 	AccessMismatchRepos []common.NameWithOwner
 	NotFoundRepos       []common.NameWithOwner
 	NoCodeqlDBRepos     []common.NameWithOwner
