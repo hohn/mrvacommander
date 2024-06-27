@@ -31,7 +31,10 @@ These are simple steps using a single container.
         cd /mrva/mrvacommander/cmd/server/ && ./server
 
 ## Using docker-compose
-### Steps to build and run the server in a multi-container environment set up by docker-compose.
+### Steps to build and run the server
+
+Steps to build and run the server in a multi-container environment set up by
+docker-compose. 
 
 1.  Built the server-image, above
 
@@ -63,6 +66,11 @@ These are simple steps using a single container.
         cd ~/work-gh/mrva/mrvacommander-1
         docker-compose up -d
         docker-compose logs -f server
+
+1.  Completely rebuild all containers.  Useful when running into docker errors
+
+        cd ~/work-gh/mrva/mrvacommander-1
+        docker-compose up --build
 
 1.  Test server via remote client by following the steps in [gh-mrva](https://github.com/hohn/gh-mrva/blob/connection-redirect/README.org#compacted-edit-run-debug-cycle)
 
