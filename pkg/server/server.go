@@ -456,7 +456,9 @@ func (c *CommanderSingle) MRVARequestCommon(w http.ResponseWriter, r *http.Reque
 		slog.Warn("No repositories found for analysis")
 	}
 
-	// XX: session_is is separate from the query pack ref.  Value may be equal
+	// XX: session_is is separate from the query pack ref.  Value may be equal.
+	// QueryPackURL is returned to the client, separately from the ID.
+	// The values may be equal here, but this is irrelevant
 	c.startAnalyses(analysisRepos, queryPackLocation, sessionId, queryLanguage)
 
 	sessionInfo := SessionInfo{
