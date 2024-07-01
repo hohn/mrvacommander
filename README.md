@@ -6,6 +6,42 @@ TODO Style notes
 - NO package init() functions
 - Dynamic behaviour must be explicit
  
+
+## Reverse proxy
+For testing, replay flows using mitmweb.  This is faster and simpler than using
+gh-mrva or the VS Code plugin.
+
+-   Set up the virtual environment and install tools
+
+        python3.11 -m venv venv
+        source venv/bin/activate
+        pip install mitmproxy
+
+For intercepting requests:
+
+1.  Start mitmproxy to listen on port 8080 and forward requests to port 8081, with
+    web interface
+
+        mitmweb --mode reverse:http://localhost:8081 -p 8080
+
+1.  Change `server` ports in `docker-compose.yml` to 
+
+        ports:
+        - "8081:8080" # host:container
+
+1.  Start the containers.
+
+1.  Submit requests.
+
+3.  Save the flows for later replay.
+
+One such session is in `tools/mitmweb-flows`; it can be loaded to replay the
+requests:
+
+1.  start `mitmweb --mode reverse:http://localhost:8081 -p 8080`
+2.  `file` > `open` > `tools/mitmweb-flows`
+3.  replay at least the submit, status, and download requests
+
 ## Cross-compile server on host, run it in container 
 These are simple steps using a single container.
 

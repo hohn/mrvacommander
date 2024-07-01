@@ -26,7 +26,7 @@ services:
     container_name: server
     stop_grace_period: 1s
     ports:
-      - "8080:8080"
+      - "8081:8080" # host:container
     depends_on:
       - rabbitmq
       - dbstore
