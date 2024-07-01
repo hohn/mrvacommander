@@ -94,8 +94,72 @@ func ListenAndServe(r *mux.Router) {
 	}
 }
 
+// TODO: check the caller as well so that it still returns statuses if no jobs exist (e.g. missing dbs) --
+func (c *CommanderSingle) submitEmptyStatusResponse(w http.ResponseWriter,
+	jsSessionID int,
+) {
+	slog.Debug("Submitting status response for empty job list", "job_id", jsSessionID)
+
+	// TODO Can/need this struct contain more info when |jobs| == 0?
+	ji := common.JobInfo{
+		QueryLanguage: "",
+		CreatedAt:     "",
+		UpdatedAt:     "",
+
+		SkippedRepositories: common.SkippedRepositories{
+			AccessMismatchRepos: common.AccessMismatchRepos{
+				RepositoryCount: 0,
+				Repositories:    []common.Repository{},
+			},
+			NotFoundRepos: common.NotFoundRepos{
+				RepositoryCount:     0,
+				RepositoryFullNames: []string{},
+			},
+			NoCodeqlDBRepos: common.NoCodeqlDBRepos{
+				RepositoryCount: 0,
+				Repositories:    []common.Repository{},
+			},
+			OverLimitRepos: common.OverLimitRepos{
+				RepositoryCount: 0,
+				Repositories:    []common.Repository{},
+			},
+		},
+	}
+
+	scannedRepos := []common.ScannedRepo{}
+
+	var jobStatus common.Status
+	jobStatus = common.StatusSuccess
+
+	status := common.StatusResponse{
+		SessionId:            jsSessionID,
+		ControllerRepo:       common.ControllerRepo{},
+		Actor:                common.Actor{},
+		QueryLanguage:        ji.QueryLanguage,
+		QueryPackURL:         "", // FIXME
+		CreatedAt:            ji.CreatedAt,
+		UpdatedAt:            ji.UpdatedAt,
+		ActionsWorkflowRunID: -1, // FIXME
+		Status:               jobStatus.ToExternalString(),
+		ScannedRepositories:  scannedRepos,
+		SkippedRepositories:  ji.SkippedRepositories,
+	}
+
+	// Encode the response as JSON
+	submitStatus, err := json.Marshal(status)
+	if err != nil {
+		slog.Error("Error encoding response as JSON:",
+			"error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Send analysisReposJSON via ResponseWriter
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(submitStatus)
+}
+
 // TODO: fix this so that it can return partial results?? if possible?
-// TODO: check the caller as well so that it still returns statuses if no jobs exist (e.g. missing dbs)
 func (c *CommanderSingle) submitStatusResponse(w http.ResponseWriter, js common.JobSpec, ji common.JobInfo) {
 	slog.Debug("Submitting status response", "job_id", js.SessionID)
 
@@ -216,10 +280,14 @@ func (c *CommanderSingle) MRVAStatusCommon(w http.ResponseWriter, r *http.Reques
 	}
 
 	jobs, err := c.v.State.GetJobList(int(sessionId))
-	if err != nil || len(jobs) == 0 {
+	if err != nil {
 		msg := "No jobs found for given session id"
 		slog.Error(msg, "id", variantAnalysisID)
 		http.Error(w, msg, http.StatusNotFound)
+		return
+	}
+	if len(jobs) == 0 {
+		c.submitEmptyStatusResponse(w, int(sessionId))
 		return
 	}
 
@@ -237,6 +305,7 @@ func (c *CommanderSingle) MRVAStatusCommon(w http.ResponseWriter, r *http.Reques
 	}
 
 	c.submitStatusResponse(w, job.Spec, jobInfo)
+
 }
 
 func (c *CommanderSingle) MRVAStatusID(w http.ResponseWriter, r *http.Request) {
