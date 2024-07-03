@@ -5,13 +5,15 @@ import (
 	"mrvacommander/pkg/common"
 )
 
+type QueryLanguage string
+
 // AnalyzeJob represents a job specifying a repository and a query pack to analyze it with.
 // This is the message format that the agent receives from the queue.
 // TODO: make query_pack_location query_pack_url with a presigned URL
 type AnalyzeJob struct {
 	Spec              common.JobSpec                 // json:"job_spec"
 	QueryPackLocation artifactstore.ArtifactLocation // json:"query_pack_location"
-	QueryLanguage     string                         // json:"query_language"
+	QueryLanguage     QueryLanguage                  // json:"query_language"
 }
 
 // AnalyzeResult represents the result of an analysis job.

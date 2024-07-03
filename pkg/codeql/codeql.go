@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"log/slog"
+	"mrvacommander/pkg/queue"
 	"mrvacommander/utils"
 	"os"
 	"os/exec"
@@ -81,8 +82,11 @@ func addFileToZip(zipWriter *zip.Writer, filePath, zipPath string) error {
 	return nil
 }
 
-func RunQuery(database string, nwo string, queryPackPath string, tempDir string) (*RunQueryResult, error) {
+func RunQuery(database string, language queue.QueryLanguage, queryPackPath string, tempDir string) (*RunQueryResult, error) {
 	path, err := getCodeQLCLIPath()
+	// XX: is nwo a name/owner, or the original callers' queryLanguage?
+	slog.Debug("XX: is nwo a name/owner, or the original callers' queryLanguage?",
+		"language", language)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get codeql cli path: %v", err)
@@ -142,7 +146,7 @@ func RunQuery(database string, nwo string, queryPackPath string, tempDir string)
 	var sarifFilePath string
 
 	if shouldGenerateSarif {
-		sarif, err := generateSarif(codeql, nwo, databasePath, queryPackPath, databaseSHA, resultsDir)
+		sarif, err := generateSarif(codeql, language, databasePath, queryPackPath, databaseSHA, resultsDir)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate SARIF: %v", err)
 		}
@@ -347,7 +351,7 @@ func getSarifOutputType(queryMetadata QueryMetadata, compatibleQueryKinds []stri
 	return ""
 }
 
-func generateSarif(codeql CodeqlCli, nwo, databasePath, queryPackPath, databaseSHA string, resultsDir string) ([]byte, error) {
+func generateSarif(codeql CodeqlCli, language queue.QueryLanguage, databasePath, queryPackPath, databaseSHA string, resultsDir string) ([]byte, error) {
 	sarifFile := filepath.Join(resultsDir, "results.sarif")
 	cmd := exec.Command(codeql.Path, "database", "interpret-results", "--format=sarif-latest", "--output="+sarifFile, "--sarif-add-snippets", "--no-group-results", databasePath, queryPackPath)
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -359,12 +363,21 @@ func generateSarif(codeql CodeqlCli, nwo, databasePath, queryPackPath, databaseS
 		return nil, fmt.Errorf("failed to read SARIF file: %v", err)
 	}
 
+	// Modify the sarif: start by extracting
 	var sarif Sarif
 	if err := json.Unmarshal(sarifData, &sarif); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal SARIF: %v", err)
 	}
 
-	injectVersionControlInfo(&sarif, nwo, databaseSHA)
+	// now inject version control info
+	for _, run := range sarif.Runs {
+		run.VersionControlProvenance = append(run.VersionControlProvenance, map[string]interface{}{
+			"repositoryUri": fmt.Sprintf("%s/%s", os.Getenv("GITHUB_SERVER_URL"), language),
+			"revisionId":    databaseSHA,
+		})
+	}
+
+	// and write it back
 	sarifBytes, err := json.Marshal(sarif)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal SARIF: %v", err)
@@ -373,14 +386,18 @@ func generateSarif(codeql CodeqlCli, nwo, databasePath, queryPackPath, databaseS
 	return sarifBytes, nil
 }
 
-func injectVersionControlInfo(sarif *Sarif, nwo, databaseSHA string) {
-	for _, run := range sarif.Runs {
-		run.VersionControlProvenance = append(run.VersionControlProvenance, map[string]interface{}{
-			"repositoryUri": fmt.Sprintf("%s/%s", os.Getenv("GITHUB_SERVER_URL"), nwo),
-			"revisionId":    databaseSHA,
-		})
-	}
-}
+// XX: inlined this function
+// func injectVersionControlInfo(sarif *Sarif, nwo, databaseSHA string) {
+// 	// XX: is nwo name/owner or language?
+// 	slog.Debug("XX: 2: is nwo a name/owner, or the original callers' queryLanguage?",
+// 		"nwo", nwo)
+// 	for _, run := range sarif.Runs {
+// 		run.VersionControlProvenance = append(run.VersionControlProvenance, map[string]interface{}{
+// 			"repositoryUri": fmt.Sprintf("%s/%s", os.Getenv("GITHUB_SERVER_URL"), nwo),
+// 			"revisionId":    databaseSHA,
+// 		})
+// 	}
+// }
 
 // getSarifResultCount returns the number of results in the SARIF file.
 func getSarifResultCount(sarif []byte) int {

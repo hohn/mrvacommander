@@ -11,7 +11,7 @@ import (
 type SessionInfo struct {
 	ID                  int
 	QueryPack           string
-	Language            string
+	Language            queue.QueryLanguage
 	AccessMismatchRepos []common.NameWithOwner
 	NotFoundRepos       []common.NameWithOwner
 	NoCodeqlDBRepos     []common.NameWithOwner

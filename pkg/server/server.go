@@ -27,7 +27,7 @@ func (c *CommanderSingle) startAnalyses(
 	analysisRepos *map[common.NameWithOwner]qldbstore.CodeQLDatabaseLocation,
 	queryPackLocation artifactstore.ArtifactLocation,
 	sessionId int,
-	queryLanguage string) {
+	queryLanguage queue.QueryLanguage) {
 
 	slog.Debug("Queueing analysis jobs", "count", len(*analysisRepos))
 
@@ -629,7 +629,7 @@ func (c *CommanderSingle) buildSessionInfoResponseJson(si SessionInfo) ([]byte, 
 		Actor:               actor,
 		ControllerRepo:      controllerRepo,
 		ID:                  si.ID,
-		QueryLanguage:       si.Language,
+		QueryLanguage:       string(si.Language),
 		QueryPackURL:        si.QueryPack,
 		CreatedAt:           time.Now().Format(time.RFC3339),
 		UpdatedAt:           time.Now().Format(time.RFC3339),
@@ -649,7 +649,7 @@ func (c *CommanderSingle) buildSessionInfoResponseJson(si SessionInfo) ([]byte, 
 			SessionID:     si.ID,
 			NameWithOwner: job.Spec.NameWithOwner,
 		}, common.JobInfo{
-			QueryLanguage:       si.Language,
+			QueryLanguage:       string(si.Language),
 			CreatedAt:           response.CreatedAt,
 			UpdatedAt:           response.UpdatedAt,
 			SkippedRepositories: skippedRepositories,
@@ -667,7 +667,7 @@ func (c *CommanderSingle) buildSessionInfoResponseJson(si SessionInfo) ([]byte, 
 
 }
 
-func (c *CommanderSingle) collectRequestInfoAndSaveQueryPack(w http.ResponseWriter, r *http.Request, sessionId int) (string, []common.NameWithOwner, artifactstore.ArtifactLocation, error) {
+func (c *CommanderSingle) collectRequestInfoAndSaveQueryPack(w http.ResponseWriter, r *http.Request, sessionId int) (queue.QueryLanguage, []common.NameWithOwner, artifactstore.ArtifactLocation, error) {
 	slog.Debug("Collecting session info")
 
 	if r.Body == nil {
@@ -708,7 +708,7 @@ func (c *CommanderSingle) collectRequestInfoAndSaveQueryPack(w http.ResponseWrit
 	}
 
 	// 2. Save the language
-	sessionLanguage := msg.Language
+	sessionLanguage := queue.QueryLanguage(msg.Language)
 
 	// 3. Save the repositories
 	var sessionRepos []common.NameWithOwner
