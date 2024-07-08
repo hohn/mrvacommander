@@ -13,11 +13,6 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
-const (
-	RESULTS_BUCKET_NAME = "results"
-	PACKS_BUCKET_NAME   = "packs"
-)
-
 type MinIOArtifactStore struct {
 	client *minio.Client
 }
@@ -34,12 +29,12 @@ func NewMinIOArtifactStore(endpoint, id, secret string) (*MinIOArtifactStore, er
 	slog.Info("Connected to MinIO artifact store server")
 
 	// Create "results" bucket
-	if err := common.CreateMinIOBucketIfNotExists(minioClient, RESULTS_BUCKET_NAME); err != nil {
+	if err := common.CreateMinIOBucketIfNotExists(minioClient, AF_VAL_BUCKET_RESULTS); err != nil {
 		return nil, fmt.Errorf("could not create results bucket: %v", err)
 	}
 
 	// Create "packs" bucket
-	if err := common.CreateMinIOBucketIfNotExists(minioClient, PACKS_BUCKET_NAME); err != nil {
+	if err := common.CreateMinIOBucketIfNotExists(minioClient, AF_VAL_BUCKET_PACKS); err != nil {
 		return nil, fmt.Errorf("could not create packs bucket: %v", err)
 	}
 
@@ -53,7 +48,7 @@ func (store *MinIOArtifactStore) GetQueryPack(location ArtifactLocation) ([]byte
 }
 
 func (store *MinIOArtifactStore) SaveQueryPack(jobId int, data []byte) (ArtifactLocation, error) {
-	return store.saveArtifact(PACKS_BUCKET_NAME, deriveKeyFromSessionId(jobId), data, "application/gzip")
+	return store.saveArtifact(AF_VAL_BUCKET_PACKS, deriveKeyFromSessionId(jobId), data, "application/gzip")
 }
 
 func (store *MinIOArtifactStore) GetResult(location ArtifactLocation) ([]byte, error) {
@@ -61,8 +56,8 @@ func (store *MinIOArtifactStore) GetResult(location ArtifactLocation) ([]byte, e
 }
 
 func (store *MinIOArtifactStore) GetResultSize(location ArtifactLocation) (int, error) {
-	bucket := location.Data["bucket"]
-	key := location.Data["key"]
+	bucket := location.Data[AF_KEY_BUCKET]
+	key := location.Data[AF_KEY_KEY]
 
 	objectInfo, err := store.client.StatObject(context.Background(), bucket, key, minio.StatObjectOptions{})
 	if err != nil {
@@ -77,12 +72,12 @@ func (store *MinIOArtifactStore) GetResultSize(location ArtifactLocation) (int, 
 }
 
 func (store *MinIOArtifactStore) SaveResult(jobSpec common.JobSpec, data []byte) (ArtifactLocation, error) {
-	return store.saveArtifact(RESULTS_BUCKET_NAME, deriveKeyFromJobSpec(jobSpec), data, "application/zip")
+	return store.saveArtifact(AF_VAL_BUCKET_RESULTS, deriveKeyFromJobSpec(jobSpec), data, "application/zip")
 }
 
 func (store *MinIOArtifactStore) getArtifact(location ArtifactLocation) ([]byte, error) {
-	bucket := location.Data["bucket"]
-	key := location.Data["key"]
+	bucket := location.Data[AF_KEY_BUCKET]
+	key := location.Data[AF_KEY_KEY]
 
 	object, err := store.client.GetObject(context.Background(), bucket, key, minio.GetObjectOptions{})
 	if err != nil {
@@ -98,18 +93,21 @@ func (store *MinIOArtifactStore) getArtifact(location ArtifactLocation) ([]byte,
 	return data, nil
 }
 
-func (store *MinIOArtifactStore) saveArtifact(bucket, key string, data []byte, contentType string) (ArtifactLocation, error) {
-	_, err := store.client.PutObject(context.Background(), bucket, key, bytes.NewReader(data), int64(len(data)), minio.PutObjectOptions{
-		ContentType: contentType,
-	})
+func (store *MinIOArtifactStore) saveArtifact(bucket, key string, data []byte,
+	contentType string) (ArtifactLocation, error) {
+	_, err := store.client.PutObject(context.Background(), bucket, key,
+		bytes.NewReader(data), int64(len(data)), minio.PutObjectOptions{
+			ContentType: contentType,
+		})
 	if err != nil {
 		return ArtifactLocation{}, err
 	}
 
+	// XX: static types
 	location := ArtifactLocation{
 		Data: map[string]string{
-			"bucket": bucket,
-			"key":    key,
+			AF_KEY_BUCKET: bucket,
+			AF_KEY_KEY:    key,
 		},
 	}
 

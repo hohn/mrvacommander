@@ -34,6 +34,7 @@ func NewRabbitMQQueue(
 	const (
 		tryCount         = 5
 		retryDelaySec    = 3
+		// XX: static typing?
 		jobsQueueName    = "tasks"
 		resultsQueueName = "results"
 	)

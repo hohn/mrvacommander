@@ -25,7 +25,7 @@ func (store *InMemoryArtifactStore) GetQueryPack(location ArtifactLocation) ([]b
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
-	key := location.Data["key"]
+	key := location.Data[AF_KEY_KEY]
 	data, exists := store.packs[key]
 	if !exists {
 		return nil, fmt.Errorf("query pack not found: %s", key)
@@ -41,10 +41,11 @@ func (store *InMemoryArtifactStore) SaveQueryPack(sessionId int, data []byte) (A
 	key := deriveKeyFromSessionId(sessionId)
 	store.packs[key] = data
 
+	// XX: static types
 	location := ArtifactLocation{
 		Data: map[string]string{
-			"bucket": "packs",
-			"key":    key,
+			AF_KEY_BUCKET: AF_VAL_BUCKET_PACKS,
+			AF_KEY_KEY:    key,
 		},
 	}
 	return location, nil
@@ -55,7 +56,7 @@ func (store *InMemoryArtifactStore) GetResult(location ArtifactLocation) ([]byte
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
-	key := location.Data["key"]
+	key := location.Data[AF_KEY_KEY]
 	data, exists := store.results[key]
 	if !exists {
 		return nil, fmt.Errorf("result not found: %s", key)
@@ -68,7 +69,7 @@ func (store *InMemoryArtifactStore) GetResultSize(location ArtifactLocation) (in
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
-	key := location.Data["key"]
+	key := location.Data[AF_KEY_KEY]
 	data, exists := store.results[key]
 	if !exists {
 		return 0, fmt.Errorf("result not found: %s", key)
@@ -84,10 +85,11 @@ func (store *InMemoryArtifactStore) SaveResult(jobSpec common.JobSpec, data []by
 	key := deriveKeyFromJobSpec(jobSpec)
 	store.results[key] = data
 
+	// XX: static types
 	location := ArtifactLocation{
 		Data: map[string]string{
-			"bucket": "results",
-			"key":    key,
+			AF_KEY_BUCKET: AF_VAL_BUCKET_RESULTS,
+			AF_KEY_KEY:    key,
 		},
 	}
 	return location, nil

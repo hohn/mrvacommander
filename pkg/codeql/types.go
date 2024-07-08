@@ -26,8 +26,10 @@ const (
 )
 
 type SarifRun struct {
+	// XX: static types
 	VersionControlProvenance []interface{} `json:"versionControlProvenance,omitempty"`
-	Results                  []interface{} `json:"results"`
+	// XX: never set, only read
+	Results []interface{} `json:"results"`
 }
 
 type Sarif struct {

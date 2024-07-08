@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"mrvacommander/pkg/artifactstore"
 	"mrvacommander/pkg/common"
 
 	"github.com/minio/minio-go/v7"
@@ -58,8 +59,8 @@ func (store *MinIOCodeQLDatabaseStore) FindAvailableDBs(analysisReposRequested [
 }
 
 func (store *MinIOCodeQLDatabaseStore) GetDatabase(location CodeQLDatabaseLocation) ([]byte, error) {
-	bucket := location.data["bucket"]
-	key := location.data["key"]
+	bucket := location.data[artifactstore.AF_KEY_BUCKET]
+	key := location.data[artifactstore.AF_KEY_KEY]
 
 	object, err := store.client.GetObject(context.Background(), bucket, key, minio.GetObjectOptions{})
 	if err != nil {
