@@ -12,7 +12,7 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
-const bucketName = "qldb"
+const QL_DB_BUCKETNAME = "qldb"
 
 type MinIOCodeQLDatabaseStore struct {
 	client     *minio.Client
@@ -30,14 +30,14 @@ func NewMinIOCodeQLDatabaseStore(endpoint, id, secret string) (*MinIOCodeQLDatab
 
 	slog.Info("Connected to MinIO CodeQL database store server")
 
-	err = common.CreateMinIOBucketIfNotExists(minioClient, bucketName)
+	err = common.CreateMinIOBucketIfNotExists(minioClient, QL_DB_BUCKETNAME)
 	if err != nil {
 		return nil, fmt.Errorf("could not create bucket: %v", err)
 	}
 
 	return &MinIOCodeQLDatabaseStore{
 		client:     minioClient,
-		bucketName: bucketName,
+		bucketName: QL_DB_BUCKETNAME,
 	}, nil
 }
 
@@ -90,8 +90,8 @@ func (store *MinIOCodeQLDatabaseStore) GetDatabaseLocationByNWO(nwo common.NameW
 
 	location := CodeQLDatabaseLocation{
 		data: map[string]string{
-			"bucket": store.bucketName,
-			"key":    objectName,
+			artifactstore.AF_KEY_BUCKET: store.bucketName,
+			artifactstore.AF_KEY_KEY:    objectName,
 		},
 	}
 
