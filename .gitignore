@@ -43,3 +43,4 @@ go.work.sum
 .env
 /artifactstore-data/.minio.sys
 /qldbminio/qldb
+.ipynb_checkpoints/
