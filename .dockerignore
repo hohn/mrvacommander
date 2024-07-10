@@ -5,3 +5,5 @@
 /test-data
 /venv
 /client
+/cmd/server/var
+/.git
