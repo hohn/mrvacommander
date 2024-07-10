@@ -4,18 +4,46 @@ qldbtools is a Python package for working with CodeQL databases
 
 ## Installation
 
-Local development
+-   Set up the virtual environment and install tools
 
-```bash
-cd ~/work-gh/mrva/mrvacommander/client/qldbtools
-pip install -e .
-```
+        cd ~/work-gh/mrva/mrvacommander/client/qldbtools/
+        python3.11 -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip
 
-Full installation
+        # From requirements.txt
+        pip install -r requirements.txt
+        # Or explicitly
+        pip install jupyterlab pandas ipython
+        pip install lckr-jupyterlab-variableinspector
 
-```bash
-pip install qldbtools
-```
+-   Run jupyterlab
+
+        cd ~/work-gh/mrva/mrvacommander/client
+        source venv/bin/activate
+        jupyter lab &
+        
+    The variable inspector is a right-click on an open console or notebook.
+    
+    The `jupyter` command produces output including
+    
+        Jupyter Server 2.14.1 is running at:
+        http://127.0.0.1:8888/lab?token=4c91308819786fe00a33b76e60f3321840283486457516a1
+
+    Use this to connect multiple front ends
+
+-   Local development
+
+    ```bash
+    cd ~/work-gh/mrva/mrvacommander/client/qldbtools
+    pip install -e .
+    ```
+
+-   Full installation
+
+    ```bash
+    pip install qldbtools
+    ```
 
 
 ## Usage

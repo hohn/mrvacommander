@@ -15,31 +15,7 @@ Separate from the server's downloading of databases, a client-side interface is 
 3.  is session based to allow iterations on selection / narrowing
 4.  must be queryable. There is no need to reinvent sql / dataframes
 
-Python with dataframes is ideal for this.
-
--   Set up the virtual environment and install tools
-
-        cd ~/work-gh/mrva/mrvacommander/client
-        python3.11 -m venv venv
-        source venv/bin/activate
-        pip install --upgrade pip
-        pip install jupyterlab pandas ipython
-        pip install lckr-jupyterlab-variableinspector
-
--   Run jupyterlab
-
-        cd ~/work-gh/mrva/mrvacommander/client
-        source venv/bin/activate
-        jupyter lab &
-        
-    The variable inspector is a right-click on an open console or notebook.
-    
-    The `jupyter` command produces output including
-    
-        Jupyter Server 2.14.1 is running at:
-        http://127.0.0.1:8888/lab?token=4c91308819786fe00a33b76e60f3321840283486457516a1
-
-    Use this to connect multiple front ends
+Python with dataframes is ideal for this; the project is in `client/`.
 
 ## Reverse proxy
 For testing, replay flows using mitmweb.  This is faster and simpler than using

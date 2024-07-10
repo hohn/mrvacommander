@@ -45,3 +45,5 @@ go.work.sum
 /qldbminio/qldb
 .ipynb_checkpoints/
 venv/
+*.egg-info
+__pycache__
