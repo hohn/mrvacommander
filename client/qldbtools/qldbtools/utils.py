@@ -8,9 +8,13 @@
 #* Imports 
 import pandas as pd
 from pathlib import Path
-import os
+import datetime
+import json
 import logging
+import os
 import time
+import yaml
+import zipfile
 
 #* Setup
 logging.basicConfig(
@@ -51,8 +55,9 @@ def collect_dbs(db_base):
             db.path = path
             s = path.stat()
             db.size = s.st_size
-            db.ctime_raw = s.st_ctime
-            db.ctime = time.ctime(s.st_ctime)
+            # db.ctime_raw = s.st_ctime
+            # db.ctime = time.ctime(s.st_ctime)
+            db.ctime = datetime.datetime.fromtimestamp(s.st_ctime).isoformat()
             yield db 
 
 def dbdf_from_tree():
@@ -61,30 +66,24 @@ def dbdf_from_tree():
     dbdf = pd.DataFrame([d.__dict__ for d in dbs])
     return dbdf
     
-#* Interactive use only
-if 0:
-    #* Data collection
-    # Get the db information in list of DBInfo form
-    db_base = "~/work-gh/mrva/mrva-open-source-download/"
-    dbs = list(collect_dbs(db_base))
-    # 
-    # Inspect:
-    from pprint import pprint
-    pprint(["len", len(dbs)])
-    pprint(["dbs[0]", dbs[0].__dict__])
-    # 
-    # Get a dataframe
-    dbdf = pd.DataFrame([d.__dict__ for d in dbs])
-    # 
-    # Interact with/visualize it
-    os.environ['APPDATA'] = "needed-for-pandasgui"
-    from pandasgui import show
-    show(dbdf)
-    # 
-    import dtale
-    dtale.show(dbdf)
-    # 
-
+#    extract_metadata(zipfile)
+# 
+# Unzip zipfile into memory and return the contents of the files
+# codeql-database.yml and baseline-info.json that it contains in a tuple
+#
+def extract_metadata(zipfile_path):
+    codeql_content = None
+    meta_content = None
+    with zipfile.ZipFile(zipfile_path, 'r') as z:
+        for file_info in z.infolist():
+            if file_info.filename == 'codeql_db/codeql-database.yml':
+                with z.open(file_info) as f:
+                    codeql_content = yaml.safe_load(f)
+            elif file_info.filename == 'codeql_db/baseline-info.json':
+                with z.open(file_info) as f:
+                    meta_content = json.load(f)
+    return codeql_content, meta_content
+               
 # Local Variables:
-# python-shell-virtualenv-root: "~/work-gh/mrva/mrvacommander/client/venv/"
+# python-shell-virtualenv-root: "~/work-gh/mrva/mrvacommander/client/qldbtools/venv/"
 # End:
