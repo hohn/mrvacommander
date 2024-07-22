@@ -6,12 +6,14 @@
 #   4. creation date
 #   5. db size
 #* Imports 
-import pandas as pd
+from dataclasses import dataclass
 from pathlib import Path
+
 import datetime
 import json
 import logging
 import os
+import pandas as pd
 import time
 import yaml
 import zipfile
@@ -40,8 +42,15 @@ def traverse_tree(root):
             pass
 
 # Collect information in one 'struct'
+@dataclass
 class DBInfo:
-    pass
+    ctime : str = '2024-05-13T12:04:01.593586'
+    language : str = 'cpp'
+    name : str = 'nanobind'
+    owner : str = 'wjakob'
+    path : Path = Path('/Users/hohn/work-gh/mrva/mrva-open-source-download/repos/wjakob/nanobind/code-scanning/codeql/databases/cpp/db.zip')
+    size : int = 63083064
+
 
 def collect_dbs(db_base):
     for path in traverse_tree(db_base):
