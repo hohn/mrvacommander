@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages
+import glob
 
 setup(
     name='qldbtools',
@@ -6,7 +7,7 @@ setup(
     description='A Python package for working with CodeQL databases',
     author='Michael Hohn',
     author_email='hohn@github.com',
-    packages=find_packages(),
-    install_requires=[
-    ],
+    packages=['qldbtools'],
+    install_requires=[],
+    scripts=glob.glob("bin/mc-*"),
 )

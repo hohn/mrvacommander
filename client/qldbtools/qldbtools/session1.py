@@ -1,4 +1,6 @@
 #* Experimental work with utils.py, to be merged into it.
+# The rest of this interactive script is available as cli script in
+# mc-db-initial-info
 from utils import *
 
 #* Data collection

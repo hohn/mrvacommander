@@ -46,10 +46,17 @@ qldbtools is a Python package for working with CodeQL databases
     ```
 
 
-## Usage
+## Use as library
 
 ```python
 import qldbtools as ql
 ```
 
+## Command-line use
 
+    cd ~/work-gh/mrva/mrvacommander/client/qldbtools
+    ./bin/mc-db-initial-info ~/work-gh/mrva/mrva-open-source-download | gzip > db-info-1.csv.gz
+    
+    gunzip < db-info-1.csv.gz | ./bin/mc-db-refine-info | gzip > db-info-2.csv.gz
+    
+    

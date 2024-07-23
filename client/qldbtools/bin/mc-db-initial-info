@@ -1,0 +1,40 @@
+#!/usr/bin/env python
+""" Collect information about CodeQL databases from the file system and write out
+    a table in CSV format.
+"""
+import qldbtools.utils as utils
+import argparse
+import logging
+import sys
+import pandas as pd
+#
+#* Configure logger
+# 
+logging.basicConfig(format='%(asctime)s %(message)s')
+
+#
+#* Process command line
+#
+parser = argparse.ArgumentParser(
+    description="""Find all CodeQL DBs in and below starting_dir and export a CSV 
+file with relevant data.""")
+parser.add_argument('starting_dir', type=str, 
+                    help='The starting directory to search for codeql.')
+args = parser.parse_args()
+
+# 
+#* Collect info
+# 
+# Get the db information in list of DBInfo form
+db_base = args.starting_dir
+dbs = list(utils.collect_dbs(db_base))
+dbdf = pd.DataFrame([d.__dict__ for d in dbs])
+#
+#
+#* Write info out
+#
+dbdf.to_csv(sys.stdout, index=False)
+
+# Local Variables:
+# python-shell-virtualenv-root: "~/work-gh/mrva/mrvacommander/client/qldbtools/venv/"
+# End:

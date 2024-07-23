@@ -52,6 +52,8 @@ for lang, lang_cont in metac['languages'].items():
             print("%sdisplayName %s" % (indent, val))
 
 #** Automated for all entries
+# The rest of this interactive script is available as cli script in
+# mc-db-refine-info
 d = dbdf_1
 joiners = []
 for left_index in range(0, len(d)-1):
@@ -73,6 +75,41 @@ full_df = pd.merge(d, joiners_df, left_index=True, right_on='left_index', how='o
 from pandasgui import show
 os.environ['APPDATA'] = "needed-for-pandasgui"
 show(full_df)
+
+#** Re-order the dataframe columns by importance
+# - Much of the data
+#   1. Is only conditionally present
+#   2. Is extra info, not for the DB proper
+#   3. May have various names
+
+# - The essential columns are
+#     | owner               |
+#     | name                |
+#     | language            |
+#     | size                |
+#     | cliVersion          |
+#     | creationTime        |
+#     | sha                 |
+#     | baselineLinesOfCode |
+#     | path                |
+
+# - The rest are useful; put them last
+#     | db_lang             |
+#     | db_lang_displayName |
+#     | db_lang_file_count  |
+#     | db_lang_linesOfCode |
+#     | left_index          |
+#     | ctime               |
+#     | primaryLanguage     |
+#     | finalised           |
+
+final_df = full_df.reindex(columns=['owner', 'name', 'language', 'size', 'cliVersion',
+	                                'creationTime', 'sha', 'baselineLinesOfCode', 'path',
+	                                'db_lang', 'db_lang_displayName', 'db_lang_file_count',
+	                                'db_lang_linesOfCode', 'ctime', 'primaryLanguage',
+	                                'finalised', 'left_index'])
+
+final_df.to_csv('all-info-table.csv.gz', compression='gzip', index=False)
 
 # 
 # Local Variables:
