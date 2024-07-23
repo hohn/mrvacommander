@@ -36,8 +36,12 @@ qldbtools is a Python package for working with CodeQL databases
 
     ```bash
     cd ~/work-gh/mrva/mrvacommander/client/qldbtools
-    pip install -e .
+    source venv/bin/activate
+    pip install --editable .
     ```
+
+    The `--editable` *should* use symlinks for all scripts; use `./bin/*` to be sure.
+
 
 -   Full installation
 
