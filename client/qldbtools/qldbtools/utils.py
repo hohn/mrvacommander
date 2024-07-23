@@ -30,6 +30,10 @@ def log_and_raise(message):
     logging.error(message)
     raise Exception(message)
 
+def log_and_raise_e(message, exception):
+    logging.error(message)
+    raise exception(message)
+
 def traverse_tree(root):
     root_path = Path(os.path.expanduser(root))
     if not root_path.exists() or not root_path.is_dir():
@@ -83,16 +87,95 @@ def dbdf_from_tree():
 def extract_metadata(zipfile_path):
     codeql_content = None
     meta_content = None
-    with zipfile.ZipFile(zipfile_path, 'r') as z:
-        for file_info in z.infolist():
-            if file_info.filename == 'codeql_db/codeql-database.yml':
-                with z.open(file_info) as f:
-                    codeql_content = yaml.safe_load(f)
-            elif file_info.filename == 'codeql_db/baseline-info.json':
-                with z.open(file_info) as f:
-                    meta_content = json.load(f)
+    # Files may not be zip files:
+    # {"message":"Repository was archived so is read-only.",
+    # "documentation_url":"https://docs.github.com/rest/code-scanning/code-scanning#get-a-codeql-database-for-a-repository"}
+    # 
+    try:
+        with zipfile.ZipFile(zipfile_path, 'r') as z:
+            for file_info in z.infolist():
+                # Filenames seen
+                #       java/codeql-database.yml
+                #       codeql_db/codeql-database.yml
+                if file_info.filename.endswith('codeql-database.yml'):
+                    with z.open(file_info) as f:
+                        codeql_content = yaml.safe_load(f)
+                # And
+                #       java/baseline-info.json
+                #       codeql_db/baseline-info.json
+                elif file_info.filename.endswith('baseline-info.json'):
+                    with z.open(file_info) as f:
+                        meta_content = json.load(f)
+    except zipfile.BadZipFile:
+        log_and_raise_e(f"Not a zipfile: '{zipfile_path}'", ExtractNotZipfile)
+    # The baseline-info is only available in more recent CodeQL versions
+    if not meta_content:
+        meta_content = {'languages':
+                        {'no-language': {'displayName': 'no-language',
+                                 'files': [],
+                                 'linesOfCode': -1,
+                                 'name': 'nolang'},
+                         }}
+            
+    if not codeql_content:
+        log_and_raise_e(f"Not a zipfile: '{zipfile_path}'", ExtractNoCQLDB)
     return codeql_content, meta_content
                
+class ExtractNotZipfile(Exception): pass
+class ExtractNoCQLDB(Exception): pass
+
+#    metadata_details(codeql_content, meta_content)
+#
+# Extract the details from metadata that will be used in DB selection and return a
+# dataframe with the information.  Example, cropped to fit:
+#
+# full_df.T
+# Out[535]: 
+#                                      0                  1
+# left_index                           0                  0
+# baselineLinesOfCode              17990              17990
+# primaryLanguage                    cpp                cpp
+# sha                  288920efc079766f4  282c20efc079766f4
+# cliVersion                      2.17.0             2.17.0
+# creationTime             .325253+00:00    51.325253+00:00
+# finalised                         True               True
+# db_lang                            cpp             python
+# db_lang_displayName              C/C++             Python
+# db_lang_file_count                 102                 27
+# db_lang_linesOfCode              17990               5586
+#
+def metadata_details(left_index, codeql_content, meta_content):
+    cqlc, metac = codeql_content, meta_content
+    d = {'left_index': left_index,
+         'baselineLinesOfCode': cqlc['baselineLinesOfCode'],
+         'primaryLanguage': cqlc['primaryLanguage'],
+         'sha': cqlc['creationMetadata'].get('sha', 'abcde0123'),
+         'cliVersion': cqlc['creationMetadata']['cliVersion'],
+         'creationTime': cqlc['creationMetadata']['creationTime'],
+         'finalised': cqlc.get('finalised', pd.NA),
+         }
+    f = pd.DataFrame(d, index=[0])
+    joiners = []
+    if not ('languages' in metac):
+        log_and_raise_e("Missing 'languages' in metadata", DetailsMissing)
+    for lang, lang_cont in metac['languages'].items():
+        d1 = { 'left_index' : left_index, 
+               'db_lang':  lang }
+        for prop, val in lang_cont.items():
+            if prop == 'files':
+                d1['db_lang_file_count'] = len(val)
+            elif prop == 'linesOfCode':
+                d1['db_lang_linesOfCode'] = val
+            elif prop == 'displayName':
+                d1['db_lang_displayName'] = val
+        joiners.append(d1)
+    fj = pd.DataFrame(joiners)
+    full_df = pd.merge(f, fj, on='left_index', how='outer')
+    return full_df
+
+class DetailsMissing(Exception): pass                        
+
+
 # Local Variables:
 # python-shell-virtualenv-root: "~/work-gh/mrva/mrvacommander/client/qldbtools/venv/"
 # End:

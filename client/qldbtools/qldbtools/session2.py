@@ -26,18 +26,21 @@ dtale.show(dbdf_1)
 #
 #* Collect metadata from DB zip files
 #
+#** A manual sample
+#
 d = dbdf_1
+left_index = 0
 d.path[0]
-idb, ibl = extract_metadata(d.path[0])
+cqlc, metac = extract_metadata(d.path[0])
 
-idb['baselineLinesOfCode']
-idb['primaryLanguage']
-idb['creationMetadata']['sha']
-idb['creationMetadata']['cliVersion']
-idb['creationMetadata']['creationTime'].isoformat()
-idb['finalised']
+cqlc['baselineLinesOfCode']
+cqlc['primaryLanguage']
+cqlc['creationMetadata']['sha']
+cqlc['creationMetadata']['cliVersion']
+cqlc['creationMetadata']['creationTime'].isoformat()
+cqlc['finalised']
 
-for lang, lang_cont in ibl['languages'].items():
+for lang, lang_cont in metac['languages'].items():
     print(lang)
     indent = "    "
     for prop, val in lang_cont.items():
@@ -48,6 +51,28 @@ for lang, lang_cont in ibl['languages'].items():
         elif prop == 'displayName':
             print("%sdisplayName %s" % (indent, val))
 
+#** Automated for all entries
+d = dbdf_1
+joiners = []
+for left_index in range(0, len(d)-1):
+    try:
+        cqlc, metac = extract_metadata(d.path[left_index])
+    except ExtractNotZipfile:
+        continue
+    except ExtractNoCQLDB:
+        continue
+    try:
+        detail_df = metadata_details(left_index, cqlc, metac)
+    except DetailsMissing:
+        continue
+    joiners.append(detail_df)
+joiners_df = pd.concat(joiners, axis=0)
+full_df = pd.merge(d, joiners_df, left_index=True, right_on='left_index', how='outer')    
+
+#** View the full dataframe with metadata
+from pandasgui import show
+os.environ['APPDATA'] = "needed-for-pandasgui"
+show(full_df)
 
 # 
 # Local Variables:
