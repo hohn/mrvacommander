@@ -80,6 +80,7 @@ lz4==4.3.3
 MarkupSafe==2.1.5
 matplotlib==3.9.1
 matplotlib-inline==0.1.7
+minio==7.2.7
 missingno==0.5.2
 mistune==3.0.2
 msgpack==1.0.8
@@ -115,6 +116,7 @@ pure-eval==0.2.2
 py-cpuinfo==9.0.0
 pyarrow==16.1.0
 pycparser==2.22
+pycryptodome==3.20.0
 Pygments==2.18.0
 pynput==1.7.7
 pyobjc-core==10.3.1
@@ -133,6 +135,7 @@ python-json-logger==2.0.7
 pytz==2024.1
 PyYAML==6.0.1
 pyzmq==26.0.3
+-e git+ssh://git@github.com/advanced-security/mrvacommander.git@26dd69c9767c315a8ffb782eedf3b55eac574d45#egg=qldbtools&subdirectory=client/qldbtools
 qtstylish==0.1.5
 referencing==0.35.1
 requests==2.32.3

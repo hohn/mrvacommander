@@ -59,8 +59,10 @@ import qldbtools as ql
 ## Command-line use
 
     cd ~/work-gh/mrva/mrvacommander/client/qldbtools
-    ./bin/mc-db-initial-info ~/work-gh/mrva/mrva-open-source-download | gzip > db-info-1.csv.gz
+    ./bin/mc-db-initial-info ~/work-gh/mrva/mrva-open-source-download > db-info-1.csv
     
-    gunzip < db-info-1.csv.gz | ./bin/mc-db-refine-info | gzip > db-info-2.csv.gz
+    ./bin/mc-db-refine-info < db-info-1.csv > db-info-2.csv
     
+    ./bin/mc-db-populate-minio < db-info-2.csv -n 3
     
+        
