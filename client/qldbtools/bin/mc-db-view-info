@@ -1,0 +1,35 @@
+#!/usr/bin/env python
+""" Read a table of CodeQL DB information and display it using pandasui
+"""
+import argparse
+import logging
+import sys
+#
+#* Configure logger
+# 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
+# Overwrite log level set by minio
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+
+#
+#* Process command line
+#
+parser = argparse.ArgumentParser(
+    description="Read a table of CodeQL DB information and display it using pandasui")
+args = parser.parse_args()
+# 
+#* Collect the information display
+#
+import pandas as pd
+
+df = pd.read_csv(sys.stdin)
+
+import os
+os.environ['APPDATA'] = "needed-for-pandasgui"
+from pandasgui import show
+show(df)
+
+# Local Variables:
+# python-shell-virtualenv-root: "~/work-gh/mrva/mrvacommander/client/qldbtools/venv/"
+# End:

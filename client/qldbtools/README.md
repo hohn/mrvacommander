@@ -64,5 +64,9 @@ import qldbtools as ql
     ./bin/mc-db-refine-info < db-info-1.csv > db-info-2.csv
     
     ./bin/mc-db-populate-minio < db-info-2.csv -n 3
+
+    ./bin/mc-db-view-info < db-info-2.csv 
+    
+    
     
         
