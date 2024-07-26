@@ -67,6 +67,6 @@ import qldbtools as ql
 
     ./bin/mc-db-view-info < db-info-2.csv 
     
-    
+    ./bin/mc-db-unique < db-info-2.csv > db-info-3.csv
     
         
