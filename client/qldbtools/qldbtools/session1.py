@@ -8,11 +8,6 @@ from utils import *
 db_base = "~/work-gh/mrva/mrva-open-source-download/"
 dbs = list(collect_dbs(db_base))
 
-# XX: add metadata
-# codeql, meta = extract_metadata('path_to_your_zipfile.zip')
-# print(codeql)
-# print(meta)
-
 # Inspect:
 from pprint import pprint
 pprint(["len", len(dbs)])
