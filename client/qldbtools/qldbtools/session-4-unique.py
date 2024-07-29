@@ -2,7 +2,7 @@
 from utils import *
 from pprint import pprint
 
-#* Reload gzipped CSV file to continue work
+#* Reload CSV file to continue work
 df2 = pd.read_csv('db-info-2.csv')
 
 
