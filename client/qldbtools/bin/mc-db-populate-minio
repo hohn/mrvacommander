@@ -72,7 +72,6 @@ except S3Error as err:
     logging.error(f"Error creating bucket: {err}")
 
 # Get info from dataframe and push the files
-# XX: include CID.  
 for index, row in entries[['owner', 'name', 'CID', 'path']].iterrows():
     owner, name, CID, path = row
     new_name = utils.form_db_bucket_name(owner, name, CID)

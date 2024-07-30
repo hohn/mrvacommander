@@ -70,8 +70,6 @@ import qldbtools as ql
    Those fields are collected and a single name addenum formed in
    `bin/mc-db-refine-info`. 
 
-   XX: Add `mc-db-generate-selection`
-
    The command sequence, grouped by data files, is
 
         cd ~/work-gh/mrva/mrvacommander/client/qldbtools
