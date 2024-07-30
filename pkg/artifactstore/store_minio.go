@@ -56,8 +56,10 @@ func (store *MinIOArtifactStore) GetResult(location ArtifactLocation) ([]byte, e
 }
 
 func (store *MinIOArtifactStore) GetResultSize(location ArtifactLocation) (int, error) {
-	bucket := location.Data[AF_KEY_BUCKET]
-	key := location.Data[AF_KEY_KEY]
+	// bucket := location.Data[AF_KEY_BUCKET]
+	// key := location.Data[AF_KEY_KEY]
+	bucket := location.Bucket
+	key := location.Key
 
 	objectInfo, err := store.client.StatObject(context.Background(), bucket, key, minio.StatObjectOptions{})
 	if err != nil {
@@ -76,8 +78,10 @@ func (store *MinIOArtifactStore) SaveResult(jobSpec common.JobSpec, data []byte)
 }
 
 func (store *MinIOArtifactStore) getArtifact(location ArtifactLocation) ([]byte, error) {
-	bucket := location.Data[AF_KEY_BUCKET]
-	key := location.Data[AF_KEY_KEY]
+	bucket := location.Bucket
+	key := location.Key
+	// bucket := location.Data[AF_KEY_BUCKET]
+	// key := location.Data[AF_KEY_KEY]
 
 	object, err := store.client.GetObject(context.Background(), bucket, key, minio.GetObjectOptions{})
 	if err != nil {
@@ -105,10 +109,12 @@ func (store *MinIOArtifactStore) saveArtifact(bucket, key string, data []byte,
 
 	// XX: static types
 	location := ArtifactLocation{
-		Data: map[string]string{
-			AF_KEY_BUCKET: bucket,
-			AF_KEY_KEY:    key,
-		},
+		Bucket: bucket,
+		Key:    key,
+		// Data: map[string]string{
+		// 	AF_KEY_BUCKET: bucket,
+		// 	AF_KEY_KEY:    key,
+		// },
 	}
 
 	return location, nil

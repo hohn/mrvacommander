@@ -1,0 +1,9 @@
+# Excludes
+
+/dbstore-data
+/qpstore-data
+/test-data
+/venv
+/client
+/cmd/server/var
+/.git
