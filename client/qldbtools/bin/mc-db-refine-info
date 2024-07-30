@@ -43,6 +43,14 @@ for left_index in range(0, len(d)-1):
 joiners_df = pd.concat(joiners, axis=0)
 full_df = pd.merge(d, joiners_df, left_index=True, right_on='left_index', how='outer')    
 
+#** Add single uniqueness field -- CID (Cumulative ID)
+full_df['CID'] = full_df.apply(lambda row: 
+                               utils.cid_hash( (row['creationTime'],
+                                                row['sha'], 
+                                                row['cliVersion'], 
+                                                row['language'])
+                                              ), axis=1)
+
 #** Re-order the dataframe columns by importance
 # - Much of the data
 #   1. Is only conditionally present
@@ -70,11 +78,13 @@ full_df = pd.merge(d, joiners_df, left_index=True, right_on='left_index', how='o
 #     | primaryLanguage     |
 #     | finalised           |
 
-final_df = full_df.reindex(columns=['owner', 'name', 'language', 'size', 'cliVersion',
-	                                'creationTime', 'sha', 'baselineLinesOfCode', 'path',
-	                                'db_lang', 'db_lang_displayName', 'db_lang_file_count',
-	                                'db_lang_linesOfCode', 'ctime', 'primaryLanguage',
-	                                'finalised', 'left_index'])
+final_df = full_df.reindex( columns=['owner', 'name', 'cliVersion',
+                                     'creationTime', 'language', 'sha','CID',
+                                     'baselineLinesOfCode', 'path', 'db_lang',
+                                     'db_lang_displayName', 'db_lang_file_count',
+                                     'db_lang_linesOfCode', 'ctime',
+                                     'primaryLanguage', 'finalised', 'left_index',
+                                     'size'])
 
 final_df.to_csv(sys.stdout, index=False)
 

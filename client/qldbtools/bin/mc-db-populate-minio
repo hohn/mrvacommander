@@ -72,9 +72,10 @@ except S3Error as err:
     logging.error(f"Error creating bucket: {err}")
 
 # Get info from dataframe and push the files
-for index, row in entries[['owner', 'name', 'path']].iterrows():
-    owner, name, path = row
-    new_name = f'{owner}${name}.zip'
+# XX: include CID.  
+for index, row in entries[['owner', 'name', 'CID', 'path']].iterrows():
+    owner, name, CID, path = row
+    new_name = utils.form_db_bucket_name(owner, name, CID)
     try:
         client.fput_object(QL_DB_BUCKET_NAME, new_name, path)
         logging.info(f"Uploaded {path} as {new_name} to bucket {QL_DB_BUCKET_NAME}")

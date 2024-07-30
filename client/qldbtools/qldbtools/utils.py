@@ -175,6 +175,38 @@ def metadata_details(left_index, codeql_content, meta_content):
 
 class DetailsMissing(Exception): pass                        
 
+from hashlib import blake2b
+
+def cid_hash(row_tuple: tuple):
+    """
+        cid_hash(row_tuple)
+    Take a bytes object and return hash as hex string
+    """
+    h = blake2b(digest_size = 3)
+    h.update(str(row_tuple).encode())
+    # return int.from_bytes(h.digest(), byteorder='big')
+    return h.hexdigest()
+
+def form_db_bucket_name(owner, name, CID):
+    """
+        form_db_bucket_name(owner, name, CID)
+    Return the name to use in minio storage; this function is trivial and used to
+    enforce consistent naming.
+
+    The 'ctsj' prefix is a random, unique key to identify the information.
+    """
+    return f'{owner}${name}ctsj{CID}.zip'
+
+def form_db_req_name(owner, name, CID):
+    """
+        form_db_req_name(owner, name, CID)
+    Return the name to use in mrva requests; this function is trivial and used to
+    enforce consistent naming.
+
+    The 'ctsj' prefix is a random, unique key to identify the information.
+    """
+    return f'{owner}/{name}ctsj{CID}'
+
 
 # Local Variables:
 # python-shell-virtualenv-root: "~/work-gh/mrva/mrvacommander/client/qldbtools/venv/"

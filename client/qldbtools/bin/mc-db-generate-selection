@@ -1,0 +1,103 @@
+#!/usr/bin/env python
+""" Read a table of CodeQL DB information
+    and generate the selection files for
+    1. the VS Code CodeQL plugin
+    2. the gh-mrva command-line client
+"""
+import argparse
+import logging
+import qldbtools.utils as utils
+import numpy as np
+
+#
+#* Configure logger
+# 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
+# Overwrite log level set by minio
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+
+#
+#* Process command line
+#
+parser = argparse.ArgumentParser(
+    description=""" Read a table of CodeQL DB information
+    and generate the selection files for
+    1. the VS Code CodeQL plugin
+    2. the gh-mrva command-line client
+    """,
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument('vscode_selection', type=str,
+                    help='VS Code selection file to generate')
+parser.add_argument('gh_mrva_selection', type=str,
+                    help='gh-mrva cli selection file to generate')
+parser.add_argument('-n', '--num-entries', type=int, 
+                    help='Only use N entries', 
+                    default=None)
+parser.add_argument('-s', '--seed', type=int, 
+                    help='Random number seed', 
+                    default=4242)
+parser.add_argument('-l', '--list-name', type=str, 
+                    help='Name of the repository list',
+                    default='mirva-list')
+
+args = parser.parse_args()
+#
+#* Load the information
+#
+import pandas as pd
+import sys
+
+df0 = pd.read_csv(sys.stdin)
+
+if args.num_entries == None:
+    # Use all entries
+    df1 = df0
+else:
+    # Use num_entries, chosen via pseudo-random numbers
+    df1 = df0.sample(n=args.num_entries,
+                    random_state=np.random.RandomState(args.seed))
+
+#
+#* Form and save structures
+#
+repos = []
+for index, row in df1[['owner', 'name', 'CID', 'path']].iterrows():
+    owner, name, CID, path = row
+    repos.append(utils.form_db_req_name(owner, name, CID))
+
+repo_list_name = args.list_name
+vsc = {
+    "version": 1,
+    "databases": {
+        "variantAnalysis": {
+            "repositoryLists": [
+                {
+                    "name": repo_list_name,
+                    "repositories": repos,
+                }
+            ],
+            "owners": [],
+            "repositories": []
+        }
+    },
+    "selected": {
+        "kind": "variantAnalysisUserDefinedList",
+        "listName": repo_list_name
+    }
+}
+
+gh = {
+    repo_list_name:  repos
+}
+
+import json
+with open(args.vscode_selection, "w") as fc:
+    json.dump(vsc, fc, indent=4)
+
+with open(args.gh_mrva_selection, "w") as fc:
+    json.dump(gh, fc, indent=4)
+ 
+# Local Variables:
+# python-shell-virtualenv-root: "~/work-gh/mrva/mrvacommander/client/qldbtools/venv/"
+# End:

@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 """ Read a table of CodeQL DB information, 
-    group entries by (owner,name),  sort each group by
-    creationTime and keep only the top (newest) element.
+    group entries by (owner,name,CID),  
+    sort each group by creationTime,
+    and keep only the top (newest) element.
 """
 import argparse
 import logging
@@ -32,8 +33,8 @@ import sys
 
 df0 = pd.read_csv(sys.stdin)
 
-df_sorted = df0.sort_values(by=['owner', 'name', 'creationTime'])
-df_unique = df_sorted.groupby(['owner', 'name']).first().reset_index()
+df_sorted = df0.sort_values(by=['owner', 'name', 'CID', 'creationTime'])
+df_unique = df_sorted.groupby(['owner', 'name', 'CID']).first().reset_index()
 
 df_unique.to_csv(sys.stdout, index=False)
 
