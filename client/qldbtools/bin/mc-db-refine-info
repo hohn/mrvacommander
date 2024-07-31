@@ -45,11 +45,12 @@ full_df = pd.merge(d, joiners_df, left_index=True, right_on='left_index', how='o
 
 #** Add single uniqueness field -- CID (Cumulative ID)
 full_df['CID'] = full_df.apply(lambda row: 
-                               utils.cid_hash( (row['creationTime'],
-                                                row['sha'], 
-                                                row['cliVersion'], 
-                                                row['language'])
-                                              ), axis=1)
+                               utils.cid_hash((
+                                   row['cliVersion'], 
+                                   row['creationTime'],
+                                   row['language'],
+                                   row['sha'], 
+                               )), axis=1)
 
 #** Re-order the dataframe columns by importance
 # - Much of the data
