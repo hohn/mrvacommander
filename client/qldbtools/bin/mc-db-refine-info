@@ -25,7 +25,7 @@ args = parser.parse_args()
 
 #
 #* Collect the information
-#
+# This step is time-intensive so we save the results right after.
 d = pd.read_csv(sys.stdin)
 joiners = []
 for left_index in range(0, len(d)-1):
@@ -43,51 +43,10 @@ for left_index in range(0, len(d)-1):
 joiners_df = pd.concat(joiners, axis=0)
 full_df = pd.merge(d, joiners_df, left_index=True, right_on='left_index', how='outer')    
 
-#** Add single uniqueness field -- CID (Cumulative ID)
-full_df['CID'] = full_df.apply(lambda row: 
-                               utils.cid_hash((
-                                   row['cliVersion'], 
-                                   row['creationTime'],
-                                   row['language'],
-                                   row['sha'], 
-                               )), axis=1)
-
-#** Re-order the dataframe columns by importance
-# - Much of the data
-#   1. Is only conditionally present
-#   2. Is extra info, not for the DB proper
-#   3. May have various names
-# 
-# - The essential columns are
-#     | owner               |
-#     | name                |
-#     | language            |
-#     | size                |
-#     | cliVersion          |
-#     | creationTime        |
-#     | sha                 |
-#     | baselineLinesOfCode |
-#     | path                |
-# 
-# - The rest are useful; put them last
-#     | db_lang             |
-#     | db_lang_displayName |
-#     | db_lang_file_count  |
-#     | db_lang_linesOfCode |
-#     | left_index          |
-#     | ctime               |
-#     | primaryLanguage     |
-#     | finalised           |
-
-final_df = full_df.reindex( columns=['owner', 'name', 'cliVersion',
-                                     'creationTime', 'language', 'sha','CID',
-                                     'baselineLinesOfCode', 'path', 'db_lang',
-                                     'db_lang_displayName', 'db_lang_file_count',
-                                     'db_lang_linesOfCode', 'ctime',
-                                     'primaryLanguage', 'finalised', 'left_index',
-                                     'size'])
-
-final_df.to_csv(sys.stdout, index=False)
+#
+#* Save results
+#
+full_df.to_csv(sys.stdout, index=False)
 
 # Local Variables:
 # python-shell-virtualenv-root: "~/work-gh/mrva/mrvacommander/client/qldbtools/venv/"

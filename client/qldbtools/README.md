@@ -84,4 +84,10 @@ import qldbtools as ql
         ./bin/mc-db-generate-selection -n 23 vscode-selection.json gh-mrva-selection.json < db-info-3.csv 
        
        
-               
+## Notes
+
+   The preview-data plugin for VS Code has a bug; it displays `0` instead of
+   `0e3379` for the following.  There are other entries with similar malfunction.
+   
+        CleverRaven,Cataclysm-DDA,0e3379,2.17.0,2024-05-08 12:13:10.038007+00:00,cpp,5ca7f4e59c2d7b0a93fb801a31138477f7b4a761,578098.0,/Users/hohn/work-gh/mrva/mrva-open-source-download/repos-2024-04-29/CleverRaven/Cataclysm-DDA/code-scanning/codeql/databases/cpp/db.zip,cpp,C/C++,1228.0,578098.0,2024-05-13T12:14:54.650648,cpp,True,4245,563435469
+        CleverRaven,Cataclysm-DDA,3231f7,2.18.0,2024-07-18 11:13:01.673231+00:00,cpp,db3435138781937e9e0e999abbaa53f1d3afb5b7,579532.0,/Users/hohn/work-gh/mrva/mrva-open-source-download/repos/CleverRaven/Cataclysm-DDA/code-scanning/codeql/databases/cpp/db.zip,cpp,C/C++,1239.0,579532.0,2024-07-24T02:33:23.900885,cpp,True,1245,573213726
