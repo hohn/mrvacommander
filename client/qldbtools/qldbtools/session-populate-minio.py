@@ -9,7 +9,7 @@ from pathlib import Path
 #
 #* Collect the information and select subset
 #
-df = pd.read_csv('db-info-2.csv')
+df = pd.read_csv('scratch/db-info-2.csv')
 seed = 4242
 if 0:
     # Use all entries

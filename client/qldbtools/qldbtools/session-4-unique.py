@@ -5,7 +5,7 @@ import pandas as pd
 # cd ../
 
 #* Reload CSV file to continue work
-df2 = df_refined = pd.read_csv('db-info-2.csv')
+df2 = df_refined = pd.read_csv('scratch/db-info-2.csv')
 
 # Identify rows missing specific entries
 rows = ( df2['cliVersion'].isna() | 
@@ -17,7 +17,7 @@ df3 = df2[~rows]
 df3
 
 #* post-save work
-df4 = pd.read_csv('db-info-3.csv')
+df4 = pd.read_csv('scratch/db-info-3.csv')
 
 # Sort and group
 df_sorted = df4.sort_values(by=['owner', 'name', 'CID', 'creationTime'])

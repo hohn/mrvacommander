@@ -13,7 +13,7 @@ import numpy as np
 import importlib
 importlib.reload(utils)
 
-df0 = pd.read_csv('db-info-3.csv')
+df0 = pd.read_csv('scratch/db-info-3.csv')
 
 # Use num_entries, chosen via pseudo-random numbers
 df1 = df0.sample(n=3, random_state=np.random.RandomState(4242))

@@ -4,7 +4,7 @@ import pandas as pd
 #
 #* Collect the information
 #
-df1 = pd.read_csv("db-info-2.csv")
+df1 = pd.read_csv("scratch/db-info-2.csv")
 
 # Add single uniqueness field -- CID (Cumulative ID) -- using
 # - creationTime
