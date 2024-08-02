@@ -41,7 +41,6 @@ def traverse_tree(root):
         elif path.is_dir():
             pass
 
-# Collect information in one 'struct'
 @dataclass
 class DBInfo:
     ctime : str = '2024-05-13T12:04:01.593586'
@@ -69,24 +68,16 @@ def collect_dbs(db_base):
             db.ctime = datetime.datetime.fromtimestamp(s.st_ctime).isoformat()
             yield db 
 
-def dbdf_from_tree():
-    db_base = "~/work-gh/mrva/mrva-open-source-download/"
-    dbs = list(collect_dbs(db_base))
-    dbdf = pd.DataFrame([d.__dict__ for d in dbs])
-    return dbdf
-    
-#    extract_metadata(zipfile)
-# 
-# Unzip zipfile into memory and return the contents of the files
-# codeql-database.yml and baseline-info.json that it contains in a tuple
-#
+
 def extract_metadata(zipfile_path):
+    """
+       extract_metadata(zipfile)
+
+    Unzip zipfile into memory and return the contents of the files
+    codeql-database.yml and baseline-info.json that it contains in a tuple
+    """
     codeql_content = None
     meta_content = None
-    # Files may not be zip files:
-    # {"message":"Repository was archived so is read-only.",
-    # "documentation_url":"https://docs.github.com/rest/code-scanning/code-scanning#get-a-codeql-database-for-a-repository"}
-    # 
     try:
         with zipfile.ZipFile(zipfile_path, 'r') as z:
             for file_info in z.infolist():
@@ -120,27 +111,28 @@ def extract_metadata(zipfile_path):
 class ExtractNotZipfile(Exception): pass
 class ExtractNoCQLDB(Exception): pass
 
-#    metadata_details(codeql_content, meta_content)
-#
-# Extract the details from metadata that will be used in DB selection and return a
-# dataframe with the information.  Example, cropped to fit:
-#
-# full_df.T
-# Out[535]: 
-#                                      0                  1
-# left_index                           0                  0
-# baselineLinesOfCode              17990              17990
-# primaryLanguage                    cpp                cpp
-# sha                  288920efc079766f4  282c20efc079766f4
-# cliVersion                      2.17.0             2.17.0
-# creationTime             .325253+00:00    51.325253+00:00
-# finalised                         True               True
-# db_lang                            cpp             python
-# db_lang_displayName              C/C++             Python
-# db_lang_file_count                 102                 27
-# db_lang_linesOfCode              17990               5586
-#
 def metadata_details(left_index, codeql_content, meta_content):
+    """
+       metadata_details(codeql_content, meta_content)
+
+    Extract the details from metadata that will be used in DB selection and return a
+    dataframe with the information.  Example, cropped to fit:
+
+    full_df.T
+    Out[535]: 
+                                         0                  1
+    left_index                           0                  0
+    baselineLinesOfCode              17990              17990
+    primaryLanguage                    cpp                cpp
+    sha                  288920efc079766f4  282c20efc079766f4
+    cliVersion                      2.17.0             2.17.0
+    creationTime             .325253+00:00    51.325253+00:00
+    finalised                         True               True
+    db_lang                            cpp             python
+    db_lang_displayName              C/C++             Python
+    db_lang_file_count                 102                 27
+    db_lang_linesOfCode              17990               5586
+    """
     cqlc, metac = codeql_content, meta_content
     d = {'left_index': left_index,
          'baselineLinesOfCode': cqlc['baselineLinesOfCode'],
