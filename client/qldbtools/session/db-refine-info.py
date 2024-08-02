@@ -1,4 +1,4 @@
-# Experimental work with utils.py, to be merged into it.
+# Experimental work be merged with bin/mc-db-refine-info
 from utils import *
 from pprint import pprint
 
