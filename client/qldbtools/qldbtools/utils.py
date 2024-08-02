@@ -1,10 +1,6 @@
-#* Overview
-# - [ ] import the dbs from the filesystem.  Include
-#   1. name
-#   2. owner
-#   3. language
-#   4. creation date
-#   5. db size
+""" This module supports the selection of CodeQL databases based on various
+criteria.  
+"""
 #* Imports 
 from dataclasses import dataclass
 from pathlib import Path
@@ -52,7 +48,7 @@ class DBInfo:
     language : str = 'cpp'
     name : str = 'nanobind'
     owner : str = 'wjakob'
-    path : Path = Path('/Users/hohn/work-gh/mrva/mrva-open-source-download/repos/wjakob/nanobind/code-scanning/codeql/databases/cpp/db.zip')
+    path : Path = Path('/Users/.../db.zip')
     size : int = 63083064
 
 
