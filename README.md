@@ -104,18 +104,18 @@ docker-compose.
 
 1.  Test server from the host via
 
-        cd ~/work-gh/mrva/mrvacommander-1/tools
+        cd ~/work-gh/mrva/mrvacommander/tools
         sh ./request_16-Jun-2024_11-33-16.curl
 
 1.  Follow server logging via
 
-        cd ~/work-gh/mrva/mrvacommander-1
+        cd ~/work-gh/mrva/mrvacommander
         docker-compose up -d
         docker-compose logs -f server
 
 1.  Completely rebuild all containers.  Useful when running into docker errors
 
-        cd ~/work-gh/mrva/mrvacommander-1
+        cd ~/work-gh/mrva/mrvacommander
         docker-compose up --build
 
 1.  Test server via remote client by following the steps in [gh-mrva](https://github.com/hohn/gh-mrva/blob/connection-redirect/README.org#compacted-edit-run-debug-cycle)
