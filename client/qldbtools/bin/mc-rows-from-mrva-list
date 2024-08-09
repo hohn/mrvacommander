@@ -1,0 +1,64 @@
+#!/usr/bin/env python
+"""
+Script to list full details for a mrva-list file
+
+1. reads files containing
+{
+    "mirva-list": [
+        "NLPchina/elasticsearch-sqlctsj168cc4",
+        "LMAX-Exchange/disruptorctsj3e75ec",
+        "justauth/JustAuthctsj8a6177",
+        "FasterXML/jackson-modules-basectsj2fe248",
+        "ionic-team/capacitor-pluginsctsj38d457",
+        "PaddlePaddle/PaddleOCRctsj60e555",
+        "elastic/apm-agent-pythonctsj21dc64",
+        "flipkart-incubator/zjsonpatchctsjc4db35",
+        "stephane/libmodbusctsj54237e",
+        "wso2/carbon-kernelctsj5a8a6e",
+        "apache/servicecomb-packctsj4d98f5"
+    ]
+}
+2. reads a pandas dataframe stored in a csv file 
+3. selects all rows from 2. that contain the 'owner' column matching
+   the string before the slash from 1. and the 'name' column matching
+   the string between the slash and the marker 'ctsj'
+
+"""
+import argparse
+import json
+import sys
+
+#
+#* Process command line
+#
+parser = argparse.ArgumentParser(
+    description="""Script to list full details for a mrva-list file""")
+parser.add_argument('mrva_list', type=str, 
+                    help='The JSON file containing the mrva-list')
+parser.add_argument('info_csv', type=str, 
+                    help='The CSV file containing the full information')
+args = parser.parse_args()
+
+#* Step 1: Read the JSON file containing the "mirva-list"
+with open(args.mrva_list, 'r') as f:
+    data = json.load(f)
+
+# Extract and parse the "mirva-list"
+mirva_list = data['mirva-list']
+parsed_mirva_list = []
+for item in mirva_list:
+    owner_name = item.split('/')[0]
+    repo_name = item.split('/')[1].split('ctsj')[0]
+    parsed_mirva_list.append((owner_name, repo_name))
+
+#* Step 2: Read the CSV file into a pandas dataframe
+import pandas as pd
+df = pd.read_csv(args.info_csv)
+
+#* Step 3: Filter the dataframe based on the parsed "mirva-list"
+filtered_df = df[
+    df.apply(lambda row: 
+             (row['owner'], row['name']) in parsed_mirva_list, axis=1)]
+
+# Optionally, you can save the filtered dataframe to a new CSV file
+filtered_df.to_csv(sys.stdout, index=False)
