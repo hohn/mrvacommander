@@ -122,16 +122,25 @@ A small sample of a full table:
         ./bin/mc-db-refine-info < scratch/db-info-1.csv > scratch/db-info-2.csv
        
         ./bin/mc-db-view-info < scratch/db-info-2.csv &
-        ./bin/mc-db-unique < scratch/db-info-2.csv > scratch/db-info-3.csv
+        ./bin/mc-db-unique cpp < scratch/db-info-2.csv > scratch/db-info-3.csv
         ./bin/mc-db-view-info < scratch/db-info-3.csv &
 
-        ./bin/mc-db-populate-minio -n 23 < scratch/db-info-3.csv
-        ./bin/mc-db-generate-selection -n 23 \
+        ./bin/mc-db-populate-minio -n 11 < scratch/db-info-3.csv
+        ./bin/mc-db-generate-selection -n 11 \
             scratch/vscode-selection.json \
             scratch/gh-mrva-selection.json \
             < scratch/db-info-3.csv 
-       
-       
+
+
+   To see the full information for a selection, use `mc-rows-from-mrva-list`:
+   
+        ./bin/mc-rows-from-mrva-list scratch/gh-mrva-selection.json \
+            scratch/db-info-3.csv > scratch/selection-full-info
+
+   To check, e.g., the `language` column:
+
+        csvcut -c language scratch/selection-full-info 
+
 ## Notes
 
    The `preview-data` plugin for VS Code has a bug; it displays `0` instead of

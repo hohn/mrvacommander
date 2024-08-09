@@ -32,9 +32,12 @@ root_logger.setLevel(logging.INFO)
 #
 parser = argparse.ArgumentParser(
     description=""" Read a table of CodeQL DB information, 
+    narrow to <language>,
     group entries by (owner,name),  sort each group by
     creationTime and keep only the top (newest) element.
     """)
+parser.add_argument('language', type=str, 
+                    help='The language to be analyzed.')
 
 args = parser.parse_args()
 #
@@ -100,8 +103,11 @@ rows = ( df3['cliVersion'].isna() |
          df3['sha'].isna() )
 df4 = df3[~rows]
 
+# XX: Limit to one language
+df5 = df4[df4['language'] == args.language]
+
 # Sort and group
-df_sorted = df4.sort_values(by=['owner', 'name', 'CID', 'creationTime'])
+df_sorted = df5.sort_values(by=['owner', 'name', 'CID', 'creationTime'])
 df_unique = df_sorted.groupby(['owner', 'name', 'CID']).first().reset_index()
 
 # Write output
