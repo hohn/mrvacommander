@@ -1,5 +1,15 @@
 all: server agent
 
+.phony: view
+
+view: README.html
+	open $<
+
+html: README.html
+
+%.html: %.md
+	pandoc --toc=true --standalone $< --out $@
+
 server:
 	cd cmd/server && GOOS=linux GOARCH=arm64 go build
 
