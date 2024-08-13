@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -12,7 +13,10 @@ import (
 	"mrvacommander/utils"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
+	"strings"
+	"syscall"
 
 	"gopkg.in/yaml.v3"
 )
@@ -82,11 +86,9 @@ func addFileToZip(zipWriter *zip.Writer, filePath, zipPath string) error {
 	return nil
 }
 
-func RunQuery(database string, language queue.QueryLanguage, queryPackPath string, tempDir string) (*RunQueryResult, error) {
+func RunQuery(database string, language queue.QueryLanguage,
+	queryPackPath string, tempDir string) (*RunQueryResult, error) {
 	path, err := getCodeQLCLIPath()
-	// XX: is nwo a name/owner, or the original callers' queryLanguage?
-	slog.Debug("XX: is nwo a name/owner, or the original callers' queryLanguage?",
-		"language", language)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get codeql cli path: %v", err)
@@ -119,18 +121,26 @@ func RunQuery(database string, language queue.QueryLanguage, queryPackPath strin
 		databaseSHA = *dbMetadata.CreationMetadata.SHA
 	}
 
-	cmd := exec.Command(codeql.Path, "database", "run-queries", "--ram=2048", "--additional-packs", queryPackPath, "--", databasePath, queryPackPath)
+	dbDir, err := findDBDir(databasePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database path: %v", err)
+	}
+
+	cmd := exec.Command(codeql.Path, "database", "run-queries",
+		"--ram=2048", "--additional-packs", queryPackPath, "--", dbDir, queryPackPath)
 	if output, err := cmd.CombinedOutput(); err != nil {
+		awaitSignal("XX: RunQuery: ", string(output))
 		return nil, fmt.Errorf("failed to run queries: %v\nOutput: %s", err, output)
 	}
 
-	queryPackRunResults, err := getQueryPackRunResults(codeql, databasePath, queryPackPath)
+	queryPackRunResults, err := getQueryPackRunResults(codeql, dbDir, queryPackPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get query pack run results: %v", err)
 	}
 
-	sourceLocationPrefix, err := getSourceLocationPrefix(codeql, databasePath)
+	sourceLocationPrefix, err := getSourceLocationPrefix(codeql, dbDir)
 	if err != nil {
+		awaitSignal("XX: RunQuery ", "failed to get source location prefix ", "databasePath=", dbDir)
 		return nil, fmt.Errorf("failed to get source location prefix: %v", err)
 	}
 
@@ -146,7 +156,7 @@ func RunQuery(database string, language queue.QueryLanguage, queryPackPath strin
 	var sarifFilePath string
 
 	if shouldGenerateSarif {
-		sarif, err := generateSarif(codeql, language, databasePath, queryPackPath, databaseSHA, resultsDir)
+		sarif, err := generateSarif(codeql, language, dbDir, queryPackPath, databaseSHA, resultsDir)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate SARIF: %v", err)
 		}
@@ -176,9 +186,114 @@ func RunQuery(database string, language queue.QueryLanguage, queryPackPath strin
 	}, nil
 }
 
-func getDatabaseMetadata(databasePath string) (*DatabaseMetadata, error) {
-	data, err := os.ReadFile(filepath.Join(databasePath, "codeql-database.yml"))
+//	awaitSignal()
+//
+// Debugging support function.  Freezes the current goroutine / function and
+// waits for an external signal before continuing.
+// Use
+//
+//	pkill -SIGUSR1 mrva_agent
+//
+// in the container to continue
+func awaitSignal(strs ...string) {
+	msg := strings.Join(strs, "")
+	sigChan := make(chan os.Signal, 1)
+
+	// Notify the channel on SIGUSR1 or SIGUSR2
+	signal.Notify(sigChan, syscall.SIGUSR1, syscall.SIGUSR2)
+
+	// Pause the program and wait for a signal
+	slog.Debug(msg, "Waiting for SIGUSR1 or SIGUSR2...", nil)
+	sig := <-sigChan
+
+	// Handle the signal
+	slog.Debug("Received signal: %s", sig.String(), nil)
+}
+
+//	findDBDir(rootdir)
+//
+// Find a subdirectory of `rootdir` that contains the files `codeql-database.yml`
+// and `src.zip` and return its absolute path
+func findDBDir(rootdir string) (string, error) {
+	var dbDir string
+	err := filepath.Walk(rootdir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Check if it's a directory
+		if info.IsDir() {
+			codeqlPath := filepath.Join(path, "codeql-database.yml")
+			srcZipPath := filepath.Join(path, "src.zip")
+
+			// Check if both files exist in this directory
+			if _, err := os.Stat(codeqlPath); err == nil {
+				if _, err := os.Stat(srcZipPath); err == nil {
+					dbDir = path
+					// Stop walking once we've found the directory
+					return filepath.SkipDir
+				}
+			}
+		}
+		return nil
+	})
+
 	if err != nil {
+		slog.Error("findDBDir: Problem in traversing directory:", "rootdir",
+			rootdir, "err", err)
+		return "", err
+	}
+
+	if dbDir == "" {
+		slog.Error("Unable to find CodeQL DB directory in database zip", "rootdir", rootdir)
+		return "", errors.New("no directory containing both 'codeql-database.yml' and 'src.zip' found")
+	}
+
+	return dbDir, nil
+}
+
+// Recursively search for files matching the glob pattern starting at rootdir
+func globRecursively(rootdir string, pattern string) ([]string, error) {
+	var matches []string
+
+	// Walk the directory tree
+	err := filepath.Walk(rootdir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Check if the file name matches the glob pattern
+		match, err := filepath.Match(pattern, info.Name())
+		if err != nil {
+			return err
+		}
+
+		if !info.IsDir() && match {
+			matches = append(matches, path)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return matches, nil
+}
+
+func getDatabaseMetadata(databasePath string) (*DatabaseMetadata, error) {
+	paths, err := globRecursively(databasePath, "codeql-database.yml")
+	if err != nil {
+		return nil, fmt.Errorf("Failed to find codeql-database.yml %v", err)
+	}
+	if len(paths) != 1 {
+		return nil, fmt.Errorf("Found wrong number of paths to codeql-database.yml: %s", paths)
+	}
+
+	data, err := os.ReadFile(paths[0])
+	if err != nil {
+		awaitSignal("XX: getDataBaseMetadata ", "databasePath=", databasePath)
 		return nil, fmt.Errorf("failed to read database metadata: %v", err)
 	}
 
@@ -317,6 +432,7 @@ func getSourceLocationPrefix(codeql CodeqlCli, databasePath string) (string, err
 	cmd := exec.Command(codeql.Path, "resolve", "database", databasePath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
+		slog.Error("Failed to resolve database", "err", err, "output", output)
 		return "", fmt.Errorf("failed to resolve database: %v\nOutput: %s", err, output)
 	}
 
