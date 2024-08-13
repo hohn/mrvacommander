@@ -129,7 +129,6 @@ func RunQuery(database string, language queue.QueryLanguage,
 	cmd := exec.Command(codeql.Path, "database", "run-queries",
 		"--ram=2048", "--additional-packs", queryPackPath, "--", dbDir, queryPackPath)
 	if output, err := cmd.CombinedOutput(); err != nil {
-		awaitSignal("XX: RunQuery: ", string(output))
 		return nil, fmt.Errorf("failed to run queries: %v\nOutput: %s", err, output)
 	}
 
@@ -140,7 +139,6 @@ func RunQuery(database string, language queue.QueryLanguage,
 
 	sourceLocationPrefix, err := getSourceLocationPrefix(codeql, dbDir)
 	if err != nil {
-		awaitSignal("XX: RunQuery ", "failed to get source location prefix ", "databasePath=", dbDir)
 		return nil, fmt.Errorf("failed to get source location prefix: %v", err)
 	}
 
@@ -293,7 +291,6 @@ func getDatabaseMetadata(databasePath string) (*DatabaseMetadata, error) {
 
 	data, err := os.ReadFile(paths[0])
 	if err != nil {
-		awaitSignal("XX: getDataBaseMetadata ", "databasePath=", databasePath)
 		return nil, fmt.Errorf("failed to read database metadata: %v", err)
 	}
 
