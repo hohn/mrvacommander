@@ -12,7 +12,13 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
-const QL_DB_BUCKETNAME = "qldb"
+// XX: static types: split by type?
+// Restrict the keys / values and centralize the common ones here
+const (
+	QL_DB_BUCKETNAME = "qldb"
+	QL_KEY_BUCKET    = "bucket"
+	QL_KEY_KEY       = "key"
+)
 
 type MinIOCodeQLDatabaseStore struct {
 	client     *minio.Client
@@ -59,8 +65,8 @@ func (store *MinIOCodeQLDatabaseStore) FindAvailableDBs(analysisReposRequested [
 }
 
 func (store *MinIOCodeQLDatabaseStore) GetDatabase(location CodeQLDatabaseLocation) ([]byte, error) {
-	bucket := location.data[artifactstore.AF_KEY_BUCKET]
-	key := location.data[artifactstore.AF_KEY_KEY]
+	bucket := location.Data[artifactstore.AF_KEY_BUCKET]
+	key := location.Data[artifactstore.AF_KEY_KEY]
 
 	object, err := store.client.GetObject(context.Background(), bucket, key, minio.GetObjectOptions{})
 	if err != nil {
@@ -89,7 +95,7 @@ func (store *MinIOCodeQLDatabaseStore) GetDatabaseLocationByNWO(nwo common.NameW
 	}
 
 	location := CodeQLDatabaseLocation{
-		data: map[string]string{
+		Data: map[string]string{
 			artifactstore.AF_KEY_BUCKET: store.bucketName,
 			artifactstore.AF_KEY_KEY:    objectName,
 		},

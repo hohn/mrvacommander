@@ -35,7 +35,7 @@ func (store *FilesystemCodeQLDatabaseStore) FindAvailableDBs(analysisReposReques
 }
 
 func (store *FilesystemCodeQLDatabaseStore) GetDatabase(location CodeQLDatabaseLocation) ([]byte, error) {
-	path, exists := location.data["path"]
+	path, exists := location.Data["path"]
 	if !exists {
 		return nil, fmt.Errorf("path not specified in location")
 	}
@@ -57,7 +57,7 @@ func (store *FilesystemCodeQLDatabaseStore) GetDatabaseLocationByNWO(nwo common.
 	}
 
 	location := CodeQLDatabaseLocation{
-		data: map[string]string{
+		Data: map[string]string{
 			"path": filePath,
 		},
 	}

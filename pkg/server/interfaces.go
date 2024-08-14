@@ -10,5 +10,6 @@ type CommanderAPI interface {
 	MRVAStatus(w http.ResponseWriter, r *http.Request)
 	MRVADownloadArtifactID(w http.ResponseWriter, r *http.Request)
 	MRVADownloadArtifact(w http.ResponseWriter, r *http.Request)
+	MRVADownloadQLDB(w http.ResponseWriter, r *http.Request)
 	MRVADownloadServe(w http.ResponseWriter, r *http.Request)
 }

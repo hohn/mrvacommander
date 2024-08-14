@@ -5,11 +5,11 @@ import (
 )
 
 type CodeQLDatabaseLocation struct {
-	// `data` is a map of key-value pairs that describe the location of the database.
+	// `Data` is a map of key-value pairs that describe the location of the database.
 	// For example, a simple key-value pair could be "path" -> "/path/to/database.zip".
 	// A more complex implementation could be "bucket" -> "example", "key" -> "unique_identifier".
 	// XX: static types
-	data map[string]string
+	Data map[string]string
 }
 
 type Store interface {

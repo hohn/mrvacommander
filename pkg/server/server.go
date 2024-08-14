@@ -63,7 +63,11 @@ func setupEndpoints(c CommanderAPI) {
 	r.HandleFunc("/repos/{owner}/{repo}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}", c.MRVAStatus)
 	r.HandleFunc("/repositories/{controller_repo_id}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}", c.MRVAStatusID)
 
+	// XX: Handle endpoint
+	//			  /repos/tdlib/telegram-bot-apictsj8529d9/code-scanning/codeql/databases/cpp
 	// Endpoints for getting a URL to download artifacts
+	//			  /repos/tdlib	     /telegram.../code-scanning/codeql/databases/cpp
+	r.HandleFunc("/repos/{repo_owner}/{repo_name}/code-scanning/codeql/databases/{repo_language}", c.MRVADownloadQLDB)
 	r.HandleFunc("/repos/{controller_owner}/{controller_repo}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}/repos/{repo_owner}/{repo_name}", c.MRVADownloadArtifact)
 	r.HandleFunc("/repositories/{controller_repo_id}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}/repositories/{repository_id}", c.MRVADownloadArtifactID)
 
@@ -360,6 +364,49 @@ func (c *CommanderSingle) MRVADownloadArtifactID(w http.ResponseWriter, r *http.
 	}
 
 	c.MRVADownloadArtifactCommon(w, r, int(repoId), jobSpec)
+}
+
+func (c *CommanderSingle) MRVADownloadQLDB(w http.ResponseWriter, r *http.Request) {
+	// The repositories are uploaded without language and can be downloaded
+	// without it.  We ignore the language parameter passed in the request:
+	// vars["repo_language"]
+
+	// Other artifact downloads, like sendArtifactDownloadResponse, depend on
+	// a jobspec (integer job id).  This request has none, and needs none.
+
+	// An original upload example is
+	//		tdlib$telegram-bot-apictsj8529d9.zip to bucket qldb.
+
+	// This is a direct data request -- don't reply with a download url.
+
+	vars := mux.Vars(r)
+	owner := vars["repo_owner"]
+	name := vars["repo_name"]
+
+	dbl := qldbstore.CodeQLDatabaseLocation{
+		Data: map[string]string{
+			qldbstore.QL_KEY_BUCKET: qldbstore.QL_DB_BUCKETNAME,
+			qldbstore.QL_KEY_KEY:    fmt.Sprintf("%s$%s.zip", owner, name),
+		},
+	}
+
+	slog.Debug("Returning codeql database using database location",
+		"qldbstore.CodeQLDatabaseLocation", dbl,
+	)
+
+	dbContent, err := c.v.CodeQLDBStore.GetDatabase(dbl)
+	if err != nil {
+		slog.Error("Failed to retrieve ql database",
+			"error", err,
+			"qldbstore.CodeQLDatabaseLocation", dbl,
+		)
+		http.Error(w, "Failed to retrieve ql database", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Write(dbContent)
+
 }
 
 func (c *CommanderSingle) MRVADownloadArtifact(w http.ResponseWriter, r *http.Request) {
