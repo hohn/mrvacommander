@@ -476,27 +476,60 @@ func generateSarif(codeql CodeqlCli, language queue.QueryLanguage, databasePath,
 		return nil, fmt.Errorf("failed to read SARIF file: %v", err)
 	}
 
-	// Modify the sarif: start by extracting
-	var sarif Sarif
-	if err := json.Unmarshal(sarifData, &sarif); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal SARIF: %v", err)
+	// Modify the sarif: start by extracting a fully dynamic structure.
+	// Previous attempts with a fully typechecked SARIF input have failed;
+	// there are simply too many optional fields that may vanish or appear at
+	// any time.
+
+	// Read json into a fully dynamic Go structure, check for the presence of an
+	// array 'Runs' in the top-level object, iterate over 'Runs' and for every
+	// entry append to the field 'VersionControlProvenance'
+
+	// Decode JSON into a map for a fully dynamic structure
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(sarifData), &data); err != nil {
+		slog.Error("Error decoding SARIF", "err", err)
+		return nil, err
 	}
 
-	// now inject version control info
-	for _, run := range sarif.Runs {
-		run.VersionControlProvenance = append(run.VersionControlProvenance, map[string]interface{}{
-			"repositoryUri": fmt.Sprintf("%s/%s", os.Getenv("GITHUB_SERVER_URL"), language),
-			"revisionId":    databaseSHA,
-		})
+	// Check if the "Runs" array exists
+	if runs, ok := data["Runs"].([]interface{}); ok {
+		for _, run := range runs {
+			if runMap, ok := run.(map[string]interface{}); ok {
+				// Check and append to the "VersionControlProvenance" field
+				if vcp, ok := runMap["VersionControlProvenance"].([]interface{}); ok {
+					// Array exists, add an entry
+					runMap["VersionControlProvenance"] = append(vcp,
+						map[string]interface{}{
+							"repositoryUri": fmt.Sprintf("%s/%s",
+								os.Getenv("GITHUB_SERVER_URL"), language),
+							"revisionId": databaseSHA,
+						})
+				} else {
+					// No array, provide one and the entry
+					runMap["VersionControlProvenance"] = []map[string]interface{}{
+						{
+							"repositoryUri": fmt.Sprintf("%s/%s",
+								os.Getenv("GITHUB_SERVER_URL"), language),
+							"revisionId": databaseSHA,
+						},
+					}
+				}
+			}
+		}
 	}
 
-	// and write it back
-	sarifBytes, err := json.Marshal(sarif)
+	// Encode the modified structure back to JSON
+	modifiedJSON, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal SARIF: %v", err)
+		slog.Error("Unable to re-encode SARIF to JSON", "err", err)
+		return nil, err
 	}
 
-	return sarifBytes, nil
+	slog.Debug("XX: sarif original", "sarif=", sarifData)
+	slog.Debug("XX: sarif modified", "modifiedJSON=", modifiedJSON)
+
+	return modifiedJSON, nil
 }
 
 // XX: inlined this function
