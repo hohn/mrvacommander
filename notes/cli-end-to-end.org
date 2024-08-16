@@ -1,0 +1,482 @@
+# -*- coding: utf-8 -*-
+#+OPTIONS: H:2 num:t \n:nil @:t ::t |:t ^:{} f:t *:t TeX:t LaTeX:t skip:nil p:nil
+#+OPTIONS: toc:nil
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="./l3style.css"/>
+#+HTML: <div id="toc">
+#+TOC: headlines 2        insert TOC here, with two headline levels
+#+HTML: </div>
+#
+#+HTML: <div id="org-content">
+
+* End-to-end example of CLI use
+  This document describes a complete cycle of the MRVA workflow.  The steps
+  included are 
+  1. aquiring CodeQL databases
+  2. selection of databases
+  3. configuration and use of the command-line client
+  4. server startup
+  5. submission of the jobs
+  6. retrieval of the results
+  7. examination of the results
+
+* Database Aquisition
+  General database aquisition is beyond the scope of this document as it is very specific
+  to an organization's environment.  Here we use an example for open-source
+  repositories, [[https://github.com/hohn/mrva-open-source-download.git][mrva-open-source-download]], which downloads the top 1000 databases for each of
+  C/C++, Java, Python -- 3000 CodeQL DBs in all.
+
+  The scripts in [[https://github.com/hohn/mrva-open-source-download.git][mrva-open-source-download]] were used to download on two distinct dates
+  resulting in close to 6000 databases to choose from.  The DBs were directly
+  saved to the file system, resulting in paths like
+  : .../mrva-open-source-download/repos-2024-04-29/google/re2/code-scanning/codeql/databases/cpp/db.zip
+  and
+  : .../mrva-open-source-download/repos/google/re2/code-scanning/codeql/databases/cpp/db.zip
+  Note that the only information in these paths are (owner, repository, download
+  date).  The databases contain more information which is used in the [[*Repository Selection][Repository
+  Selection]] section.
+
+  To get a collection of databases follow the [[https://github.com/hohn/mrva-open-source-download?tab=readme-ov-file#mrva-download][instructions]].
+
+* Repository Selection
+  Here we select a small subset of those repositories using a collection scripts
+  made for the purpose, the [[https://github.com/hohn/mrvacommander/blob/hohn-0.1.21.2-improve-structure-and-docs/client/qldbtools/README.md#installation][qldbtools]] package.
+  Clone the full repository before continuing:
+  #+BEGIN_SRC sh 
+    mkdir -p ~/work-gh/mrva/
+    git clone git@github.com:hohn/mrvacommander.git
+    cd ~/work-gh/mrva/mrvacommander/client/qldbtools && mkdir -p scratch
+  #+END_SRC
+
+  After performing the [[https://github.com/hohn/mrvacommander/blob/hohn-0.1.21.2-improve-structure-and-docs/client/qldbtools/README.md#installation][installation]] steps, we can follow the [[https://github.com/hohn/mrvacommander/blob/hohn-0.1.21.2-improve-structure-and-docs/client/qldbtools/README.md#command-line-use][command line]] use
+  instructions to collect all the database information from the file system into a
+  single table:
+
+  #+BEGIN_SRC sh 
+    cd ~/work-gh/mrva/mrvacommander/client/qldbtools && mkdir -p scratch
+    ./bin/mc-db-initial-info ~/work-gh/mrva/mrva-open-source-download > scratch/db-info-1.csv
+  #+END_SRC
+
+  The [[https://csvkit.readthedocs.io/en/latest/scripts/csvstat.html][=csvstat=]] tool gives a good overview[fn:1]; here is a pruned version of the
+  output 
+  #+BEGIN_SRC text
+    csvstat  scratch/db-info-1.csv 
+      1. "ctime"
+          Type of data:          DateTime
+          ...
+
+      2. "language"
+        Type of data:          Text
+        Non-null values:       6000
+        Unique values:         3
+        Longest value:         6 characters
+        Most common values:    cpp (2000x)
+                               java (2000x)
+                               python (2000x)
+      3. "name"
+         ...
+      4. "owner"
+        Type of data:          Text
+        Non-null values:       6000
+        Unique values:         2189
+        Longest value:         29 characters
+        Most common values:    apache (258x)
+                               google (86x)
+                               microsoft (64x)
+                               spring-projects (56x)
+                               alibaba (42x)
+      5. "path"
+         ...
+      6. "size"
+        Type of data:          Number
+        Non-null values:       6000
+        Unique values:         5354
+        Smallest value:        0
+        Largest value:         1,885,008,701
+        Sum:                   284,766,326,993
+        ...
+
+    Row count: 6000
+
+  #+END_SRC
+  The information critial for selection are the columns
+  1. owner
+  2. name
+  3. language
+  The size column is interesting:  a smallest value of 0 indicates some error
+  while our largest DB is 1.88 GB in size
+
+  This information is not sufficient, so we collect more.  The following script
+  extracts information from every database on disk and takes more time accordingly
+  -- about 30 seconds on my laptop.
+  #+BEGIN_SRC sh 
+    ./bin/mc-db-refine-info < scratch/db-info-1.csv > scratch/db-info-2.csv
+  #+END_SRC
+  This new table is a merge of all the available meta-information with the
+  previous table causing the increase in the number of rows.  The following
+  columns are now present
+  #+BEGIN_SRC text
+    0:$     csvstat  scratch/db-info-2.csv 
+      1. "ctime"
+      2. "language"
+      3. "name"
+      4. "owner"
+      5. "path"
+      6. "size"
+      7. "left_index"
+      8. "baselineLinesOfCode"
+        Type of data:          Number
+        Contains null values:  True (excluded from calculations)
+        Non-null values:       11920
+        Unique values:         4708
+        Smallest value:        0
+        Largest value:         22,028,732
+        Sum:                   3,454,019,142
+        Mean:                  289,766.707
+        Median:                54,870.5
+      9. "primaryLanguage"
+     10. "sha"
+        Type of data:          Text
+        Contains null values:  True (excluded from calculations)
+        Non-null values:       11920
+        Unique values:         4928
+     11. "cliVersion"
+        Type of data:          Text
+        Contains null values:  True (excluded from calculations)
+        Non-null values:       11920
+        Unique values:         59
+        Longest value:         6 characters
+        Most common values:    2.17.0 (3850x)
+                               2.18.0 (3622x)
+                               2.17.2 (1097x)
+                               2.17.6 (703x)
+                               2.16.3 (378x)
+     12. "creationTime"
+        Type of data:          Text
+        Contains null values:  True (excluded from calculations)
+        Non-null values:       11920
+        Unique values:         5345
+        Longest value:         32 characters
+        Most common values:    None (19x)
+                               2024-03-19 01:40:14.507823+00:00 (16x)
+                               2024-02-29 19:12:59.785147+00:00 (16x)
+                               2024-01-30 22:24:17.411939+00:00 (14x)
+                               2024-04-05 09:34:03.774619+00:00 (14x)
+     13. "finalised"
+        Type of data:          Boolean
+        Contains null values:  True (excluded from calculations)
+        Non-null values:       11617
+        Unique values:         2
+        Most common values:    True (11617x)
+                               None (322x)
+     14. "db_lang"
+     15. "db_lang_displayName"
+     16. "db_lang_file_count"
+     17. "db_lang_linesOfCode"
+
+    Row count: 11939
+  #+END_SRC
+  There are several columns that are critical, namely
+     1. "sha"
+     2. "cliVersion"
+     3. "creationTime"
+  The others may be useful, but they are not strictly required.
+  The critical ones deserve more explanation:
+     1. "sha": The =git= commit SHA of the repository the CodeQL database was
+        created from.  Required to distinguish query results over the evolution of
+        a code base.
+     2. "cliVersion":  The version of the CodeQL CLI used to create the database.
+        Required to identify advances/regressions originating from the CodeQL binary.
+     3. "creationTime":  The time the database was created.  Required (or at least
+        very handy) for following the evolution of query results over time.
+  This leaves us with a row count of 11939
+
+  To start reducing that count, start with
+  #+BEGIN_SRC sh 
+    ./bin/mc-db-unique < scratch/db-info-2.csv > scratch/db-info-3.csv
+  #+END_SRC
+  and get a reduced count and a new column:
+  #+BEGIN_SRC text
+    csvstat  scratch/db-info-3.csv 
+    3. "CID"
+
+      Type of data:          Text
+      Contains null values:  False
+      Non-null values:       5344
+      Unique values:         5344
+      Longest value:         6 characters
+      Most common values:    1f8d99 (1x)
+                             9ab87a (1x)
+                             76fdc7 (1x)
+                             b21305 (1x)
+                             4ae79b (1x)
+
+    Row count: 5344
+  #+END_SRC
+  From the docs:  'Read a table of CodeQL DB information and produce a table with unique entries 
+  adding the Cumulative ID (CID) column.'
+
+  The CID column combines 
+  - cliVersion
+  - creationTime
+  - language
+  - sha
+  into a single 6-character string via hashing and with (owner, repo) provides a
+  unique index for every DB.
+
+  We still have too many rows.  The tables are all in CSV format, so you can use
+  your favorite tool to narrow the selection for your needs.   For this document,
+  we simply use a pseudo-random selection of 11 databases via
+  #+BEGIN_SRC sh 
+    ./bin/mc-db-generate-selection -n 11 \
+                                   scratch/vscode-selection.json \
+                                   scratch/gh-mrva-selection.json \
+                                   < scratch/db-info-3.csv 
+  #+END_SRC
+
+  Note that these use pseudo-random numbers, so the selection is in fact
+  deterministic.  The selected databases in =gh-mrva-selection.json=, to be used
+  in section [[*Running the gh-mrva command-line client][Running the gh-mrva command-line client]], are the following:
+  #+begin_src javascript
+    {
+        "mirva-list": [
+            "NLPchina/elasticsearch-sqlctsj168cc4",
+            "LMAX-Exchange/disruptorctsj3e75ec",
+            "justauth/JustAuthctsj8a6177",
+            "FasterXML/jackson-modules-basectsj2fe248",
+            "ionic-team/capacitor-pluginsctsj38d457",
+            "PaddlePaddle/PaddleOCRctsj60e555",
+            "elastic/apm-agent-pythonctsj21dc64",
+            "flipkart-incubator/zjsonpatchctsjc4db35",
+            "stephane/libmodbusctsj54237e",
+            "wso2/carbon-kernelctsj5a8a6e",
+            "apache/servicecomb-packctsj4d98f5"
+        ]
+    }
+  #+end_src
+
+* Starting the server
+  The full instructions for building and running the server are in [[../README.md]] under
+  'Steps to build and run the server'
+
+  With docker-compose set up and this repository cloned as previously described,
+  we just run
+  #+BEGIN_SRC sh 
+        cd ~/work-gh/mrva/mrvacommander
+        docker-compose up --build
+  #+END_SRC
+  and wait until the log output no longer changes.
+
+  Then, use the following command to populate the mrvacommander database storage:
+  #+BEGIN_SRC sh 
+    cd ~/work-gh/mrva/mrvacommander/client/qldbtools && \
+        ./bin/mc-db-populate-minio -n 11 < scratch/db-info-3.csv
+  #+END_SRC
+  
+* Running the gh-mrva command-line client
+  The first run uses the test query to verify basic functionality, but it returns
+  no results.
+** Run MRVA from command line
+   1. Install mrva cli
+      #+BEGIN_SRC sh 
+        mkdir -p ~/work-gh/mrva && cd ~/work-gh/mrva
+        git clone https://github.com/hohn/gh-mrva.git
+        cd ~/work-gh/mrva/gh-mrva && git checkout mrvacommander-end-to-end
+
+        # Build it
+        go mod edit -replace="github.com/GitHubSecurityLab/gh-mrva=$HOME/work-gh/mrva/gh-mrva"
+        go build .
+
+        # Sanity check
+        ./gh-mrva -h
+      #+END_SRC
+
+   2. Set up the configuration
+      #+BEGIN_SRC sh 
+        mkdir -p ~/.config/gh-mrva
+        cat > ~/.config/gh-mrva/config.yml <<eof
+        # The following options are supported
+        # codeql_path: Path to CodeQL distribution (checkout of codeql repo)
+        # controller: NWO of the MRVA controller to use.  Not used here.
+        # list_file: Path to the JSON file containing the target repos
+
+        # XX:
+        codeql_path: $HOME/work-gh/not-used
+        controller: not-used/mirva-controller
+        list_file: $HOME/work-gh/mrva/gh-mrva/gh-mrva-selection.json
+        eof
+      #+END_SRC
+
+   3. Submit the mrva job
+      #+BEGIN_SRC sh 
+        cp ~/work-gh/mrva/mrvacommander/client/qldbtools/scratch/gh-mrva-selection.json \
+           ~/work-gh/mrva/gh-mrva/gh-mrva-selection.json 
+
+        cd ~/work-gh/mrva/gh-mrva/
+        ./gh-mrva submit --language cpp --session mirva-session-1360    \
+                  --list mirva-list                                     \
+                  --query ~/work-gh/mrva/gh-mrva/FlatBuffersFunc.ql
+      #+END_SRC
+
+   4. Check the status
+      #+BEGIN_SRC sh 
+        cd ~/work-gh/mrva/gh-mrva/
+
+        # Check the status
+        ./gh-mrva status --session mirva-session-1360
+      #+END_SRC
+
+   5. Download the sarif files, optionally also get databases.  For the current
+      query / database combination there are zero result hence no downloads.
+      #+BEGIN_SRC sh 
+        cd ~/work-gh/mrva/gh-mrva/
+        # Just download the sarif files
+        ./gh-mrva download --session mirva-session-1360 \
+                  --output-dir mirva-session-1360
+
+        # Download the sarif files and CodeQL dbs
+        ./gh-mrva download --session mirva-session-1360 \
+                  --download-dbs \
+                  --output-dir mirva-session-1360
+      #+END_SRC
+
+** Write query that has some results
+   First, get the list of paths corresponding to the previously selected
+   databases. 
+   #+BEGIN_SRC sh 
+     cd ~/work-gh/mrva/mrvacommander/client/qldbtools 
+     ./bin/mc-rows-from-mrva-list scratch/gh-mrva-selection.json \
+                                  scratch/db-info-3.csv > scratch/selection-full-info
+     csvcut -c path scratch/selection-full-info 
+   #+END_SRC
+
+   Use one of these databases to write a query.  It need not produce results.  
+   #+BEGIN_SRC sh 
+     cd ~/work-gh/mrva/gh-mrva/
+     code gh-mrva.code-workspace
+   #+END_SRC
+   In this case, the trivial =findPrintf=:
+   #+BEGIN_SRC java
+     /**
+      ,* @name findPrintf
+      ,* @description find calls to plain fprintf
+      ,* @kind problem
+      ,* @id cpp-fprintf-call
+      ,* @problem.severity warning
+      ,*/
+
+     import cpp
+
+     from FunctionCall fc
+     where
+       fc.getTarget().getName() = "fprintf"
+     select fc, "call of fprintf"
+   #+END_SRC
+
+
+   Repeat the submit steps with this query
+   1. -- 
+   2. --
+   3. Submit the mrva job
+      #+BEGIN_SRC sh 
+        cp ~/work-gh/mrva/mrvacommander/client/qldbtools/scratch/gh-mrva-selection.json \
+           ~/work-gh/mrva/gh-mrva/gh-mrva-selection.json 
+
+        cd ~/work-gh/mrva/gh-mrva/
+        ./gh-mrva submit --language cpp --session mirva-session-1480    \
+                  --list mirva-list                                     \
+                  --query ~/work-gh/mrva/gh-mrva/Fprintf.ql
+      #+END_SRC
+   4. Check the status
+      #+BEGIN_SRC sh 
+        cd ~/work-gh/mrva/gh-mrva/
+        ./gh-mrva status --session mirva-session-1480
+      #+END_SRC
+
+      This time we have results
+      #+BEGIN_SRC text
+        ...
+        Run name: mirva-session-1480
+        Status: succeeded
+        Total runs: 1
+        Total successful scans: 11
+        Total failed scans: 0
+        Total skipped repositories: 0
+        Total skipped repositories due to access mismatch: 0
+        Total skipped repositories due to not found: 0
+        Total skipped repositories due to no database: 0
+        Total skipped repositories due to over limit: 0
+        Total repositories with findings: 7
+        Total findings: 618
+        Repositories with findings:
+          quickfix/quickfixctsjebfd13 (cpp-fprintf-call): 5
+          libfuse/libfusectsj7a66a4 (cpp-fprintf-call): 146
+          xoreaxeaxeax/movfuscatorctsj8f7e5b (cpp-fprintf-call): 80
+          pocoproject/pococtsj26b932 (cpp-fprintf-call): 17
+          BoomingTech/Piccoloctsj6d7177 (cpp-fprintf-call): 10
+          tdlib/telegram-bot-apictsj8529d9 (cpp-fprintf-call): 247
+          WinMerge/winmergectsj101305 (cpp-fprintf-call): 113
+      #+END_SRC
+   5. Download the sarif files, optionally also get databases.  
+      #+BEGIN_SRC sh 
+        cd ~/work-gh/mrva/gh-mrva/
+        # Just download the sarif files
+        ./gh-mrva download --session mirva-session-1480 \
+                  --output-dir mirva-session-1480
+
+        # Download the sarif files and CodeQL dbs
+        ./gh-mrva download --session mirva-session-1480 \
+                  --download-dbs \
+                  --output-dir mirva-session-1480
+
+        # And list them:
+        \ls -la *1480*
+        -rwxr-xr-x@  1 hohn  staff    1915857 Aug 16 14:10 BoomingTech_Piccoloctsj6d7177_1.sarif
+        drwxr-xr-x@  3 hohn  staff         96 Aug 16 14:15 BoomingTech_Piccoloctsj6d7177_1_db
+        -rwxr-xr-x@  1 hohn  staff   89857056 Aug 16 14:11 BoomingTech_Piccoloctsj6d7177_1_db.zip
+        -rwxr-xr-x@  1 hohn  staff    3105663 Aug 16 14:10 WinMerge_winmergectsj101305_1.sarif
+        -rwxr-xr-x@  1 hohn  staff  227812131 Aug 16 14:12 WinMerge_winmergectsj101305_1_db.zip
+        -rwxr-xr-x@  1 hohn  staff     193976 Aug 16 14:10 libfuse_libfusectsj7a66a4_1.sarif
+        -rwxr-xr-x@  1 hohn  staff   12930693 Aug 16 14:10 libfuse_libfusectsj7a66a4_1_db.zip
+        -rwxr-xr-x@  1 hohn  staff    1240694 Aug 16 14:10 pocoproject_pococtsj26b932_1.sarif
+        -rwxr-xr-x@  1 hohn  staff  158924920 Aug 16 14:12 pocoproject_pococtsj26b932_1_db.zip
+        -rwxr-xr-x@  1 hohn  staff     888494 Aug 16 14:10 quickfix_quickfixctsjebfd13_1.sarif
+        -rwxr-xr-x@  1 hohn  staff   75023303 Aug 16 14:11 quickfix_quickfixctsjebfd13_1_db.zip
+        -rwxr-xr-x@  1 hohn  staff    1487363 Aug 16 14:10 tdlib_telegram-bot-apictsj8529d9_1.sarif
+        -rwxr-xr-x@  1 hohn  staff  373477635 Aug 16 14:14 tdlib_telegram-bot-apictsj8529d9_1_db.zip
+        -rwxr-xr-x@  1 hohn  staff     103657 Aug 16 14:10 xoreaxeaxeax_movfuscatorctsj8f7e5b_1.sarif
+        -rwxr-xr-x@  1 hohn  staff    9464225 Aug 16 14:10 xoreaxeaxeax_movfuscatorctsj8f7e5b_1_db.zip
+      #+END_SRC
+
+   6. Use the [[https://marketplace.visualstudio.com/items?itemName=MS-SarifVSCode.sarif-viewer][SARIF Viewer]] plugin in VS Code to open and review the results.
+
+      Prepare the source directory so the viewer can be pointed at it
+      #+BEGIN_SRC sh 
+        cd ~/work-gh/mrva/gh-mrva/mirva-session-1480
+
+        unzip -qd BoomingTech_Piccoloctsj6d7177_1_db BoomingTech_Piccoloctsj6d7177_1_db.zip 
+
+        cd BoomingTech_Piccoloctsj6d7177_1_db/codeql_db/
+        unzip -qd src src.zip
+      #+END_SRC
+
+      Use the viewer
+      #+BEGIN_SRC sh 
+        code BoomingTech_Piccoloctsj6d7177_1.sarif
+
+        # For lauxlib.c, point the source viewer to 
+        find ~/work-gh/mrva/gh-mrva/mirva-session-1480/BoomingTech_Piccoloctsj6d7177_1_db/codeql_db/src/home/runner/work/bulk-builder/bulk-builder -name lauxlib.c
+
+        # Here: ~/work-gh/mrva/gh-mrva/mirva-session-1480/BoomingTech_Piccoloctsj6d7177_1_db/codeql_db/src/home/runner/work/bulk-builder/bulk-builder/engine/3rdparty/lua-5.4.4/lauxlib.c
+      #+END_SRC
+
+   7. (optional) Large result sets are more easily filtered via
+      dataframes or spreadsheets.  Convert the SARIF to CSV if needed; see [[https://github.com/hohn/sarif-cli/][sarif-cli]].
+
+   
+
+
+* Footnotes
+[fn:1]The =csvkit= can be installed into the same Python virtual environment as
+the =qldbtools=.
+
+#+HTML: </div>

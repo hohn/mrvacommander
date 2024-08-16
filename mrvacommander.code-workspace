@@ -6,6 +6,7 @@
 	],
 	"settings": {
 		"sarif-viewer.connectToGithubCodeScanning": "off",
-		"codeQL.githubDatabase.download": "never"
+        "codeQL.githubDatabase.download": "never",
+        "makefile.configureOnOpen": false
 	}
 }
