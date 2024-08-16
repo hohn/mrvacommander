@@ -1,12 +1,4 @@
 # -*- coding: utf-8 -*-
-#+OPTIONS: H:2 num:t \n:nil @:t ::t |:t ^:{} f:t *:t TeX:t LaTeX:t skip:nil p:nil
-#+OPTIONS: toc:nil
-#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="./l3style.css"/>
-#+HTML: <div id="toc">
-#+TOC: headlines 2        insert TOC here, with two headline levels
-#+HTML: </div>
-#
-#+HTML: <div id="org-content">
 
 * End-to-end example of CLI use
   This document describes a complete cycle of the MRVA workflow.  The steps
@@ -478,5 +470,3 @@
 * Footnotes
 [fn:1]The =csvkit= can be installed into the same Python virtual environment as
 the =qldbtools=.
-
-#+HTML: </div>
