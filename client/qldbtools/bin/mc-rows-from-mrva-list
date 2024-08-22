@@ -19,9 +19,11 @@ Script to list full details for a mrva-list file
     ]
 }
 2. reads a pandas dataframe stored in a csv file 
-3. selects all rows from 2. that contain the 'owner' column matching
-   the string before the slash from 1. and the 'name' column matching
-   the string between the slash and the marker 'ctsj'
+3. selects all rows from 2. that
+   - contain the 'owner' column matching the string before the slash from 1. and
+   - the 'name' column matching the string between the slash and the marker
+     'ctsj' and
+   - the 'CID' column matching the string after the marker 'ctsj'
 
 """
 import argparse
@@ -49,7 +51,8 @@ parsed_mirva_list = []
 for item in mirva_list:
     owner_name = item.split('/')[0]
     repo_name = item.split('/')[1].split('ctsj')[0]
-    parsed_mirva_list.append((owner_name, repo_name))
+    cid = item.split('/')[1].split('ctsj')[1]
+    parsed_mirva_list.append((owner_name, repo_name, cid))
 
 #* Step 2: Read the CSV file into a pandas dataframe
 import pandas as pd
@@ -58,7 +61,7 @@ df = pd.read_csv(args.info_csv)
 #* Step 3: Filter the dataframe based on the parsed "mirva-list"
 filtered_df = df[
     df.apply(lambda row: 
-             (row['owner'], row['name']) in parsed_mirva_list, axis=1)]
+             (row['owner'], row['name'], row['CID']) in parsed_mirva_list, axis=1)]
 
 # Optionally, you can save the filtered dataframe to a new CSV file
 filtered_df.to_csv(sys.stdout, index=False)
