@@ -10,6 +10,30 @@ html: README.html
 %.html: %.md
 	pandoc --toc=true --standalone $< --out $@
 
+# Build the qldbtools container image
+dbt: client-qldbtools-container
+client-qldbtools-container:
+	cd client/containers/qldbtools && \
+		docker build -t $@ .
+
+# Run a shell in the container with the qldbtools
+dbt-run:
+	docker run --rm -it client-qldbtools-container /bin/bash
+
+dbt-run:
+	docker run --rm -it client-qldbtools-container /bin/bash
+
+dbt-check:
+	docker run --rm -it client-qldbtools-container mc-db-initial-info
+
+ghm: client-ghmrva-container
+client-ghmrva-container:
+	cd client/containers/ghmrva && \
+		docker build -t $@ .
+ghm-run:
+	docker run --rm client-ghmrva-container --help
+
+
 server:
 	cd cmd/server && GOOS=linux GOARCH=arm64 go build
 
