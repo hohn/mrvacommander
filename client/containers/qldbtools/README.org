@@ -1,0 +1,18 @@
+* MRVA python tools container
+  Set upDocker image with python 3.11 and pip and the qldbtools
+
+  #+BEGIN_SRC sh 
+    # Build
+    cd ~/work-gh/mrva/mrvacommander
+    make dbt
+
+    # Check
+    cd ~/work-gh/mrva/mrvacommander
+    make dbt-check
+
+    # Use
+    cd ~/work-gh/mrva/mrvacommander
+    make dbt-run
+
+  #+END_SRC
+  

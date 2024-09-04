@@ -1,0 +1,60 @@
+* MRVA VS Code server container
+  On the host:
+
+  - Build the container via 
+    #+BEGIN_SRC sh 
+      make csi
+    #+END_SRC
+
+  - Run the container via
+    #+BEGIN_SRC sh 
+      make csi-serve
+    #+END_SRC
+
+  - Connect to it at http://localhost:9080/?folder=/home/coder, password is =mrva=.
+
+  Inside the container:
+
+  - Setup inside the container
+    #+BEGIN_SRC shell
+      export PATH=/opt/codeql:$PATH
+      codeql pack init qldemo
+      cd qldemo
+      codeql pack add codeql/python-all@1.0.6
+    #+END_SRC
+
+  - Open a new file =qldemo/simple.ql= and add this this query to it.  The plugin
+    will download the CodeQL binaries (but never use them -- the configuration
+    redirects) 
+    #+BEGIN_SRC java
+      import python
+          select 42
+    #+END_SRC
+
+  - Create database.
+    #+BEGIN_SRC sh 
+      cd ~/qldemo
+
+      cat > short.py <<EOF
+      print('hello world')
+      EOF
+      export PATH=/opt/codeql:$PATH  
+      codeql database create --language=python -s . -v short-db
+    #+END_SRC
+
+  - Set the database as default and run the query.
+
+  - Capture the state of this container and create a new image from it
+    #+BEGIN_SRC sh 
+      docker ps
+      docker commit 0c15aeeaa914 code-server-initialized:0.1.24
+      docker kill 0c15aeeaa914
+      docker run -d -p 9080:9080 code-server-initialized:0.1.24
+    #+END_SRC
+
+  - Push this container
+    [[file:~/work-gh/mrva/mrvacommander/client/containers/vscode/Makefile::image-push: image]]
+    #+BEGIN_SRC sh 
+      docker images |head
+      make csi-push
+    #+END_SRC

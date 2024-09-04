@@ -1,0 +1,12 @@
+* MRVA cli tools container
+  Set up via
+  #+BEGIN_SRC sh 
+    # Build
+    cd ~/work-gh/mrva/mrvacommander/
+    make ghm
+    # Run
+    docker run --rm gh-mrva
+    # Push
+    make ghm-push
+  #+END_SRC
+  
