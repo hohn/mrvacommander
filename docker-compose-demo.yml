@@ -1,111 +1,133 @@
 services:
-  code-server:
-    image: codercom/code-server
-    ports:
-      - "9080:8080"
-    volumes:
-      - ./project:/home/coder/project
-      - ~/.config/code-server:/home/coder/.config/code-server
-      - ~/.local/share/code-server:/home/coder/.local/share/code-server
-    environment:
-      - PASSWORD=mrva
+    mrvadata:
+        image: ghcr.io/hohn/mrvadata:0.1.24
+        container_name: mrvadata
+        volumes:
+            - mrvadata:/data/mrvacommander
+        networks:
+            - backend
+            
+    client-qldbtools:
+        image: ghcr.io/hohn/client-qldbtools-container:0.1.24 
+        volumes:
+            # data at /data/mrvacommander/qldbtools/scratch
+            - mrvadata:/data/mrvacommander
+        depends_on:
+            - mrvadata
+        networks:
+            - backend
+            
 
-  rabbitmq:
-    image: rabbitmq:3-management
-    hostname: rabbitmq
-    container_name: rabbitmq
-    volumes:
-      - ./init/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
-      - ./init/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    networks:
-      - backend
-    healthcheck:
-      test: rabbitmq-diagnostics check_port_connectivity
-      interval: 30s
-      timeout: 30s
-      retries: 10
-
-  server:
-    build:
-      context: .
-      dockerfile: ./cmd/server/Dockerfile
-    command: [ '--mode=container', '--loglevel=debug' ]
-    container_name: server
-    stop_grace_period: 1s
-    ports:
-      # - "8081:8080" # host:container for proxy
-      - "8080:8080" # host:container
-    depends_on:
-      - rabbitmq
-      - dbstore
-      - artifactstore
-    networks:
-      - backend
-    env_file:
-      - path: ./.env.container
-        required: true
-
-  dbstore:
-    image: minio/minio:RELEASE.2024-06-11T03-13-30Z
-    container_name: dbstore
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    env_file:
-      - path: .env.container
-        required: true
-
-    command: server /data --console-address ":9001"
-    # Demo: Mount preloaded minio backing store
-    volumes:
-      - type: volume
-        source: dbstore-volume
-        target: /data/dbs
-        volume:
-          nocopy: true
-    networks:
-      - backend
-
-  artifactstore:
-    image: minio/minio:RELEASE.2024-06-11T03-13-30Z
-    container_name: artifactstore
-    ports:
-      - "19000:9000" # host:container
-      - "19001:9001"
-    env_file:
-      - path: ./.env.container
-        required: true
-    command: server /data --console-address ":9001"
-    volumes:
-      - ./qpstore-data:/data
-    networks:
-      - backend
-
-  agent:
-    build:
-      context: .
-      dockerfile: ./cmd/agent/Dockerfile
-    command: [ '--loglevel=debug' ]
-    container_name: agent
-    depends_on:
-      - rabbitmq
-      - dbstore
-      - artifactstore
-    env_file:
-      - path: ./.env.container
-        required: true
-    networks:
-      - backend
-
+    client-ghmrva:
+        # XX: redirect by changing code or using nginx proxy
+        # client.Get(fmt.Sprintf("http://localhost:8080/repos/%s/code-scanning/codeql/variant-analyses/%d", controller, runId), &response)
+        image: ghcr.io/hohn/client-ghmrva-container:0.1.24 
+        volumes:
+            - mrvadata:/data/mrvacommander
+        depends_on:
+            - mrvadata
+        networks:
+            - backend
+            
+    code-server:
+        image: ghcr.io/hohn/code-server-initialized:0.1.24
+        ports:
+            - "9080:9080"
+        volumes:
+            - mrvadata:/data/mrvacommander
+        environment:
+            - PASSWORD=mrva
+        depends_on:
+            - mrvadata
+     
+    rabbitmq:
+        image: rabbitmq:3-management
+        hostname: rabbitmq
+        container_name: rabbitmq
+        volumes:
+            - ./init/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+            - ./init/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+        ports:
+            - "5672:5672"
+            - "15672:15672"
+        healthcheck:
+          test: rabbitmq-diagnostics check_port_connectivity
+          interval: 30s
+          timeout: 30s
+          retries: 10
+        networks:
+            - backend
+     
+    server:
+        image: ghcr.io/hohn/mrva-server:0.1.24
+        command: [ '--mode=container', '--loglevel=debug' ]
+        container_name: server
+        stop_grace_period: 1s
+        ports:
+            - "8080:8080" # host:container
+        depends_on:
+            - rabbitmq
+            - dbstore
+            - artifactstore
+        env_file:
+            - path: ./.env.container
+              required: true
+        networks:
+            - backend
+     
+    dbstore:
+        image: minio/minio:RELEASE.2024-06-11T03-13-30Z
+        container_name: dbstore
+        ports:
+            - "9000:9000"
+            - "9001:9001"
+        env_file:
+            - path: .env.container
+              required: true
+        command: server /data/mrvacommander/dbstore-data --console-address ":9001"
+        depends_on:
+            - mrvadata
+        volumes:
+            # data at /data/mrvacommander/dbstore-data
+            - mrvadata:/data/mrvacommander
+        networks:
+            - backend
+     
+    artifactstore:
+        image: minio/minio:RELEASE.2024-06-11T03-13-30Z
+        container_name: artifactstore
+        ports:
+            - "19000:9000" # host:container
+            - "19001:9001"
+        env_file:
+            - path: ./.env.container
+              required: true
+        command: server /data --console-address ":9001"
+        volumes:
+            # data at /data/mrvacommander/qpstore-data
+            - mrvadata:/data/mrvacommander
+            # XX: use multiple storage containers?
+            # - ./qpstore-data:/data
+        networks:
+            - backend
+     
+    agent:
+        image: ghcr.io/hohn/mrva-agent:0.1.24
+        command: [ '--loglevel=debug' ]
+        container_name: agent
+        depends_on:
+            - rabbitmq
+            - dbstore
+            - artifactstore
+        env_file:
+            - path: ./.env.container
+              required: true
+        networks:
+            - backend
+   
 networks:
-  backend:
-    driver: bridge
+    backend:
+        driver: bridge
 
-# Demo: Provide preloaded minio backing store
 volumes:
-  dbstore-volume:
-    external: true
-    name: dbstore-container:/data
+    mrvadata:

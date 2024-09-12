@@ -14,9 +14,6 @@ RUN go mod download
 # Build the Go binary
 RUN go build .
 
-# # Set the entrypoint
-# CMD ["/bin/bash"]
-
 # Use a minimal base image for the final container
 FROM debian:bookworm
 
@@ -26,5 +23,5 @@ WORKDIR /app
 # Copy the binary from the builder stage
 COPY --from=builder /work-gh/mrva/gh-mrva/gh-mrva /usr/local/bin/gh-mrva
 
-# Set the entrypoint to the binary
-ENTRYPOINT ["gh-mrva"]
+# Run forever
+CMD ["tail", "-f", "/dev/null"]

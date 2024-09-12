@@ -56,7 +56,9 @@ ENV CODEQL_JAVA_HOME=/usr
 # to user settings.
 # This is in addition to the environment variable CODEQL_JAVA_HOME which has no
 # effect on the plugin
+USER root
 COPY ./settings.json  /home/coder/.local/share/code-server/User/
+RUN chown -R coder:coder /home/coder/.local/share/code-server/
 
 # Start Code Server
 ENTRYPOINT ["dumb-init", "code-server", "--bind-addr", "0.0.0.0:9080", "."]

@@ -1,4 +1,4 @@
 {
     "codeQL.runningQueries.numberOfThreads": 2,
-    "codeQl.cli.executablePath": "/opt/codeql"
+    "codeQL.cli.executablePath": "/opt/codeql/codeql"
 }

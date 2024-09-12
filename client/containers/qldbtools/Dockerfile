@@ -25,5 +25,6 @@ RUN pip install -r requirements.txt
 # Install qldbtools
 RUN pip install .
 
-# Set the default entrypoint
-CMD ["/bin/bash"]
+# Run forever
+CMD ["tail", "-f", "/dev/null"]
+

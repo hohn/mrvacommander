@@ -118,6 +118,12 @@ docker-compose.
         cd ~/work-gh/mrva/mrvacommander
         docker-compose up --build
 
+1.  Start the server containers and the desktop/demo containers
+
+        cd ~/work-gh/mrva/mrvacommander/
+        docker-compose down --remove-orphans
+        docker-compose -f docker-compose-demo.yml up -d
+
 1.  Test server via remote client by following the steps in [gh-mrva](https://github.com/hohn/gh-mrva/blob/connection-redirect/README.org#compacted-edit-run-debug-cycle)
 
 ### Some general docker-compose commands
