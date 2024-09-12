@@ -23,4 +23,5 @@ csi-push: csi
 
 csi-test:
 	docker pull ghcr.io/hohn/${CSI_TARGET}
-	docker run --rm -it --name test-code-server-codeql ghcr.io/hohn/${CSI_TARGET} sh
+	docker run --rm -d -p 9080:9080 --name test-code-server-codeql\
+		ghcr.io/hohn/${CSI_TARGET}

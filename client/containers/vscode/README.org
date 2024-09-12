@@ -46,13 +46,20 @@
       codeql database create --language=python -s . -v short-db
     #+END_SRC
 
-  - Set the database as default and run the query on =simple.ql=
+  - Set the database as default and run the query =simple.ql=
 
   - Capture the state of this container and create a new image from it
     #+BEGIN_SRC sh 
       docker ps
-      docker commit 0c15aeeaa914 code-server-initialized:0.1.24
-      docker kill 0c15aeeaa914
+      docker commit 3802c3e9ad8c code-server-initialized:0.1.24
+      # sha256:76cfebdd75a69bcaa8020d06fec52593bd5fde06a100c1962f3201af809bfac0
+      docker kill 3802c3e9ad8c
+
+      # Make sure the image tag matches the sha
+      docker inspect code-server-initialized:0.1.24 |grep Id
+      # "Id": "sha256:76cfebdd75a69bcaa8020d06fec52593bd5fde06a100c1962f3201af809bfac0",
+
+      # Run the image and check
       docker run -d -p 9080:9080 code-server-initialized:0.1.24
     #+END_SRC
 
@@ -60,3 +67,10 @@
     #+BEGIN_SRC sh 
       make csi-push
     #+END_SRC
+
+  - Test the registry image
+    #+BEGIN_SRC sh 
+      make csi-test
+    #+END_SRC
+
+
