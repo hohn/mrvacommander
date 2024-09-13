@@ -1,27 +1,24 @@
-digraph docker_compose {
-    rankdir=LR;
-    
-    node [shape=box];
-    
-    mrvadata [label="mrvadata" color=lightblue];
-    "client-qldbtools" [label="client-qldbtools" color=lightgreen];
-    "client-ghmrva" [label="client-ghmrva" color=lightgreen];
-    "code-server" [label="code-server" color=lightgreen];
-    rabbitmq [label="rabbitmq" color=lightcoral];
-    server [label="server" color=lightcoral];
-    dbstore [label="dbstore" color=lightcoral];
-    artifactstore [label="artifactstore" color=lightcoral];
-    agent [label="agent" color=lightcoral];
-    
-    // Dependencies
-    "client-qldbtools" -> mrvadata;
-    "client-ghmrva" -> mrvadata;
-    "code-server" -> mrvadata;
+digraph G {
+    // Define nodes
+    mrvadata [label="mrvadata" shape=box];
+    client_qldbtools [label="client-qldbtools" shape=box];
+    client_ghmrva [label="client-ghmrva" shape=box];
+    code_server [label="code-server" shape=box];
+    rabbitmq [label="rabbitmq" shape=box];
+    server [label="server" shape=box];
+    dbstore [label="dbstore" shape=box];
+    artifactstore [label="artifactstore" shape=box];
+    agent [label="agent" shape=box];
+
+    // Define edges (dependencies)
+    server -> rabbitmq;
+    server -> dbstore;
+    server -> artifactstore;
     dbstore -> mrvadata;
-    "server" -> rabbitmq;
-    "server" -> dbstore;
-    "server" -> artifactstore;
     agent -> rabbitmq;
     agent -> dbstore;
     agent -> artifactstore;
+
+    // Define styling
+    edge [arrowhead=normal];
 }

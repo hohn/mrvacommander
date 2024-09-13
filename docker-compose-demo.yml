@@ -3,17 +3,34 @@ services:
         image: ghcr.io/hohn/mrvadata:0.1.24
         container_name: mrvadata
         volumes:
-            - mrvadata:/data/mrvacommander
+            - mrvadata:/data/mrvacommander/dbstore-data
         networks:
             - backend
             
-    client-qldbtools:
-        image: ghcr.io/hohn/client-qldbtools-container:0.1.24 
-        volumes:
-            # data at /data/mrvacommander/qldbtools/scratch
-            - mrvadata:/data/mrvacommander
+    dbstore:
+        image: minio/minio:RELEASE.2024-06-11T03-13-30Z
+        container_name: dbstore
+        ports:
+            - "9000:9000"
+            - "9001:9001"
+        env_file:
+            - path: .env.container
+              required: true
+        command: server /data/mrvacommander/dbstore-data --console-address ":9001"
         depends_on:
             - mrvadata
+        # The mrvadata volume has content of ./dbstore-data, so the volume mount
+        # below is equivalent of this original:
+        # volumes:        
+        #     - ./dbstore-data:/data
+        volumes:
+            - mrvadata:/data
+        networks:
+            - backend
+     
+    client-qldbtools:
+        image: ghcr.io/hohn/client-qldbtools-container:0.1.24 
+        # XX: Copy client/qldbtools/scratch into this container
         networks:
             - backend
             
@@ -22,10 +39,7 @@ services:
         # XX: redirect by changing code or using nginx proxy
         # client.Get(fmt.Sprintf("http://localhost:8080/repos/%s/code-scanning/codeql/variant-analyses/%d", controller, runId), &response)
         image: ghcr.io/hohn/client-ghmrva-container:0.1.24 
-        volumes:
-            - mrvadata:/data/mrvacommander
-        depends_on:
-            - mrvadata
+        # XX: Include codeql in container if needed; no attached storage container.
         networks:
             - backend
             
@@ -33,12 +47,9 @@ services:
         image: ghcr.io/hohn/code-server-initialized:0.1.24
         ports:
             - "9080:9080"
-        volumes:
-            - mrvadata:/data/mrvacommander
+        # XX: Include codeql binary in code-server (if it's not there already)
         environment:
             - PASSWORD=mrva
-        depends_on:
-            - mrvadata
      
     rabbitmq:
         image: rabbitmq:3-management
@@ -72,25 +83,6 @@ services:
         env_file:
             - path: ./.env.container
               required: true
-        networks:
-            - backend
-     
-    dbstore:
-        image: minio/minio:RELEASE.2024-06-11T03-13-30Z
-        container_name: dbstore
-        ports:
-            - "9000:9000"
-            - "9001:9001"
-        env_file:
-            - path: .env.container
-              required: true
-        command: server /data/mrvacommander/dbstore-data --console-address ":9001"
-        depends_on:
-            - mrvadata
-        volumes:
-            # XX: use multiple storage containers
-            # data at /data/mrvacommander/dbstore-data
-            - mrvadata:/data/mrvacommander
         networks:
             - backend
      
