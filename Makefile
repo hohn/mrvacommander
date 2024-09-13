@@ -14,7 +14,7 @@ html: README.html
 dbt: mk.client-qldbtools-container
 mk.client-qldbtools-container:
 	cd client/containers/qldbtools && \
-		docker build -t $@:0.1.24 .
+		docker build -t client-qldbtools-container:0.1.24 .
 	touch $@
 
 # Run a shell in the container with the qldbtools
@@ -34,7 +34,7 @@ mk.dbt-push: mk.client-qldbtools-container
 ghm: mk.client-ghmrva-container
 mk.client-ghmrva-container:
 	cd client/containers/ghmrva && \
-		docker build -t $@:0.1.24 .
+		docker build -t client-ghmrva-container:0.1.24 .
 	touch $@
 
 
@@ -45,7 +45,7 @@ mk.ghm-push: mk.client-ghmrva-container
 	touch $@
 
 ghm-run:
-	docker run --rm client-ghmrva-container --help
+	docker run --rm -it ghcr.io/hohn/client-ghmrva-container:0.1.24 /bin/bash
 
 server:
 	cd cmd/server && GOOS=linux GOARCH=arm64 go build
