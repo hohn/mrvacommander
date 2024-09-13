@@ -1,8 +1,8 @@
 all: code-server-initialized
 
 CSI_TARGET := code-server-initialized:0.1.24
-csi: code-server-initialized
-code-server-initialized:
+csi: mk.code-server-initialized
+mk.code-server-initialized:
 	docker build -t ${CSI_TARGET} .
 	touch $@
 
@@ -11,12 +11,13 @@ csi-serve: csi
 
 clean:
 	-docker rmi -f ${CSI_TARGET}
-	-rm code-server-initialized
+	-rm mk.code-server-initialized
 
 # Targets below are used after some manual setup of the container.  See README.org
 # for details
 
-csi-push: csi
+csi-push: mk.csi-push
+mk.csi-push: csi
 	docker tag ${CSI_TARGET} ghcr.io/hohn/${CSI_TARGET}
 	docker push ghcr.io/hohn/${CSI_TARGET}
 	touch $@

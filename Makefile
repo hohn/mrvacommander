@@ -11,40 +11,41 @@ html: README.html
 	pandoc --toc=true --standalone $< --out $@
 
 # Build the qldbtools container image
-dbt: client-qldbtools-container
-client-qldbtools-container:
+dbt: mk.client-qldbtools-container
+mk.client-qldbtools-container:
 	cd client/containers/qldbtools && \
 		docker build -t $@:0.1.24 .
 	touch $@
 
 # Run a shell in the container with the qldbtools
-dbt-run: dbt
+dbt-run: mk.client-qldbtools-container
 	docker run --rm -it client-qldbtools-container:0.1.24 /bin/bash
 
 # Run one of the scripts in the container as check
-dbt-check: dbt
+dbt-check: mk.client-qldbtools-container
 	docker run --rm -it client-qldbtools-container:0.1.24 mc-db-initial-info
 
-dbt-push: dbt
+dbt-push: mk.dbt-push
+mk.dbt-push: mk.client-qldbtools-container
 	docker tag client-qldbtools-container:0.1.24 ghcr.io/hohn/client-qldbtools-container:0.1.24 
 	docker push ghcr.io/hohn/client-qldbtools-container:0.1.24
 	touch $@
 
-
-ghm: client-ghmrva-container
-client-ghmrva-container:
+ghm: mk.client-ghmrva-container
+mk.client-ghmrva-container:
 	cd client/containers/ghmrva && \
 		docker build -t $@:0.1.24 .
 	touch $@
 
-ghm-push: ghm
+
+ghm-push: mk.ghm-push
+mk.ghm-push: mk.client-ghmrva-container
 	docker tag client-ghmrva-container:0.1.24 ghcr.io/hohn/client-ghmrva-container:0.1.24 
 	docker push ghcr.io/hohn/client-ghmrva-container:0.1.24 
 	touch $@
 
 ghm-run:
 	docker run --rm client-ghmrva-container --help
-
 
 server:
 	cd cmd/server && GOOS=linux GOARCH=arm64 go build

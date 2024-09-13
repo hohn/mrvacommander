@@ -88,6 +88,7 @@ services:
         depends_on:
             - mrvadata
         volumes:
+            # XX: use multiple storage containers
             # data at /data/mrvacommander/dbstore-data
             - mrvadata:/data/mrvacommander
         networks:
@@ -104,10 +105,9 @@ services:
               required: true
         command: server /data --console-address ":9001"
         volumes:
-            # data at /data/mrvacommander/qpstore-data
-            - mrvadata:/data/mrvacommander
-            # XX: use multiple storage containers?
-            # - ./qpstore-data:/data
+            # The artifactstore is only populated at runtime so there is no need
+            # for Docker storage; a directory is fine.
+            - ./qpstore-data:/data
         networks:
             - backend
      

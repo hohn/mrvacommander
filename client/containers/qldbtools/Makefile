@@ -1,8 +1,8 @@
 DBT_TARGET := client-qldbtools-container:0.1.24
 
 # Build the qldbtools container image
-dbt: client-qldbtools-container
-client-qldbtools-container:
+dbt: mk.client-qldbtools-container
+mk.client-qldbtools-container:
 	docker build -t ${DBT_TARGET} .
 	touch $@
 
@@ -14,7 +14,8 @@ dbt-run: dbt
 dbt-check: dbt
 	docker run --rm -it ${DBT_TARGET} mc-db-initial-info
 
-dbt-push: dbt
+dbt-push: mk.dbt-push
+mk.dbt-push: dbt
 	docker tag ${DBT_TARGET} ghcr.io/hohn/${DBT_TARGET} 
 	docker push ghcr.io/hohn/${DBT_TARGET}
 	touch $@
