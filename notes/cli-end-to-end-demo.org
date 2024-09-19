@@ -1,0 +1,372 @@
+# -*- coding: utf-8 -*-
+
+* End-to-end example of CLI use
+  This document describes a complete cycle of the MRVA workflow.  The steps
+  included are 
+  1. aquiring CodeQL databases
+  2. selection of databases
+  3. configuration and use of the command-line client
+  4. server startup
+  5. submission of the jobs
+  6. retrieval of the results
+  7. examination of the results
+
+* Database Aquisition
+  General database aquisition is beyond the scope of this document as it is very specific
+  to an organization's environment.
+
+  For this demo, the data is preloaded via container.  To inspect it:
+
+  #+BEGIN_SRC sh 
+    # On host, run 
+    docker exec -it dbstore /bin/bash
+
+    # In the container
+    ls -la /data/dbstore-data/
+    ls  /data/dbstore-data/qldb/ | wc -l
+  #+END_SRC
+  Here we use a small sample of an example for open-source
+  repositories, 23 in all.
+
+* Repository Selection
+  When using all of the MRVA system, we select a small subset of repositories
+  available to you in [[*Database Aquisition][Database Aquisition]].  For this demo we include a small
+  collection -- 23 repositories -- and here we further narrow the selection to 12.
+
+  The full list
+  #+BEGIN_SRC text
+    ls -1 /data/dbstore-data/qldb/
+    'BoomingTech$Piccoloctsj6d7177.zip'
+    'KhronosGroup$OpenXR-SDKctsj984ee6.zip'
+    'OpenRCT2$OpenRCT2ctsj975d7c.zip'
+    'StanfordLegion$legionctsj39cbe4.zip'
+    'USCiLab$cerealctsj264953.zip'
+    'WinMerge$winmergectsj101305.zip'
+    'draios$sysdigctsj12c02d.zip'
+    'gildor2$UEViewerctsjfefdd8.zip'
+    'git-for-windows$gitctsjb7c2bd.zip'
+    'google$orbitctsj9bbeaf.zip'
+    'libfuse$libfusectsj7a66a4.zip'
+    'luigirizzo$netmapctsj6417fa.zip'
+    'mawww$kakounectsjc54fab.zip'
+    'microsoft$node-native-keymapctsj4cc9a2.zip'
+    'nem0$LumixEnginectsjfab756.zip'
+    'pocoproject$pococtsj26b932.zip'
+    'quickfix$quickfixctsjebfd13.zip'
+    'rui314$moldctsjfec16a.zip'
+    'swig$swigctsj78bcd3.zip'
+    'tdlib$telegram-bot-apictsj8529d9.zip'
+    'timescale$timescaledbctsjf617cf.zip'
+    'xoreaxeaxeax$movfuscatorctsj8f7e5b.zip'
+    'xrootd$xrootdctsje4b745.zip'
+  #+END_SRC
+
+  The selection of 12 repositories, from an initial collection of 6000 was made
+  using a collection of Python/pandas scripts made for the purpose, the [[https://github.com/hohn/mrvacommander/blob/hohn-0.1.21.2-improve-structure-and-docs/client/qldbtools/README.md#installation][qldbtools]]
+  package.  The resulting selection, in the format expected by the VS Code
+  extension, follows.
+  #+BEGIN_SRC text
+    cat  /data/qldbtools/scratch/vscode-selection.json
+    {
+        "version": 1,
+        "databases": {
+            "variantAnalysis": {
+                "repositoryLists": [
+                    {
+                        "name": "mirva-list",
+                        "repositories": [
+                            "xoreaxeaxeax/movfuscatorctsj8f7e5b",
+                            "microsoft/node-native-keymapctsj4cc9a2",
+                            "BoomingTech/Piccoloctsj6d7177",
+                            "USCiLab/cerealctsj264953",
+                            "KhronosGroup/OpenXR-SDKctsj984ee6",
+                            "tdlib/telegram-bot-apictsj8529d9",
+                            "WinMerge/winmergectsj101305",
+                            "timescale/timescaledbctsjf617cf",
+                            "pocoproject/pococtsj26b932",
+                            "quickfix/quickfixctsjebfd13",
+                            "libfuse/libfusectsj7a66a4"
+                        ]
+                    }
+                ],
+                "owners": [],
+                "repositories": []
+            }
+        },
+        "selected": {
+            "kind": "variantAnalysisUserDefinedList",
+            "listName": "mirva-list"
+        }
+  #+END_SRC
+
+  This selection is deceptively simple.  For a full explanation, see [[file:cli-end-to-end-detailed.org::*Repository Selection][Repository
+  Selection]] in the detailed version of this document.
+
+** The meaning of the names
+   This section is optional reading for the demonstration.
+
+   The repository names all end with =ctsj= followed by 6 hex digits like =ctsj4cc9a2=.
+
+   The information critial for selection of databases are the columns
+   1. owner
+   2. name
+   3. language
+   4. "sha"
+   5. "cliVersion"
+   6. "creationTime"
+
+   There are others that may be useful, but they are not strictly required.
+
+   The critical ones deserve more explanation:
+   1. "sha": The =git= commit SHA of the repository the CodeQL database was
+      created from.  Required to distinguish query results over the evolution of
+      a code base.
+   2. "cliVersion":  The version of the CodeQL CLI used to create the database.
+      Required to identify advances/regressions originating from the CodeQL binary.
+   3. "creationTime":  The time the database was created.  Required (or at least
+      very handy) for following the evolution of query results over time.
+
+   There is a computed column, CID. The CID column combines 
+   - cliVersion
+   - creationTime
+   - language
+   - sha
+   into a single 6-character string via hashing.  Together with (owner, repo) it
+   provides a unique index for every DB.
+
+
+   For this document, we simply use a pseudo-random selection of 11 databases via
+   #+BEGIN_SRC sh 
+     ./bin/mc-db-generate-selection -n 11 \
+                                    scratch/vscode-selection.json \
+                                    scratch/gh-mrva-selection.json \
+                                    < scratch/db-info-3.csv 
+   #+END_SRC
+
+   Note that these use pseudo-random numbers, so the selection is in fact
+   deterministic.  
+
+* Starting the server
+  The full instructions for building and running the server are in [[../README.md]] under
+  'Steps to build and run the server'
+
+  With docker-compose set up and this repository cloned as previously described,
+  we just run
+  #+BEGIN_SRC sh 
+        cd ~/work-gh/mrva/mrvacommander
+        docker-compose up --build
+  #+END_SRC
+  and wait until the log output no longer changes.
+
+  Then, use the following command to populate the mrvacommander database storage:
+  #+BEGIN_SRC sh 
+    cd ~/work-gh/mrva/mrvacommander/client/qldbtools && \
+        ./bin/mc-db-populate-minio -n 11 < scratch/db-info-3.csv
+  #+END_SRC
+  
+* Running the gh-mrva command-line client
+  The first run uses the test query to verify basic functionality, but it returns
+  no results.
+** Run MRVA from command line
+   1. Install mrva cli
+      #+BEGIN_SRC sh 
+        mkdir -p ~/work-gh/mrva && cd ~/work-gh/mrva
+        git clone https://github.com/hohn/gh-mrva.git
+        cd ~/work-gh/mrva/gh-mrva && git checkout mrvacommander-end-to-end
+
+        # Build it
+        go mod edit -replace="github.com/GitHubSecurityLab/gh-mrva=$HOME/work-gh/mrva/gh-mrva"
+        go build .
+
+        # Sanity check
+        ./gh-mrva -h
+      #+END_SRC
+
+   2. Set up the configuration
+      #+BEGIN_SRC sh 
+        mkdir -p ~/.config/gh-mrva
+        cat > ~/.config/gh-mrva/config.yml <<eof
+        # The following options are supported
+        # codeql_path: Path to CodeQL distribution (checkout of codeql repo)
+        # controller: NWO of the MRVA controller to use.  Not used here.
+        # list_file: Path to the JSON file containing the target repos
+
+        # XX:
+        codeql_path: $HOME/work-gh/not-used
+        controller: not-used/mirva-controller
+        list_file: $HOME/work-gh/mrva/gh-mrva/gh-mrva-selection.json
+        eof
+      #+END_SRC
+
+   3. Submit the mrva job
+      #+BEGIN_SRC sh 
+        cp ~/work-gh/mrva/mrvacommander/client/qldbtools/scratch/gh-mrva-selection.json \
+           ~/work-gh/mrva/gh-mrva/gh-mrva-selection.json 
+
+        cd ~/work-gh/mrva/gh-mrva/
+        ./gh-mrva submit --language cpp --session mirva-session-1360    \
+                  --list mirva-list                                     \
+                  --query ~/work-gh/mrva/gh-mrva/FlatBuffersFunc.ql
+      #+END_SRC
+
+   4. Check the status
+      #+BEGIN_SRC sh 
+        cd ~/work-gh/mrva/gh-mrva/
+
+        # Check the status
+        ./gh-mrva status --session mirva-session-1360
+      #+END_SRC
+
+   5. Download the sarif files, optionally also get databases.  For the current
+      query / database combination there are zero result hence no downloads.
+      #+BEGIN_SRC sh 
+        cd ~/work-gh/mrva/gh-mrva/
+        # Just download the sarif files
+        ./gh-mrva download --session mirva-session-1360 \
+                  --output-dir mirva-session-1360
+
+        # Download the sarif files and CodeQL dbs
+        ./gh-mrva download --session mirva-session-1360 \
+                  --download-dbs \
+                  --output-dir mirva-session-1360
+      #+END_SRC
+
+** Write query that has some results
+   First, get the list of paths corresponding to the previously selected
+   databases. 
+   #+BEGIN_SRC sh 
+     cd ~/work-gh/mrva/mrvacommander/client/qldbtools 
+     ./bin/mc-rows-from-mrva-list scratch/gh-mrva-selection.json \
+                                  scratch/db-info-3.csv > scratch/selection-full-info
+     csvcut -c path scratch/selection-full-info 
+   #+END_SRC
+
+   Use one of these databases to write a query.  It need not produce results.  
+   #+BEGIN_SRC sh 
+     cd ~/work-gh/mrva/gh-mrva/
+     code gh-mrva.code-workspace
+   #+END_SRC
+   In this case, the trivial =findPrintf=:
+   #+BEGIN_SRC java
+     /**
+      ,* @name findPrintf
+      ,* @description find calls to plain fprintf
+      ,* @kind problem
+      ,* @id cpp-fprintf-call
+      ,* @problem.severity warning
+      ,*/
+
+     import cpp
+
+     from FunctionCall fc
+     where
+       fc.getTarget().getName() = "fprintf"
+     select fc, "call of fprintf"
+   #+END_SRC
+
+
+   Repeat the submit steps with this query
+   1. -- 
+   2. --
+   3. Submit the mrva job
+      #+BEGIN_SRC sh 
+        cp ~/work-gh/mrva/mrvacommander/client/qldbtools/scratch/gh-mrva-selection.json \
+           ~/work-gh/mrva/gh-mrva/gh-mrva-selection.json 
+
+        cd ~/work-gh/mrva/gh-mrva/
+        ./gh-mrva submit --language cpp --session mirva-session-1480    \
+                  --list mirva-list                                     \
+                  --query ~/work-gh/mrva/gh-mrva/Fprintf.ql
+      #+END_SRC
+   4. Check the status
+      #+BEGIN_SRC sh 
+        cd ~/work-gh/mrva/gh-mrva/
+        ./gh-mrva status --session mirva-session-1480
+      #+END_SRC
+
+      This time we have results
+      #+BEGIN_SRC text
+        ...
+        Run name: mirva-session-1480
+        Status: succeeded
+        Total runs: 1
+        Total successful scans: 11
+        Total failed scans: 0
+        Total skipped repositories: 0
+        Total skipped repositories due to access mismatch: 0
+        Total skipped repositories due to not found: 0
+        Total skipped repositories due to no database: 0
+        Total skipped repositories due to over limit: 0
+        Total repositories with findings: 7
+        Total findings: 618
+        Repositories with findings:
+          quickfix/quickfixctsjebfd13 (cpp-fprintf-call): 5
+          libfuse/libfusectsj7a66a4 (cpp-fprintf-call): 146
+          xoreaxeaxeax/movfuscatorctsj8f7e5b (cpp-fprintf-call): 80
+          pocoproject/pococtsj26b932 (cpp-fprintf-call): 17
+          BoomingTech/Piccoloctsj6d7177 (cpp-fprintf-call): 10
+          tdlib/telegram-bot-apictsj8529d9 (cpp-fprintf-call): 247
+          WinMerge/winmergectsj101305 (cpp-fprintf-call): 113
+      #+END_SRC
+   5. Download the sarif files, optionally also get databases.  
+      #+BEGIN_SRC sh 
+        cd ~/work-gh/mrva/gh-mrva/
+        # Just download the sarif files
+        ./gh-mrva download --session mirva-session-1480 \
+                  --output-dir mirva-session-1480
+
+        # Download the sarif files and CodeQL dbs
+        ./gh-mrva download --session mirva-session-1480 \
+                  --download-dbs \
+                  --output-dir mirva-session-1480
+
+        # And list them:
+        \ls -la *1480*
+        -rwxr-xr-x@  1 hohn  staff    1915857 Aug 16 14:10 BoomingTech_Piccoloctsj6d7177_1.sarif
+        drwxr-xr-x@  3 hohn  staff         96 Aug 16 14:15 BoomingTech_Piccoloctsj6d7177_1_db
+        -rwxr-xr-x@  1 hohn  staff   89857056 Aug 16 14:11 BoomingTech_Piccoloctsj6d7177_1_db.zip
+        -rwxr-xr-x@  1 hohn  staff    3105663 Aug 16 14:10 WinMerge_winmergectsj101305_1.sarif
+        -rwxr-xr-x@  1 hohn  staff  227812131 Aug 16 14:12 WinMerge_winmergectsj101305_1_db.zip
+        -rwxr-xr-x@  1 hohn  staff     193976 Aug 16 14:10 libfuse_libfusectsj7a66a4_1.sarif
+        -rwxr-xr-x@  1 hohn  staff   12930693 Aug 16 14:10 libfuse_libfusectsj7a66a4_1_db.zip
+        -rwxr-xr-x@  1 hohn  staff    1240694 Aug 16 14:10 pocoproject_pococtsj26b932_1.sarif
+        -rwxr-xr-x@  1 hohn  staff  158924920 Aug 16 14:12 pocoproject_pococtsj26b932_1_db.zip
+        -rwxr-xr-x@  1 hohn  staff     888494 Aug 16 14:10 quickfix_quickfixctsjebfd13_1.sarif
+        -rwxr-xr-x@  1 hohn  staff   75023303 Aug 16 14:11 quickfix_quickfixctsjebfd13_1_db.zip
+        -rwxr-xr-x@  1 hohn  staff    1487363 Aug 16 14:10 tdlib_telegram-bot-apictsj8529d9_1.sarif
+        -rwxr-xr-x@  1 hohn  staff  373477635 Aug 16 14:14 tdlib_telegram-bot-apictsj8529d9_1_db.zip
+        -rwxr-xr-x@  1 hohn  staff     103657 Aug 16 14:10 xoreaxeaxeax_movfuscatorctsj8f7e5b_1.sarif
+        -rwxr-xr-x@  1 hohn  staff    9464225 Aug 16 14:10 xoreaxeaxeax_movfuscatorctsj8f7e5b_1_db.zip
+      #+END_SRC
+
+   6. Use the [[https://marketplace.visualstudio.com/items?itemName=MS-SarifVSCode.sarif-viewer][SARIF Viewer]] plugin in VS Code to open and review the results.
+
+      Prepare the source directory so the viewer can be pointed at it
+      #+BEGIN_SRC sh 
+        cd ~/work-gh/mrva/gh-mrva/mirva-session-1480
+
+        unzip -qd BoomingTech_Piccoloctsj6d7177_1_db BoomingTech_Piccoloctsj6d7177_1_db.zip 
+
+        cd BoomingTech_Piccoloctsj6d7177_1_db/codeql_db/
+        unzip -qd src src.zip
+      #+END_SRC
+
+      Use the viewer
+      #+BEGIN_SRC sh 
+        code BoomingTech_Piccoloctsj6d7177_1.sarif
+
+        # For lauxlib.c, point the source viewer to 
+        find ~/work-gh/mrva/gh-mrva/mirva-session-1480/BoomingTech_Piccoloctsj6d7177_1_db/codeql_db/src/home/runner/work/bulk-builder/bulk-builder -name lauxlib.c
+
+        # Here: ~/work-gh/mrva/gh-mrva/mirva-session-1480/BoomingTech_Piccoloctsj6d7177_1_db/codeql_db/src/home/runner/work/bulk-builder/bulk-builder/engine/3rdparty/lua-5.4.4/lauxlib.c
+      #+END_SRC
+
+   7. (optional) Large result sets are more easily filtered via
+      dataframes or spreadsheets.  Convert the SARIF to CSV if needed; see [[https://github.com/hohn/sarif-cli/][sarif-cli]].
+
+   
+
+
+* Footnotes
+[fn:1]The =csvkit= can be installed into the same Python virtual environment as
+the =qldbtools=.
