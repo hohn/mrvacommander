@@ -252,7 +252,7 @@
                      sh -c 'cat > /root/.config/gh-mrva/config.yml' <<eof
         codeql_path: not-used/$HOME/work-gh
         controller: not-used/mirva-controller
-        list_file: $HOME/work-gh/mrva/gh-mrva/gh-mrva-selection.json
+        list_file: /root/work-gh/mrva/gh-mrva/gh-mrva-selection.json
         eof
 
         # check:
@@ -260,28 +260,51 @@
         docker exec -it mrvacommander-client-ghmrva-1 cat /root/.config/gh-mrva/config.yml
       #+END_SRC
 
-   3. [ ] Submit the mrva job
+   3. [X] Provide the specification files
       #+BEGIN_SRC sh 
+        docker exec -i mrvacommander-client-ghmrva-1 \
+               sh -c 'mkdir -p /root/work-gh/mrva/gh-mrva'
+
+        cat | docker exec -i mrvacommander-client-ghmrva-1 \
+                     sh -c 'cat > /root/work-gh/mrva/gh-mrva/gh-mrva-selection.json' <<eof
+        {
+            "mirva-list": [
+                "xoreaxeaxeax/movfuscatorctsj8f7e5b",
+                "microsoft/node-native-keymapctsj4cc9a2",
+                "BoomingTech/Piccoloctsj6d7177",
+                "USCiLab/cerealctsj264953",
+                "KhronosGroup/OpenXR-SDKctsj984ee6",
+                "tdlib/telegram-bot-apictsj8529d9",
+                "WinMerge/winmergectsj101305",
+                "timescale/timescaledbctsjf617cf",
+                "pocoproject/pococtsj26b932",
+                "quickfix/quickfixctsjebfd13",
+                "libfuse/libfusectsj7a66a4"
+            ]
+        }
+        eof
+      #+END_SRC
+
+   4. [ ] Submit the mrva job
+      #+BEGIN_SRC sh 
+
+
+      ss
+        
+
         docker exec -it mrvacommander-client-ghmrva-1 /usr/local/bin/gh-mrva    \
                submit --language cpp --session mirva-session-1360               \
                           --list mirva-list                                     \
                           --query ~/work-gh/mrva/gh-mrva/FlatBuffersFunc.ql     
 
-        XX:
-        2024/09/24 21:10:07 open /root/.config/gh-mrva/config.yml: no such file or directory
 
-
-
-        cp ~/work-gh/mrva/mrvacommander/client/qldbtools/scratch/gh-mrva-selection.json \
-           ~/work-gh/mrva/gh-mrva/gh-mrva-selection.json 
-
-        cd ~/work-gh/mrva/gh-mrva/
-        ./gh-mrva submit --language cpp --session mirva-session-1360    \
-                  --list mirva-list                                     \
-                  --query ~/work-gh/mrva/gh-mrva/FlatBuffersFunc.ql
+        Resolving mirva-list repositories from /root/work-gh/mrva/gh-mrva/gh-mrva-selection.json
+        Submitting 1 queries for 11 repositories
+        Generating query pack for /Users/hohn/work-gh/mrva/gh-mrva/FlatBuffersFunc.ql
+        2024/09/24 23:20:31 Query file /Users/hohn/work-gh/mrva/gh-mrva/FlatBuffersFunc.ql does not exist
       #+END_SRC
 
-   4. [ ] Check the status
+   5. [ ] Check the status
       #+BEGIN_SRC sh 
         cd ~/work-gh/mrva/gh-mrva/
 
@@ -289,7 +312,7 @@
         ./gh-mrva status --session mirva-session-1360
       #+END_SRC
 
-   5. [ ] Download the sarif files, optionally also get databases.  For the current
+   6. [ ] Download the sarif files, optionally also get databases.  For the current
       query / database combination there are zero result hence no downloads.
       #+BEGIN_SRC sh 
         cd ~/work-gh/mrva/gh-mrva/
