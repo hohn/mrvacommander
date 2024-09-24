@@ -159,6 +159,28 @@
     docker-compose -f docker-compose-demo.yml up -d
   #+END_SRC
   and wait until the log output no longer changes.
+  Should look like
+  #+BEGIN_SRC text
+    docker-compose -f docker-compose-demo.yml up -d
+    [+] Running 27/6
+     ✔ dbstore Pulled 1.1s
+     ✔ artifactstore Pulled 1.1s
+     ✔ mrvadata 3 layers [⣿⣿⣿]      0B/0B      Pulled 263.8s
+     ✔ server 2 layers [⣿⣿]      0B/0B      Pulled 25.2s
+     ✔ agent 5 layers [⣿⣿⣿⣿⣿]      0B/0B      Pulled 24.9s
+     ✔ client-qldbtools 11 layers [⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿]      0B/0B      Pulled 20.8s
+    [+] Running 9/9
+     ✔ Container mrvadata Started 0.3s
+     ✔ Container mrvacommander-client-qldbtools-1  Started 0.3s
+     ✔ Container mrvacommander-client-ghmrva-1     Running 0.0s
+     ✔ Container mrvacommander-code-server-1       Running 0.0s
+     ✔ Container artifactstore Running 0.0s
+     ✔ Container rabbitmq Running 0.0s
+     ✔ Container dbstore Started 0.4s
+     ✔ Container agent Started 0.5s
+     ✔ Container server Started 0.5s
+  #+END_SRC
+
 
   The content is prepopulated in the =dbstore= container.  
 
@@ -199,7 +221,11 @@
 * Running the gh-mrva command-line client
   The first run uses the test query to verify basic functionality, but it returns
   no results.
+
+  XX: mrvacommander-client-ghmrva-1
+
 ** Run MRVA from command line
+   
    1. Install mrva cli
       #+BEGIN_SRC sh 
         mkdir -p ~/work-gh/mrva && cd ~/work-gh/mrva
