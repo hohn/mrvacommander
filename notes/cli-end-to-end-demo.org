@@ -222,42 +222,56 @@
   The first run uses the test query to verify basic functionality, but it returns
   no results.
 
-  XX: mrvacommander-client-ghmrva-1
+  XX: 
+  #+BEGIN_SRC sh 
+    docker exec -it mrvacommander-client-ghmrva-1 /bin/bash
+    ls /usr/local/bin/gh-mrva
+
+    docker exec -it mrvacommander-client-ghmrva-1 /usr/local/bin/gh-mrva -h
+
+    ~/work-gh/mrva/mrvacommander/client/containers/mrvadata/
+    ls /data/mrvacommander/qldbtools/*
+
+    docker exec -it mrvacommander-client-ghmrva-1 /bin/bash
+    ls 
+
+  #+END_SRC
+
 
 ** Run MRVA from command line
+   # From ~/work-gh/mrva/gh-mrva
    
-   1. Install mrva cli
+   1. [X] Check mrva cli
       #+BEGIN_SRC sh 
-        mkdir -p ~/work-gh/mrva && cd ~/work-gh/mrva
-        git clone https://github.com/hohn/gh-mrva.git
-        cd ~/work-gh/mrva/gh-mrva && git checkout mrvacommander-end-to-end
-
-        # Build it
-        go mod edit -replace="github.com/GitHubSecurityLab/gh-mrva=$HOME/work-gh/mrva/gh-mrva"
-        go build .
-
-        # Sanity check
-        ./gh-mrva -h
+        docker exec -it mrvacommander-client-ghmrva-1 /usr/local/bin/gh-mrva -h
       #+END_SRC
 
-   2. Set up the configuration
+   2. [X] Set up the configuration
       #+BEGIN_SRC sh 
-        mkdir -p ~/.config/gh-mrva
-        cat > ~/.config/gh-mrva/config.yml <<eof
-        # The following options are supported
-        # codeql_path: Path to CodeQL distribution (checkout of codeql repo)
-        # controller: NWO of the MRVA controller to use.  Not used here.
-        # list_file: Path to the JSON file containing the target repos
-
-        # XX:
-        codeql_path: $HOME/work-gh/not-used
+        cat | docker exec -i mrvacommander-client-ghmrva-1 \
+                     sh -c 'cat > /root/.config/gh-mrva/config.yml' <<eof
+        codeql_path: not-used/$HOME/work-gh
         controller: not-used/mirva-controller
         list_file: $HOME/work-gh/mrva/gh-mrva/gh-mrva-selection.json
         eof
+
+        # check:
+        docker exec -it mrvacommander-client-ghmrva-1 ls /root/.config/gh-mrva/config.yml
+        docker exec -it mrvacommander-client-ghmrva-1 cat /root/.config/gh-mrva/config.yml
       #+END_SRC
 
-   3. Submit the mrva job
+   3. [ ] Submit the mrva job
       #+BEGIN_SRC sh 
+        docker exec -it mrvacommander-client-ghmrva-1 /usr/local/bin/gh-mrva    \
+               submit --language cpp --session mirva-session-1360               \
+                          --list mirva-list                                     \
+                          --query ~/work-gh/mrva/gh-mrva/FlatBuffersFunc.ql     
+
+        XX:
+        2024/09/24 21:10:07 open /root/.config/gh-mrva/config.yml: no such file or directory
+
+
+
         cp ~/work-gh/mrva/mrvacommander/client/qldbtools/scratch/gh-mrva-selection.json \
            ~/work-gh/mrva/gh-mrva/gh-mrva-selection.json 
 
@@ -267,7 +281,7 @@
                   --query ~/work-gh/mrva/gh-mrva/FlatBuffersFunc.ql
       #+END_SRC
 
-   4. Check the status
+   4. [ ] Check the status
       #+BEGIN_SRC sh 
         cd ~/work-gh/mrva/gh-mrva/
 
@@ -275,7 +289,7 @@
         ./gh-mrva status --session mirva-session-1360
       #+END_SRC
 
-   5. Download the sarif files, optionally also get databases.  For the current
+   5. [ ] Download the sarif files, optionally also get databases.  For the current
       query / database combination there are zero result hence no downloads.
       #+BEGIN_SRC sh 
         cd ~/work-gh/mrva/gh-mrva/
