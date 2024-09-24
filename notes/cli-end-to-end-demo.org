@@ -260,7 +260,7 @@
         docker exec -it mrvacommander-client-ghmrva-1 cat /root/.config/gh-mrva/config.yml
       #+END_SRC
 
-   3. [X] Provide the specification files
+   3. [X] Provide the repository list file
       #+BEGIN_SRC sh 
         docker exec -i mrvacommander-client-ghmrva-1 \
                sh -c 'mkdir -p /root/work-gh/mrva/gh-mrva'
@@ -285,17 +285,37 @@
         eof
       #+END_SRC
 
-   4. [ ] Submit the mrva job
+   4. [X] Provide the CodeQL query
       #+BEGIN_SRC sh 
+        cat | docker exec -i mrvacommander-client-ghmrva-1 \
+                     sh -c 'cat > /root/work-gh/mrva/gh-mrva/FlatBuffersFunc.ql' <<eof
+        /**
+         ,* @name pickfun
+         ,* @description pick function from FlatBuffers
+         ,* @kind problem
+         ,* @id cpp-flatbuffer-func
+         ,* @problem.severity warning
+         ,*/
+
+        import cpp
+
+        from Function f
+        where
+          f.getName() = "MakeBinaryRegion" or
+          f.getName() = "microprotocols_add"
+        select f, "definition of MakeBinaryRegion"
+
+        eof
+
+      #+END_SRC
 
 
-      ss
-        
-
+   5. [ ] Submit the mrva job
+      #+BEGIN_SRC sh 
         docker exec -it mrvacommander-client-ghmrva-1 /usr/local/bin/gh-mrva    \
                submit --language cpp --session mirva-session-1360               \
                           --list mirva-list                                     \
-                          --query ~/work-gh/mrva/gh-mrva/FlatBuffersFunc.ql     
+                          --query /root/work-gh/mrva/gh-mrva/FlatBuffersFunc.ql     
 
 
         Resolving mirva-list repositories from /root/work-gh/mrva/gh-mrva/gh-mrva-selection.json
@@ -304,7 +324,7 @@
         2024/09/24 23:20:31 Query file /Users/hohn/work-gh/mrva/gh-mrva/FlatBuffersFunc.ql does not exist
       #+END_SRC
 
-   5. [ ] Check the status
+   6. [ ] Check the status
       #+BEGIN_SRC sh 
         cd ~/work-gh/mrva/gh-mrva/
 
@@ -312,7 +332,7 @@
         ./gh-mrva status --session mirva-session-1360
       #+END_SRC
 
-   6. [ ] Download the sarif files, optionally also get databases.  For the current
+   7. [ ] Download the sarif files, optionally also get databases.  For the current
       query / database combination there are zero result hence no downloads.
       #+BEGIN_SRC sh 
         cd ~/work-gh/mrva/gh-mrva/
