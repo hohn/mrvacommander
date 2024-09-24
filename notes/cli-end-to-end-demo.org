@@ -102,10 +102,9 @@
   This selection is deceptively simple.  For a full explanation, see [[file:cli-end-to-end-detailed.org::*Repository Selection][Repository
   Selection]] in the detailed version of this document.
 
-** The meaning of the names
-   This section is optional reading for the demonstration.
-
-   The repository names all end with =ctsj= followed by 6 hex digits like =ctsj4cc9a2=.
+** Optional: The meaning of the names
+   The repository names all end with =ctsj= followed by 6 hex digits like
+   =ctsj4cc9a2=.
 
    The information critial for selection of databases are the columns
    1. owner
@@ -147,22 +146,55 @@
    deterministic.  
 
 * Starting the server
-  The full instructions for building and running the server are in [[../README.md]] under
-  'Steps to build and run the server'
-
-  With docker-compose set up and this repository cloned as previously described,
-  we just run
+  Clone the full repository before continuing:
   #+BEGIN_SRC sh 
-        cd ~/work-gh/mrva/mrvacommander
-        docker-compose up --build
+    mkdir -p ~/work-gh/mrva/
+    git clone git@github.com:hohn/mrvacommander.git
+  #+END_SRC
+
+  Make sure Docker is installed and running.
+  With docker-compose set up and this repository cloned, we just run
+  #+BEGIN_SRC sh 
+    cd ~/work-gh/mrva/mrvacommander
+    docker-compose up -d
   #+END_SRC
   and wait until the log output no longer changes.
 
-  Then, use the following command to populate the mrvacommander database storage:
-  #+BEGIN_SRC sh 
-    cd ~/work-gh/mrva/mrvacommander/client/qldbtools && \
-        ./bin/mc-db-populate-minio -n 11 < scratch/db-info-3.csv
-  #+END_SRC
+  The content is prepopulated in the =dbstore= container.  
+
+** Optional: Inspect the Backing Store
+   As completely optional step, you can inspect the backing store:
+   #+BEGIN_SRC sh 
+     docker exec -it dbstore /bin/bash
+     ls /data/qldb/
+     # 'BoomingTech$Piccoloctsj6d7177.zip'	 'mawww$kakounectsjc54fab.zip'
+     # 'KhronosGroup$OpenXR-SDKctsj984ee6.zip'  'microsoft$node-native-keymapctsj4cc9a2.zip'
+     # ...
+   #+END_SRC
+
+** Optional: Inspect the MinIO DB
+   Another completely optional step, you can inspect the minio DB contents if you
+   have the minio cli installed:
+   #+BEGIN_SRC sh 
+     # Configuration
+     MINIO_ALIAS="qldbminio"
+     MINIO_URL="http://localhost:9000"
+     MINIO_ROOT_USER="user"
+     MINIO_ROOT_PASSWORD="mmusty8432"
+     QL_DB_BUCKET_NAME="qldb"
+
+     # Check for MinIO client
+     if ! command -v mc &> /dev/null
+     then
+         echo "MinIO client (mc) not found."
+     fi
+
+     # Configure MinIO client
+     mc alias set $MINIO_ALIAS $MINIO_URL $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD
+
+     # Show contents
+     mc ls qldbminio/qldb
+   #+END_SRC
   
 * Running the gh-mrva command-line client
   The first run uses the test query to verify basic functionality, but it returns
