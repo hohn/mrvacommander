@@ -156,7 +156,7 @@
   With docker-compose set up and this repository cloned, we just run
   #+BEGIN_SRC sh 
     cd ~/work-gh/mrva/mrvacommander
-    docker-compose up -d
+    docker-compose -f docker-compose-demo.yml up -d
   #+END_SRC
   and wait until the log output no longer changes.
 
