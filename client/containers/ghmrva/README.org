@@ -6,6 +6,11 @@
     make ghm
     # Run
     docker run -ti  client-ghmrva-container:0.1.24 /bin/bash
+
+    # In the container
+    gh-mrva -h
+    codeql -h
+
     # Push
     make ghm-push
   #+END_SRC
