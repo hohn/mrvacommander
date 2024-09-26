@@ -330,18 +330,13 @@
 
       #+END_SRC
 
-   7. [ ] Download the sarif files, optionally also get databases.  For the current
+   7. [X] Download the sarif files, optionally also get databases.  For the current
       query / database combination there are zero result hence no downloads.
       #+BEGIN_SRC sh 
-        cd ~/work-gh/mrva/gh-mrva/
-        # Just download the sarif files
-        ./gh-mrva download --session mirva-session-1360 \
-                  --output-dir mirva-session-1360
-
-        # Download the sarif files and CodeQL dbs
-        ./gh-mrva download --session mirva-session-1360 \
-                  --download-dbs \
-                  --output-dir mirva-session-1360
+        docker exec -i mrvacommander-client-ghmrva-1 /usr/local/bin/gh-mrva \
+               download --session mirva-session-1360                        \
+               --download-dbs                                               \
+               --output-dir mirva-session-1360
       #+END_SRC
 
 ** Write query that has some results
