@@ -248,6 +248,9 @@
 
    2. [X] Set up the configuration
       #+BEGIN_SRC sh 
+        docker exec -i mrvacommander-client-ghmrva-1 \
+               sh -c 'mkdir -p /root/.config/gh-mrva/'
+
         cat | docker exec -i mrvacommander-client-ghmrva-1 \
                      sh -c 'cat > /root/.config/gh-mrva/config.yml' <<eof
         codeql_path: not-used/$HOME/work-gh
@@ -256,8 +259,8 @@
         eof
 
         # check:
-        docker exec -it mrvacommander-client-ghmrva-1 ls /root/.config/gh-mrva/config.yml
-        docker exec -it mrvacommander-client-ghmrva-1 cat /root/.config/gh-mrva/config.yml
+        docker exec -i mrvacommander-client-ghmrva-1 ls /root/.config/gh-mrva/config.yml
+        docker exec -i mrvacommander-client-ghmrva-1 cat /root/.config/gh-mrva/config.yml
       #+END_SRC
 
    3. [X] Provide the repository list file
@@ -309,19 +312,12 @@
 
       #+END_SRC
 
-
-   5. [ ] Submit the mrva job
+   5. [X] Submit the mrva job
       #+BEGIN_SRC sh 
-        docker exec -it mrvacommander-client-ghmrva-1 /usr/local/bin/gh-mrva    \
-               submit --language cpp --session mirva-session-1360               \
-                          --list mirva-list                                     \
-                          --query /root/work-gh/mrva/gh-mrva/FlatBuffersFunc.ql     
-
-
-        Resolving mirva-list repositories from /root/work-gh/mrva/gh-mrva/gh-mrva-selection.json
-        Submitting 1 queries for 11 repositories
-        Generating query pack for /Users/hohn/work-gh/mrva/gh-mrva/FlatBuffersFunc.ql
-        2024/09/24 23:20:31 Query file /Users/hohn/work-gh/mrva/gh-mrva/FlatBuffersFunc.ql does not exist
+        docker exec -i mrvacommander-client-ghmrva-1 /usr/local/bin/gh-mrva \
+               submit --language cpp --session mirva-session-1360           \
+               --list mirva-list                                            \
+               --query /root/work-gh/mrva/gh-mrva/FlatBuffersFunc.ql     
       #+END_SRC
 
    6. [ ] Check the status
