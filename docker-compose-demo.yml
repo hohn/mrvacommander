@@ -36,12 +36,10 @@ services:
             
 
     client-ghmrva:
-        # XX: redirect by changing code or using nginx proxy
-        # client.Get(fmt.Sprintf("http://localhost:8080/repos/%s/code-scanning/codeql/variant-analyses/%d", controller, runId), &response)
         image: ghcr.io/hohn/client-ghmrva-container:0.1.24 
-        # XX: Include codeql in container if needed; no attached storage container.
-        networks:
-            - backend
+        network_mode: "service:server" # Share the 'server' network namespace
+        environment:
+            - SERVER_URL=http://localhost:8080  # 'localhost' now refers to 'server'
             
     code-server:
         image: ghcr.io/hohn/code-server-initialized:0.1.24
@@ -74,8 +72,6 @@ services:
         command: [ '--mode=container', '--loglevel=debug' ]
         container_name: server
         stop_grace_period: 1s
-        ports:
-            - "8080:8080" # host:container
         depends_on:
             - rabbitmq
             - dbstore
