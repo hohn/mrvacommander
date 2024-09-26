@@ -320,12 +320,14 @@
                --query /root/work-gh/mrva/gh-mrva/FlatBuffersFunc.ql     
       #+END_SRC
 
-   6. [ ] Check the status
+   6. [X] Check the status
       #+BEGIN_SRC sh 
-        cd ~/work-gh/mrva/gh-mrva/
-
         # Check the status
         ./gh-mrva status --session mirva-session-1360
+
+        docker exec -i mrvacommander-client-ghmrva-1 /usr/local/bin/gh-mrva \
+               status --session mirva-session-1360
+
       #+END_SRC
 
    7. [ ] Download the sarif files, optionally also get databases.  For the current
