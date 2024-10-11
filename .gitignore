@@ -47,8 +47,9 @@ go.work.sum
 venv/
 *.egg-info
 __pycache__
-cli-end-to-end.html
 README.html
+ChangeLog
+notes/*.html
 
 # Make timestamp files
 mk.*
