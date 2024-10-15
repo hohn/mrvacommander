@@ -1,0 +1,70 @@
+* MRVA cli tools container
+  Set up / run:
+  #+BEGIN_SRC sh 
+    # Run the raw container assembly
+    cd ~/work-gh/mrva/mrvacommander/
+    docker-compose -f docker-compose-demo-build.yml up -d
+
+    # Use the following commands to populate the mrvacommander database storage
+    cd ~/work-gh/mrva/mrvacommander/client/qldbtools 
+    mkdir -p scratch 
+    source venv/bin/activate
+
+    ./bin/mc-db-initial-info ~/work-gh/mrva/mrva-open-source-download > scratch/db-info-1.csv
+
+    ./bin/mc-db-refine-info < scratch/db-info-1.csv > scratch/db-info-2.csv
+
+    ./bin/mc-db-unique cpp < scratch/db-info-2.csv > scratch/db-info-3.csv
+
+    ./bin/mc-db-generate-selection -n 11 \
+                                   scratch/vscode-selection.json \
+                                   scratch/gh-mrva-selection.json \
+                                   < scratch/db-info-3.csv 
+
+    # Several seconds start-up time; fast db population
+    ./bin/mc-db-populate-minio -n 11 < scratch/db-info-3.csv
+
+    # While the containers are running, this will show minio's storage.  The zip files
+    # are split into part.* and xl.meta by minio.  Use the web interface to see real
+    # names. 
+    docker exec dbstore ls -R /data/mrvacommander/
+
+    # Open browser to see the file listing
+    open http://localhost:9001/browser/qldb
+
+    # list the volumes
+    docker volume ls |grep dbs
+    docker volume inspect mrvacommander_dbsdata
+
+    # Persist volume using container
+    cd ~/work-gh/mrva/mrvacommander/demo/containers/dbsdata
+    # Note: use mrvacommander_dbsdata, not mrvacommander-dbsdata
+    # Get the data as tar file from the image
+    docker run --rm \
+           -v mrvacommander_dbsdata:/data \
+           -v $(pwd):/backup \
+           busybox sh -c "tar cvf /backup/dbsdata_backup.tar  ."
+    # Build container with the tarball
+    cd ~/work-gh/mrva/mrvacommander/demo/containers/dbsdata
+    docker build -t dbsdata-container:0.1.24 .
+    docker image ls | grep dbs
+
+    # check container contents
+    docker run -it dbsdata-container:0.1.24 /bin/sh
+    docker run -it dbsdata-container:0.1.24 ls data/qldb
+
+    # Tag the dbstore backing container
+    docker inspect dbsdata-container:0.1.24 |grep Id
+    docker tag dbsdata-container:0.1.24 ghcr.io/hohn/dbsdata-container:0.1.24
+
+    # Push the pre-populated image
+    docker push ghcr.io/hohn/dbsdata-container:0.1.24
+
+    # Check the tagged image
+    docker run -it ghcr.io/hohn/dbsdata-container:0.1.24 \
+           ls data/qldb
+
+    # Shut down the container assembly
+    docker-compose -f docker-compose-demo-build.yml down
+  #+END_SRC
+

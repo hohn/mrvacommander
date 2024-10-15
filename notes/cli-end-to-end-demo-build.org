@@ -2,41 +2,19 @@
 #+OPTIONS: H:2 num:t \n:nil @:t ::t |:t ^:{} f:t *:t TeX:t LaTeX:t skip:nil p:nil
 
 * End-to-end example of CLI use
-  This document describes a complete cycle of the MRVA workflow, but using
-  pre-populated data.  The steps  included are 
-  1. aquiring CodeQL databases
-  2. selection of databases
-  3. configuration and use of the command-line client
-  4. server startup
-  5. submission of the jobs
-  6. retrieval of the results
-  7. examination of the results
-
-* Start the containers
-  #+BEGIN_SRC sh 
-    cd ~/work-gh/mrva/mrvacommander/
-
-    docker-compose -f docker-compose-demo.yml down --volumes --remove-orphans
-    docker-compose -f docker-compose-demo.yml up --build
-  #+END_SRC
+  This document describes the build steps for the demo containers.
 
 * Database Aquisition
-  General database aquisition is beyond the scope of this document as it is very specific
-  to an organization's environment.
-
-  For this demo, the data is preloaded via container.  To inspect it:
+  For this demo, the data is preloaded via container.  To set up the container
 
   #+BEGIN_SRC sh 
     # On host, run 
     docker exec -it dbstore /bin/bash
 
     # In the container
-    ls -la /data/mrvacommander/dbstore-data/qldb
-
-    # Or in one step
-    docker exec -it dbstore ls -la /data/mrvacommander/dbstore-data/qldb
+    ls -la /data/dbstore-data/
+    ls  /data/dbstore-data/qldb/ | wc -l
   #+END_SRC
-
   Here we use a small sample of an example for open-source
   repositories, 23 in all.
 

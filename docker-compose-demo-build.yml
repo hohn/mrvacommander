@@ -1,16 +1,17 @@
+# This is the compose configuration used to build / prepopulate the containers for
+# a demo.
 services:
     dbssvc:
-        # dbsdata-container:0.1.24
-        image: ghcr.io/hohn/dbsdata-container:0.1.24
-        command: tail -f /dev/null # Keep the container running            
-        # volumes:
-        #     - /qldb  # Directory inside the container that contains the data
-        volumes:
-            - dbsdata:/data
+        ## image: ghcr.io/hohn/dbsdata-container:0.1.24
+        build:
+            context: .
+            dockerfile: ./demo/containers/dbsdata/Dockerfile
         container_name: dbssvc
+        volumes:
+            - dbsdata:/data/mrvacommander/dbstore-data
         networks:
             - backend
-
+            
     dbstore:
         image: minio/minio:RELEASE.2024-06-11T03-13-30Z
         container_name: dbstore
@@ -22,25 +23,28 @@ services:
               required: true
         command: server /data/mrvacommander/dbstore-data --console-address ":9001"
         depends_on:
-            - dbssvc            
-        # volumes_from:
-        #     - dbsdata  # Use the volumes from dbsdata container
+            - dbssvc
         volumes:
             - dbsdata:/data/mrvacommander/dbstore-data
         networks:
             - backend
-     
+            
     client-ghmrva:
-        image: ghcr.io/hohn/client-ghmrva-container:0.1.24 
+        ## image: ghcr.io/hohn/client-ghmrva-container:0.1.24 
+        build:
+            context: .
+            dockerfile: ./client/containers/ghmrva/Dockerfile
         network_mode: "service:server" # Share the 'server' network namespace
         environment:
             - SERVER_URL=http://localhost:8080  # 'localhost' now refers to 'server'
             
     code-server:
-        image: ghcr.io/hohn/code-server-initialized:0.1.24
+        ## image: ghcr.io/hohn/code-server-initialized:0.1.24
+        build:
+            context: ./client/containers/vscode
+            dockerfile: Dockerfile
         ports:
             - "9080:9080"
-        # XX: Include codeql binary in code-server (if it's not there already)
         environment:
             - PASSWORD=mrva
      
@@ -55,18 +59,23 @@ services:
             - "5672:5672"
             - "15672:15672"
         healthcheck:
-          test: rabbitmq-diagnostics check_port_connectivity
-          interval: 30s
-          timeout: 30s
-          retries: 10
+            test: rabbitmq-diagnostics check_port_connectivity
+            interval: 30s
+            timeout: 30s
+            retries: 10
         networks:
             - backend
      
     server:
-        image: ghcr.io/hohn/mrva-server:0.1.24
+        build:
+            context: .
+            dockerfile: ./cmd/server/Dockerfile
         command: [ '--mode=container', '--loglevel=debug' ]
         container_name: server
         stop_grace_period: 1s
+        ports:
+            # - "8081:8080" # host:container for proxy
+            - "8080:8080" # host:container
         depends_on:
             - rabbitmq
             - dbstore
@@ -95,7 +104,10 @@ services:
             - backend
      
     agent:
-        image: ghcr.io/hohn/mrva-agent:0.1.24
+        ## image: ghcr.io/hohn/mrva-agent:0.1.24
+        build:
+          context: .
+          dockerfile: ./cmd/agent/Dockerfile
         command: [ '--loglevel=debug' ]
         container_name: agent
         depends_on:
@@ -113,4 +125,5 @@ networks:
         driver: bridge
 
 volumes:
-    dbsdata:
+  dbsdata:
+
