@@ -184,13 +184,7 @@ func RunAnalysisJob(
 		return result, fmt.Errorf("failed to extract query pack: %w", err)
 	}
 
-	// Download the CodeQL database as a byte slice
-	location, err := dbs.GetDatabaseLocationByNWO(job.Spec.NameWithOwner)
-	if err != nil {
-		return result, fmt.Errorf("failed to get database location: %w", err)
-	}
-
-	databaseData, err := dbs.GetDatabase(location)
+	databaseData, err := dbs.GetDatabase(job.Spec.NameWithOwner)
 	if err != nil {
 		return result, fmt.Errorf("failed to get database: %w", err)
 	}

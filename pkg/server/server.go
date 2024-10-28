@@ -16,7 +16,6 @@ import (
 
 	"mrvacommander/pkg/artifactstore"
 	"mrvacommander/pkg/common"
-	"mrvacommander/pkg/qldbstore"
 	"mrvacommander/pkg/queue"
 	"mrvacommander/utils"
 
@@ -24,14 +23,14 @@ import (
 )
 
 func (c *CommanderSingle) startAnalyses(
-	analysisRepos *map[common.NameWithOwner]qldbstore.CodeQLDatabaseLocation,
+	analysisRepos []common.NameWithOwner,
 	queryPackLocation artifactstore.ArtifactLocation,
 	sessionId int,
 	queryLanguage queue.QueryLanguage) {
 
-	slog.Debug("Queueing analysis jobs", "count", len(*analysisRepos))
+	slog.Debug("Queueing analysis jobs", "count", len(analysisRepos))
 
-	for nwo := range *analysisRepos {
+	for _, nwo := range analysisRepos {
 		jobSpec := common.JobSpec{
 			SessionID:     sessionId,
 			NameWithOwner: nwo,
@@ -380,25 +379,20 @@ func (c *CommanderSingle) MRVADownloadQLDB(w http.ResponseWriter, r *http.Reques
 	// This is a direct data request -- don't reply with a download url.
 
 	vars := mux.Vars(r)
-	owner := vars["repo_owner"]
-	name := vars["repo_name"]
-
-	dbl := qldbstore.CodeQLDatabaseLocation{
-		Data: map[string]string{
-			qldbstore.QL_KEY_BUCKET: qldbstore.QL_DB_BUCKETNAME,
-			qldbstore.QL_KEY_KEY:    fmt.Sprintf("%s$%s.zip", owner, name),
-		},
+	dbl := common.NameWithOwner{
+		Owner: vars["repo_owner"],
+		Repo:  vars["repo_name"],
 	}
 
 	slog.Debug("Returning codeql database using database location",
-		"qldbstore.CodeQLDatabaseLocation", dbl,
+		"dbl", dbl,
 	)
 
 	dbContent, err := c.v.CodeQLDBStore.GetDatabase(dbl)
 	if err != nil {
 		slog.Error("Failed to retrieve ql database",
 			"error", err,
-			"qldbstore.CodeQLDatabaseLocation", dbl,
+			"dbl", dbl,
 		)
 		http.Error(w, "Failed to retrieve ql database", http.StatusInternalServerError)
 		return
@@ -568,7 +562,7 @@ func (c *CommanderSingle) MRVARequestCommon(w http.ResponseWriter, r *http.Reque
 
 	notFoundRepos, analysisRepos := c.v.CodeQLDBStore.FindAvailableDBs(repoNWOs)
 
-	if len(*analysisRepos) == 0 {
+	if len(analysisRepos) == 0 {
 		slog.Warn("No repositories found for analysis")
 	}
 

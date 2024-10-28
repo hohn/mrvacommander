@@ -526,24 +526,8 @@ func generateSarif(codeql CodeqlCli, language queue.QueryLanguage, databasePath,
 		return nil, err
 	}
 
-	slog.Debug("XX: sarif original", "sarif=", sarifData)
-	slog.Debug("XX: sarif modified", "modifiedJSON=", modifiedJSON)
-
 	return modifiedJSON, nil
 }
-
-// XX: inlined this function
-// func injectVersionControlInfo(sarif *Sarif, nwo, databaseSHA string) {
-// 	// XX: is nwo name/owner or language?
-// 	slog.Debug("XX: 2: is nwo a name/owner, or the original callers' queryLanguage?",
-// 		"nwo", nwo)
-// 	for _, run := range sarif.Runs {
-// 		run.VersionControlProvenance = append(run.VersionControlProvenance, map[string]interface{}{
-// 			"repositoryUri": fmt.Sprintf("%s/%s", os.Getenv("GITHUB_SERVER_URL"), nwo),
-// 			"revisionId":    databaseSHA,
-// 		})
-// 	}
-// }
 
 // getSarifResultCount returns the number of results in the SARIF file.
 func getSarifResultCount(sarif []byte) int {

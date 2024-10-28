@@ -19,48 +19,39 @@ func NewLocalFilesystemCodeQLDatabaseStore(basePath string) *FilesystemCodeQLDat
 
 func (store *FilesystemCodeQLDatabaseStore) FindAvailableDBs(analysisReposRequested []common.NameWithOwner) (
 	notFoundRepos []common.NameWithOwner,
-	foundRepos *map[common.NameWithOwner]CodeQLDatabaseLocation) {
+	foundRepos []common.NameWithOwner) {
 
-	foundReposMap := make(map[common.NameWithOwner]CodeQLDatabaseLocation)
 	for _, repo := range analysisReposRequested {
-		location, err := store.GetDatabaseLocationByNWO(repo)
-		if err != nil {
+		// Form the file path
+		filePath := filepath.Join(store.basePath,
+			fmt.Sprintf("%s/%s/%s_%s_db.zip", repo.Owner, repo.Repo, repo.Owner, repo.Repo))
+
+		// Check if the file exists
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
 			notFoundRepos = append(notFoundRepos, repo)
 		} else {
-			foundReposMap[repo] = location
+			foundRepos = append(foundRepos, repo)
 		}
 	}
 
-	return notFoundRepos, &foundReposMap
+	return notFoundRepos, foundRepos
 }
 
-func (store *FilesystemCodeQLDatabaseStore) GetDatabase(location CodeQLDatabaseLocation) ([]byte, error) {
-	path, exists := location.Data["path"]
-	if !exists {
-		return nil, fmt.Errorf("path not specified in location")
-	}
+func (store *FilesystemCodeQLDatabaseStore) GetDatabase(location common.NameWithOwner) ([]byte, error) {
 
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
-}
-
-func (store *FilesystemCodeQLDatabaseStore) GetDatabaseLocationByNWO(nwo common.NameWithOwner) (CodeQLDatabaseLocation, error) {
-	filePath := filepath.Join(store.basePath, fmt.Sprintf("%s/%s/%s_%s_db.zip", nwo.Owner, nwo.Repo, nwo.Owner, nwo.Repo))
+	// Form the file path
+	filePath := filepath.Join(store.basePath,
+		fmt.Sprintf("%s/%s/%s_%s_db.zip", location.Owner, location.Repo, location.Owner, location.Repo))
 
 	// Check if the file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return CodeQLDatabaseLocation{}, fmt.Errorf("database not found for %s", nwo)
+		return nil, fmt.Errorf("database not found for %s", location)
 	}
 
-	location := CodeQLDatabaseLocation{
-		Data: map[string]string{
-			"path": filePath,
-		},
+	// Read file and return it as byte slice
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, err
 	}
-
-	return location, nil
+	return data, nil
 }

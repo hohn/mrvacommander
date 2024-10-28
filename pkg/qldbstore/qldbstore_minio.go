@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"mrvacommander/pkg/artifactstore"
 	"mrvacommander/pkg/common"
 
 	"github.com/minio/minio-go/v7"
@@ -49,26 +48,26 @@ func NewMinIOCodeQLDatabaseStore(endpoint, id, secret string) (*MinIOCodeQLDatab
 
 func (store *MinIOCodeQLDatabaseStore) FindAvailableDBs(analysisReposRequested []common.NameWithOwner) (
 	notFoundRepos []common.NameWithOwner,
-	foundRepos *map[common.NameWithOwner]CodeQLDatabaseLocation) {
+	foundRepos []common.NameWithOwner) {
 
-	foundReposMap := make(map[common.NameWithOwner]CodeQLDatabaseLocation)
 	for _, repo := range analysisReposRequested {
-		location, err := store.GetDatabaseLocationByNWO(repo)
-		if err != nil {
-			notFoundRepos = append(notFoundRepos, repo)
+		status := store.haveDatabase(repo)
+		if status {
+			foundRepos = append(foundRepos, repo)
 		} else {
-			foundReposMap[repo] = location
+			notFoundRepos = append(notFoundRepos, repo)
 		}
 	}
 
-	return notFoundRepos, &foundReposMap
+	return notFoundRepos, foundRepos
 }
 
-func (store *MinIOCodeQLDatabaseStore) GetDatabase(location CodeQLDatabaseLocation) ([]byte, error) {
-	bucket := location.Data[artifactstore.AF_KEY_BUCKET]
-	key := location.Data[artifactstore.AF_KEY_KEY]
-
-	object, err := store.client.GetObject(context.Background(), bucket, key, minio.GetObjectOptions{})
+func (store *MinIOCodeQLDatabaseStore) GetDatabase(location common.NameWithOwner) ([]byte, error) {
+	key := fmt.Sprintf("%s$%s.zip", location.Owner, location.Repo)
+	object, err := store.client.GetObject(context.Background(),
+		store.bucketName,
+		key,
+		minio.GetObjectOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -82,24 +81,21 @@ func (store *MinIOCodeQLDatabaseStore) GetDatabase(location CodeQLDatabaseLocati
 	return data, nil
 }
 
-func (store *MinIOCodeQLDatabaseStore) GetDatabaseLocationByNWO(nwo common.NameWithOwner) (CodeQLDatabaseLocation, error) {
-	objectName := fmt.Sprintf("%s$%s.zip", nwo.Owner, nwo.Repo)
+func (store *MinIOCodeQLDatabaseStore) haveDatabase(location common.NameWithOwner) bool {
+	objectName := fmt.Sprintf("%s$%s.zip", location.Owner, location.Repo)
 
 	// Check if the object exists
-	_, err := store.client.StatObject(context.Background(), store.bucketName, objectName, minio.StatObjectOptions{})
+	_, err := store.client.StatObject(context.Background(),
+		store.bucketName,
+		objectName,
+		minio.StatObjectOptions{})
 	if err != nil {
 		if minio.ToErrorResponse(err).Code == "NoSuchKey" {
-			return CodeQLDatabaseLocation{}, fmt.Errorf("database not found for %s", nwo)
+			slog.Info("No database found for", location)
+			return false
 		}
-		return CodeQLDatabaseLocation{}, err
+		slog.Info("General database error while checking for", location)
+		return false
 	}
-
-	location := CodeQLDatabaseLocation{
-		Data: map[string]string{
-			artifactstore.AF_KEY_BUCKET: store.bucketName,
-			artifactstore.AF_KEY_KEY:    objectName,
-		},
-	}
-
-	return location, nil
+	return true
 }
