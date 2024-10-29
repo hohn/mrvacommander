@@ -791,6 +791,7 @@ func (c *CommanderSingle) decodeAndSaveBase64QueryPack(qp string, sessionId int)
 		return artifactstore.ArtifactLocation{}, err
 	}
 
+	// XX: afl use
 	artifactLocation, err := c.v.Artifacts.SaveQueryPack(sessionId, tgz)
 	if err != nil {
 		slog.Error("Failed to save query pack", "err", err)

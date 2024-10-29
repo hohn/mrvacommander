@@ -15,8 +15,6 @@ import (
 // Restrict the keys / values and centralize the common ones here
 const (
 	QL_DB_BUCKETNAME = "qldb"
-	QL_KEY_BUCKET    = "bucket"
-	QL_KEY_KEY       = "key"
 )
 
 type MinIOCodeQLDatabaseStore struct {
