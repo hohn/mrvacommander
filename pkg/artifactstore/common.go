@@ -5,8 +5,6 @@ import (
 	"mrvacommander/pkg/common"
 )
 
-// xx: afl use
-// XX: static types: split by type?
 // Restrict the keys / values for ArtifactLocation and centralize the common ones
 // here
 const (
@@ -15,7 +13,7 @@ const (
 )
 
 type ArtifactLocation struct {
-	Key    string // location in bucket
+	Key    string // location in bucket OR full location for file paths
 	Bucket string // which bucket: packs or results
 }
 

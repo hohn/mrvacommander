@@ -48,7 +48,6 @@ func (store *MinIOArtifactStore) GetQueryPack(location ArtifactLocation) ([]byte
 }
 
 func (store *MinIOArtifactStore) SaveQueryPack(jobId int, data []byte) (ArtifactLocation, error) {
-	// xx: afl use
 	return store.saveArtifact(AF_BUCKETNAME_PACKS, deriveKeyFromSessionId(jobId), data, "application/gzip")
 }
 
@@ -57,7 +56,6 @@ func (store *MinIOArtifactStore) GetResult(location ArtifactLocation) ([]byte, e
 }
 
 func (store *MinIOArtifactStore) GetResultSize(location ArtifactLocation) (int, error) {
-	// xx: afl use
 	bucket := location.Bucket
 	key := location.Key
 
@@ -74,12 +72,10 @@ func (store *MinIOArtifactStore) GetResultSize(location ArtifactLocation) (int, 
 }
 
 func (store *MinIOArtifactStore) SaveResult(jobSpec common.JobSpec, data []byte) (ArtifactLocation, error) {
-	// xx: afl use
 	return store.saveArtifact(AF_BUCKETNAME_RESULTS, deriveKeyFromJobSpec(jobSpec), data, "application/zip")
 }
 
 func (store *MinIOArtifactStore) getArtifact(location ArtifactLocation) ([]byte, error) {
-	// xx: afl use
 	bucket := location.Bucket
 	key := location.Key
 
@@ -107,8 +103,6 @@ func (store *MinIOArtifactStore) saveArtifact(bucket, key string, data []byte,
 		return ArtifactLocation{}, err
 	}
 
-	// XX: afl use
-	// XX: static types
 	location := ArtifactLocation{
 		Bucket: bucket,
 		Key:    key,
