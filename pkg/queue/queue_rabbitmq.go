@@ -32,8 +32,8 @@ func NewRabbitMQQueue(
 	isAgent bool,
 ) (*RabbitMQQueue, error) {
 	const (
-		tryCount         = 5
-		retryDelaySec    = 3
+		tryCount      = 5
+		retryDelaySec = 3
 		// XX: static typing?
 		jobsQueueName    = "tasks"
 		resultsQueueName = "results"
@@ -126,12 +126,15 @@ func (q *RabbitMQQueue) Close() {
 }
 
 func (q *RabbitMQQueue) ConsumeJobs(queueName string) {
-	msgs, err := q.channel.Consume(queueName, "", true, false, false, false, nil)
+	autoAck := false
+	msgs, err := q.channel.Consume(queueName, "", autoAck, false, false, false, nil)
+
 	if err != nil {
-		slog.Error("failed to register a consumer", slog.Any("error", err))
+		slog.Error("failed to consume from queue", slog.Any("error", err))
 	}
 
 	for msg := range msgs {
+		// Process message
 		job := AnalyzeJob{}
 		err := json.Unmarshal(msg.Body, &job)
 		if err != nil {
@@ -139,6 +142,15 @@ func (q *RabbitMQQueue) ConsumeJobs(queueName string) {
 			continue
 		}
 		q.jobs <- job
+
+		// Acknowledge the message after successful processing
+		err = msg.Ack(false)
+		if err != nil {
+			slog.Error("Failed to acknowledge job consumption message",
+				slog.Any("error", err))
+			continue
+		}
+
 	}
 	close(q.jobs)
 }
@@ -159,6 +171,17 @@ func (q *RabbitMQQueue) publishResult(queueName string, result AnalyzeResult) {
 		return
 	}
 
+	// Enable publisher confirms on the channel
+	err = q.channel.Confirm(false)
+	if err != nil {
+		slog.Error("Failed to enable publisher confirms", slog.Any("error", err))
+	}
+
+	// Set up a confirmation channel.  This uses a large capacity to avoid blocking.
+	confirmChannelSize := 99999
+	confirmations := q.channel.NotifyPublish(make(chan amqp.Confirmation, confirmChannelSize))
+
+	// Publish the message
 	slog.Debug("Publishing result", slog.String("result", string(resultBytes)))
 	err = q.channel.PublishWithContext(ctx, "", queueName, false, false,
 		amqp.Publishing{
@@ -168,6 +191,13 @@ func (q *RabbitMQQueue) publishResult(queueName string, result AnalyzeResult) {
 	if err != nil {
 		slog.Error("failed to publish result", slog.Any("error", err))
 	}
+
+	// Wait for the confirmation
+	confirm := <-confirmations
+	if !confirm.Ack {
+		slog.Error("Publish result message confirmation failed")
+	}
+
 }
 
 func (q *RabbitMQQueue) publishJob(queueName string, job AnalyzeJob) {
@@ -180,6 +210,18 @@ func (q *RabbitMQQueue) publishJob(queueName string, job AnalyzeJob) {
 		return
 	}
 
+	// Enable publisher confirms on the channel
+	err = q.channel.Confirm(false)
+	if err != nil {
+		slog.Error("Failed to enable publisher confirms", slog.Any("error", err))
+	}
+
+	// Set up a confirmation channel.  This uses a large capacity to avoid
+	// blocking server requests.
+	confirmChannelSize := 99999
+	confirmations := q.channel.NotifyPublish(make(chan amqp.Confirmation, confirmChannelSize))
+
+	// Publish the job
 	slog.Debug("Publishing job", slog.String("job", string(jobBytes)))
 	err = q.channel.PublishWithContext(ctx, "", queueName, false, false,
 		amqp.Publishing{
@@ -189,6 +231,13 @@ func (q *RabbitMQQueue) publishJob(queueName string, job AnalyzeJob) {
 	if err != nil {
 		slog.Error("failed to publish job", slog.Any("error", err))
 	}
+
+	// Wait for the confirmation
+	confirm := <-confirmations
+	if !confirm.Ack {
+		slog.Error("Publish result message confirmation failed")
+	}
+
 }
 
 func (q *RabbitMQQueue) PublishJobs(queueName string) {
@@ -198,12 +247,14 @@ func (q *RabbitMQQueue) PublishJobs(queueName string) {
 }
 
 func (q *RabbitMQQueue) ConsumeResults(queueName string) {
-	msgs, err := q.channel.Consume(queueName, "", true, false, false, false, nil)
+	autoAck := false
+	msgs, err := q.channel.Consume(queueName, "", autoAck, false, false, false, nil)
 	if err != nil {
 		slog.Error("failed to register a consumer", slog.Any("error", err))
 	}
 
 	for msg := range msgs {
+		// Process message
 		result := AnalyzeResult{}
 		err := json.Unmarshal(msg.Body, &result)
 		if err != nil {
@@ -211,6 +262,15 @@ func (q *RabbitMQQueue) ConsumeResults(queueName string) {
 			continue
 		}
 		q.results <- result
+
+		// Acknowledge the message after successful processing
+		err = msg.Ack(false)
+		if err != nil {
+			slog.Error("Failed to acknowledge result consumption message",
+				slog.Any("error", err))
+			continue
+		}
+
 	}
 	close(q.results)
 }
