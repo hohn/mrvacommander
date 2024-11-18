@@ -4,6 +4,9 @@ cmd/server/var/
 # vscode project dir
 .vscode/
 
+# idea project dir
+.idea/
+
 # Compiled binary
 cmd/server/server
 cmd/agent/agent
@@ -45,6 +48,7 @@ go.work.sum
 /qldbminio/qldb
 .ipynb_checkpoints/
 venv/
+venv-*/
 *.egg-info
 __pycache__
 README.html
