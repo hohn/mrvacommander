@@ -2,11 +2,19 @@
 """ Collect information about CodeQL databases from the file system and write out
     a table in CSV format.
 """
+from argparse import ArgumentParser
+from typing import List
+
+from pandas import DataFrame
+
 import qldbtools.utils as utils
 import argparse
 import logging
 import sys
 import pandas as pd
+
+from qldbtools.utils import DBInfo
+
 #
 #* Configure logger
 # 
@@ -15,7 +23,7 @@ logging.basicConfig(format='%(asctime)s %(message)s')
 #
 #* Process command line
 #
-parser = argparse.ArgumentParser(
+parser: ArgumentParser = argparse.ArgumentParser(
     description="""Find all CodeQL DBs in and below starting_dir and export a CSV 
 file with relevant data.""")
 parser.add_argument('starting_dir', type=str, 
@@ -26,9 +34,9 @@ args = parser.parse_args()
 #* Collect info
 # 
 # Get the db information in list of DBInfo form
-db_base = args.starting_dir
-dbs = list(utils.collect_dbs(db_base))
-dbdf = pd.DataFrame([d.__dict__ for d in dbs])
+db_base: str = args.starting_dir
+dbs: list[DBInfo] = list(utils.collect_dbs(db_base))
+dbdf: DataFrame = pd.DataFrame([d.__dict__ for d in dbs])
 #
 #
 #* Write info out

@@ -9,10 +9,14 @@ import datetime
 import json
 import logging
 import os
+from typing import List, Dict, Any
+
 import pandas as pd
 import time
 import yaml
 import zipfile
+
+from pandas import DataFrame
 
 #* Setup
 logging.basicConfig(
@@ -30,7 +34,7 @@ def log_and_raise_e(message, exception):
     logging.error(message)
     raise exception(message)
 
-def traverse_tree(root):
+def traverse_tree(root: str) -> Path:
     root_path = Path(os.path.expanduser(root))
     if not root_path.exists() or not root_path.is_dir():
         log_and_raise(f"The specified root path '{root}' does not exist or "
@@ -51,7 +55,7 @@ class DBInfo:
     size : int = 63083064
 
 
-def collect_dbs(db_base):
+def collect_dbs(db_base: str) -> DBInfo:
     for path in traverse_tree(db_base):
         if path.name == "db.zip":
             # For the current repository, we have
@@ -69,7 +73,7 @@ def collect_dbs(db_base):
             yield db 
 
 
-def extract_metadata(zipfile_path):
+def extract_metadata(zipfile_path: str) -> tuple[object,object]:
     """
        extract_metadata(zipfile)
 
@@ -111,7 +115,7 @@ def extract_metadata(zipfile_path):
 class ExtractNotZipfile(Exception): pass
 class ExtractNoCQLDB(Exception): pass
 
-def metadata_details(left_index, codeql_content, meta_content):
+def metadata_details(left_index: int, codeql_content: object, meta_content: object) -> pd.DataFrame:
     """
        metadata_details(codeql_content, meta_content)
 
@@ -143,11 +147,11 @@ def metadata_details(left_index, codeql_content, meta_content):
          'finalised': cqlc.get('finalised', pd.NA),
          }
     f = pd.DataFrame(d, index=[0])
-    joiners = []
+    joiners: list[dict[str, int | Any]] = []
     if not ('languages' in metac):
         log_and_raise_e("Missing 'languages' in metadata", DetailsMissing)
     for lang, lang_cont in metac['languages'].items():
-        d1 = { 'left_index' : left_index, 
+        d1: dict[str, int | Any] = { 'left_index' : left_index,
                'db_lang':  lang }
         for prop, val in lang_cont.items():
             if prop == 'files':
@@ -157,8 +161,8 @@ def metadata_details(left_index, codeql_content, meta_content):
             elif prop == 'displayName':
                 d1['db_lang_displayName'] = val
         joiners.append(d1)
-    fj = pd.DataFrame(joiners)
-    full_df = pd.merge(f, fj, on='left_index', how='outer')
+    fj: DataFrame = pd.DataFrame(joiners)
+    full_df: DataFrame = pd.merge(f, fj, on='left_index', how='outer')
     return full_df
 
 class DetailsMissing(Exception): pass                        
@@ -185,7 +189,7 @@ def form_db_bucket_name(owner, name, CID):
     """
     return f'{owner}${name}ctsj{CID}.zip'
 
-def form_db_req_name(owner, name, CID):
+def form_db_req_name(owner: str, name: str, CID: str) -> str:
     """
         form_db_req_name(owner, name, CID)
     Return the name to use in mrva requests; this function is trivial and used to

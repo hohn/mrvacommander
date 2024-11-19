@@ -6,6 +6,11 @@
 """
 import argparse
 import logging
+from argparse import Namespace
+from typing import List
+
+from pandas import DataFrame
+
 import qldbtools.utils as utils
 import numpy as np
 
@@ -41,18 +46,18 @@ parser.add_argument('-l', '--list-name', type=str,
                     help='Name of the repository list',
                     default='mirva-list')
 
-args = parser.parse_args()
+args: Namespace = parser.parse_args()
 #
 #* Load the information
 #
 import pandas as pd
 import sys
 
-df0 = pd.read_csv(sys.stdin)
+df0: DataFrame = pd.read_csv(sys.stdin)
 
 if args.num_entries == None:
     # Use all entries
-    df1 = df0
+    df1: DataFrame = df0
 else:
     # Use num_entries, chosen via pseudo-random numbers
     df1 = df0.sample(n=args.num_entries,
@@ -61,12 +66,12 @@ else:
 #
 #* Form and save structures
 #
-repos = []
+repos: list[str] = []
 for index, row in df1[['owner', 'name', 'CID', 'path']].iterrows():
     owner, name, CID, path = row
     repos.append(utils.form_db_req_name(owner, name, CID))
 
-repo_list_name = args.list_name
+repo_list_name: str = args.list_name
 vsc = {
     "version": 1,
     "databases": {

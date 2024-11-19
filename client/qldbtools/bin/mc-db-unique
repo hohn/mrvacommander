@@ -18,6 +18,10 @@
 """
 import argparse
 import logging
+from argparse import Namespace
+from typing import Any
+
+from pandas import DataFrame, Series
 
 #
 #* Configure logger
@@ -39,7 +43,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('language', type=str, 
                     help='The language to be analyzed.')
 
-args = parser.parse_args()
+args: Namespace = parser.parse_args()
 #
 #* Collect the information and select subset
 #
@@ -47,7 +51,7 @@ import pandas as pd
 import sys
 import qldbtools.utils as utils
 
-df2 = pd.read_csv(sys.stdin)
+df2: DataFrame = pd.read_csv(sys.stdin)
 
 # 
 #* Add single uniqueness field -- CID (Cumulative ID)
@@ -88,7 +92,7 @@ df2['CID'] = df2.apply(lambda row:
 #     | primaryLanguage     |
 #     | finalised           |
 
-df3 = df2.reindex( columns=['owner', 'name', 'cliVersion', 'creationTime',
+df3: DataFrame = df2.reindex( columns=['owner', 'name', 'cliVersion', 'creationTime',
                                      'language', 'sha','CID',
                                      'baselineLinesOfCode', 'path', 'db_lang',
                                      'db_lang_displayName', 'db_lang_file_count',
@@ -101,14 +105,14 @@ rows = ( df3['cliVersion'].isna() |
          df3['creationTime'].isna() |
          df3['language'].isna() |
          df3['sha'].isna() )
-df4 = df3[~rows]
+df4: DataFrame = df3[~rows]
 
-# XX: Limit to one language
+# Limit to one language
 df5 = df4[df4['language'] == args.language]
 
 # Sort and group
-df_sorted = df5.sort_values(by=['owner', 'name', 'CID', 'creationTime'])
-df_unique = df_sorted.groupby(['owner', 'name', 'CID']).first().reset_index()
+df_sorted: DataFrame = df5.sort_values(by=['owner', 'name', 'CID', 'creationTime'])
+df_unique: DataFrame = df_sorted.groupby(['owner', 'name', 'CID']).first().reset_index()
 
 # Write output
 df_unique.to_csv(sys.stdout, index=False)
