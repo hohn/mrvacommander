@@ -45,6 +45,7 @@
 
   #+BEGIN_SRC sh 
     cd ~/work-gh/mrva/mrvacommander/client/qldbtools && mkdir -p scratch
+    source venv/bin/activate
     ./bin/mc-db-initial-info ~/work-gh/mrva/mrva-open-source-download > scratch/db-info-1.csv
   #+END_SRC
 
@@ -184,7 +185,7 @@
 
   To start reducing that count, start with
   #+BEGIN_SRC sh 
-    ./bin/mc-db-unique < scratch/db-info-2.csv > scratch/db-info-3.csv
+    ./bin/mc-db-unique cpp < scratch/db-info-2.csv > scratch/db-info-3.csv
   #+END_SRC
   and get a reduced count and a new column:
   #+BEGIN_SRC text
@@ -202,7 +203,6 @@
                              b21305 (1x)
                              4ae79b (1x)
 
-    Row count: 5344
   #+END_SRC
   From the docs:  'Read a table of CodeQL DB information and produce a table with unique entries 
   adding the Cumulative ID (CID) column.'
