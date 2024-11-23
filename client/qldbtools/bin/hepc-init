@@ -85,6 +85,12 @@ def process_db_file(zip_path, db_collection_dir):
 
 # Main application class
 class DBProcessor(cli.Application):
+    """
+    DBProcessor processes db.zip files found in a starting directory,
+    symlinks updated names in a collection directory,
+    and adds a metadata information file "metadata.json" to the directory.
+    """
+
     db_collection_dir = cli.SwitchAttr(
         "--db_collection_dir", str, mandatory=True, help="Specify the database collection directory"
     )
