@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+import logging
+from pathlib import Path
+from plumbum import cli
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+import uvicorn
+
+# Logging configuration
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger(__name__)
+
+# FastAPI application
+app = FastAPI()
+db_dir = None  # This will be set by the CLI application
+
+@app.get("/db/{file_path:path}")
+def serve_file(file_path: str):
+    """
+    Serve files from the database directory, such as .zip files or metadata.json.
+    """
+    logger.info(f"Requested file: {file_path}")
+    # Resolve symlink
+    resolved_path = Path(file_path).resolve(strict=True)
+    logger.info(f"file resolved to: {resolved_path}")
+    if not resolved_path.exists():
+        logger.error(f"File not found: {resolved_path}")
+        raise HTTPException(status_code=404, detail=f"{resolved_path} not found")
+    return FileResponse(resolved_path)
+
+
+@app.get("/index")
+@app.get("/api/v1/latest_results/codeql-all")
+def serve_metadata_json():
+    """
+    Serve the metadata.json file for multiple routes.
+    """
+    metadata_path = Path(db_dir) / "metadata.json"
+    logger.info(f"Requested metadata.json at: {metadata_path}")
+    if not metadata_path.exists():
+        logger.error("metadata.json not found.")
+        raise HTTPException(status_code=404, detail="metadata.json not found")
+    logger.info(f"Serving metadata.json from: {metadata_path}")
+    return FileResponse(metadata_path)
+
+@app.middleware("http")
+async def log_request(request, call_next):
+    logger.info(f"Incoming request: {request.method} {request.url}")
+    response = await call_next(request)
+    return response
+
+class DBService(cli.Application):
+    """
+    DBService serves:
+    1. CodeQL database .zip files symlinked in the --codeql-db-dir
+    2. Metadata for those zip files, contained in metadata.json in the same
+       directory.
+    The HTTP endpoints are:
+    1. /db/{filename}
+    2. /index
+    3. /api/v1/latest_results/codeql-all
+    """
+
+    codeql_db_dir = cli.SwitchAttr("--codeql-db-dir", str, mandatory=True,
+                                   help="Directory containing CodeQL database files")
+    host = cli.SwitchAttr("--host", str, default="127.0.0.1",
+                          help="Host address for the HTTP server")
+    port = cli.SwitchAttr("--port", int, default=8080, help="Port for the HTTP server")
+
+    def main(self):
+        global db_dir
+        db_dir = Path(self.codeql_db_dir)
+        if not db_dir.is_dir():
+            logger.error(f"Invalid directory: {db_dir}")
+            return 1
+
+        logger.info(f"Starting server at {self.host}:{self.port}")
+        logger.info(f"Serving files from directory: {db_dir}")
+
+        # Run the FastAPI server using Uvicorn
+        uvicorn.run(app, host=self.host, port=self.port)
+
+
+if __name__ == "__main__":
+    DBService.run()

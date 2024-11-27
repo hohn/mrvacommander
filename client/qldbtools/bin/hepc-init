@@ -18,7 +18,7 @@ def log(level, message):
     timestamp = date("+%Y-%m-%d %H:%M:%S").strip()
     print(f"{colors[level]}[{timestamp}] [{level}] {message}{colors['RESET']}", file=sys.stderr)
 
-# Generate a CID
+# Generate a CID (cumulative id)
 def generate_cid(cli_version, creation_time, primary_language, sha):
     hash_input = f"{cli_version} {creation_time} {primary_language} {sha}".encode()
     return hashlib.sha256(hash_input).hexdigest()[:6]
@@ -50,7 +50,6 @@ def process_db_file(zip_path, db_collection_dir):
         cli_version = creation_metadata["cliVersion"]
         creation_time = creation_metadata["creationTime"]
         source_location_prefix = local.path(yaml_data["sourceLocationPrefix"])
-
         repo = source_location_prefix.name
         owner = source_location_prefix.parent.name
         cid = generate_cid(cli_version, creation_time, primary_language, sha)
