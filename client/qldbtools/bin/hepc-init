@@ -10,8 +10,8 @@ from plumbum.cmd import find, mkdir, ln, rm, mktemp, unzip, date, env
 # Logging function
 def log(level, message):
     colors = {
-        "INFO": "\033[1;34m",
-        "WARN": "\033[1;33m",
+        "INFO":  "\033[1;34m",
+        "WARN":  "\033[1;33m",
         "ERROR": "\033[1;31m",
         "RESET": "\033[0m",
     }
@@ -44,28 +44,28 @@ def process_db_file(zip_path, db_collection_dir):
         with yaml_path.open("r") as f:
             yaml_data = yaml.safe_load(f)
 
-        primary_language = yaml_data["primaryLanguage"]
-        creation_metadata = yaml_data["creationMetadata"]
-        sha = creation_metadata["sha"]
-        cli_version = creation_metadata["cliVersion"]
-        creation_time = creation_metadata["creationTime"]
+        primary_language       = yaml_data["primaryLanguage"]
+        creation_metadata      = yaml_data["creationMetadata"]
+        sha                    = creation_metadata["sha"]
+        cli_version            = creation_metadata["cliVersion"]
+        creation_time          = creation_metadata["creationTime"]
         source_location_prefix = local.path(yaml_data["sourceLocationPrefix"])
-        repo = source_location_prefix.name
-        owner = source_location_prefix.parent.name
-        cid = generate_cid(cli_version, creation_time, primary_language, sha)
-        new_db_fname = f"{owner}-{repo}-ctsj-{cid}.zip"
-        result_url = f"http://hepc/{db_collection_dir}/{new_db_fname}"
+        repo                   = source_location_prefix.name
+        owner                  = source_location_prefix.parent.name
+        cid                    = generate_cid(cli_version, creation_time, primary_language, sha)
+        new_db_fname           = f"{owner}-{repo}-ctsj-{cid}.zip"
+        result_url             = f"http://hepc/{db_collection_dir}/{new_db_fname}"
 
         metadata = {
-            "git_branch": "HEAD",
-            "git_commit_id": sha,
-            "git_repo": repo,
-            "ingestion_datetime_utc": str(creation_time),
-            "result_url": result_url,
-            "tool_id": "9f2f9642-febb-4435-9204-fb50bbd43de4",
-            "tool_name": f"codeql-{primary_language}",
-            "tool_version": cli_version,
-            "projname": f"{owner}/{repo}",
+            "git_branch"             : "HEAD",
+            "git_commit_id"          : sha,
+            "git_repo"               : repo,
+            "ingestion_datetime_utc" : str(creation_time),
+            "result_url"             : result_url,
+            "tool_id"                : "9f2f9642-febb-4435-9204-fb50bbd43de4",
+            "tool_name"              : f"codeql-{primary_language}",
+            "tool_version"           : cli_version,
+            "projname"               : f"{owner}/{repo}",
         }
 
         metadata_file = local.path(db_collection_dir) / "metadata.json"
