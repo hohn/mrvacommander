@@ -1,6 +1,6 @@
 digraph DockerComposeDemo {
     rankdir=LR; // Left-to-right layout
-    node [shape=box style="rounded,filled" color=lightblue2 fontname="Helvetica"];
+    node [shape=plaintext fontname="Helvetica"];
     edge [arrowsize=0.5];
     
     // Title
@@ -9,21 +9,85 @@ digraph DockerComposeDemo {
     fontsize=20;
     fontname="Helvetica";
 
-    // Define nodes with clickable URLs
-    dbssvc [label="dbssvc\n(./demo/containers/dbsdata/Dockerfile)" URL="../demo/containers/dbsdata/Dockerfile" target="_blank"];
-    dbstore [label="dbstore\n(minio/minio)"];
-    client_ghmrva [label="client-ghmrva\n(./client/containers/ghmrva/Dockerfile)" URL="../client/containers/ghmrva/Dockerfile" target="_blank"];
-    code_server [label="code-server\n(./client/containers/vscode/Dockerfile)" URL="../client/containers/vscode/Dockerfile" target="_blank"];
-    rabbitmq [label="rabbitmq\n(rabbitmq:3-management)"];
-    artifactstore [label="artifactstore\n(minio/minio)"];
-    agent [label="agent\n(./cmd/agent/Dockerfile)" URL="../cmd/agent/Dockerfile" target="_blank"];
+    // Define nodes with Dockerfile references
+    dbssvc [
+        shape=plaintext
+        label=<
+            <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+                <tr><td colspan="1" bgcolor="lightblue"><b>dbssvc</b></td></tr>
+                <tr><td align="left"><font point-size="10">Dockerfile: ./demo/containers/dbsdata/Dockerfile</font></td></tr>
+            </table>
+        >
+    ];
 
-    // Expanded 'server' node with handler names
+    dbstore [
+        shape=plaintext
+        label=<
+            <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+                <tr><td colspan="1" bgcolor="lightblue"><b>dbstore</b></td></tr>
+                <tr><td align="left"><font point-size="10">Image: minio/minio:RELEASE.2024-06-11T03-13-30Z</font></td></tr>
+            </table>
+        >
+    ];
+
+    client_ghmrva [
+        shape=plaintext
+        label=<
+            <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+                <tr><td colspan="1" bgcolor="lightblue"><b>client-ghmrva</b></td></tr>
+                <tr><td align="left"><font point-size="10">Dockerfile: ./client/containers/ghmrva/Dockerfile</font></td></tr>
+            </table>
+        >
+    ];
+
+    code_server [
+        shape=plaintext
+        label=<
+            <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+                <tr><td colspan="1" bgcolor="lightblue"><b>code-server</b></td></tr>
+                <tr><td align="left"><font point-size="10">Dockerfile: ./client/containers/vscode/Dockerfile</font></td></tr>
+            </table>
+        >
+    ];
+
+    rabbitmq [
+        shape=plaintext
+        label=<
+            <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+                <tr><td colspan="1" bgcolor="lightblue"><b>rabbitmq</b></td></tr>
+                <tr><td align="left"><font point-size="10">Image: rabbitmq:3-management</font></td></tr>
+            </table>
+        >
+    ];
+
+    artifactstore [
+        shape=plaintext
+        label=<
+            <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+                <tr><td colspan="1" bgcolor="lightblue"><b>artifactstore</b></td></tr>
+                <tr><td align="left"><font point-size="10">Image: minio/minio:RELEASE.2024-06-11T03-13-30Z</font></td></tr>
+            </table>
+        >
+    ];
+
+    agent [
+        shape=plaintext
+        label=<
+            <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+                <tr><td colspan="1" bgcolor="lightblue"><b>agent</b></td></tr>
+                <tr><td align="left"><font point-size="10">Dockerfile: ./cmd/agent/Dockerfile</font></td></tr>
+            </table>
+        >
+    ];
+
+    // Expanded 'server' node with handler names and Dockerfile reference
     server [
         shape=plaintext
         label=<
             <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
                 <tr><td colspan="1" bgcolor="lightblue"><b>server</b></td></tr>
+                <tr><td align="left"><font point-size="10">Dockerfile: ./cmd/server/Dockerfile</font></td></tr>
+                <tr><td align="left"><font point-size="10">c.RootHandler</font></td></tr>
                 <tr><td align="left"><font point-size="10">c.MRVARequest</font></td></tr>
                 <tr><td align="left"><font point-size="10">c.MRVARequestID</font></td></tr>
                 <tr><td align="left"><font point-size="10">c.MRVAStatus</font></td></tr>
@@ -32,6 +96,7 @@ digraph DockerComposeDemo {
                 <tr><td align="left"><font point-size="10">c.MRVADownloadArtifact</font></td></tr>
                 <tr><td align="left"><font point-size="10">c.MRVADownloadArtifactID</font></td></tr>
                 <tr><td align="left"><font point-size="10">c.MRVADownloadServe</font></td></tr>
+                <tr><td align="left"><font point-size="10"><i>Not Found</i></font></td></tr>
             </table>
         >
     ];
