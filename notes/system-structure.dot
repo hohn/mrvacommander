@@ -1,20 +1,25 @@
 digraph DockerCompose {
     rankdir=LR; // Left-to-right layout
-    node [shape=box style="rounded,filled" color=lightblue2];
-    edge [arrowsize=0.5]; // Reduce arrow size
-
+    node [shape=box style="rounded,filled" color=lightblue2 fontname="Helvetica"];
+    edge [arrowsize=0.5];
+    
     // Title
     label="Container Dependencies";
     labelloc=top;
     fontsize=20;
+    fontname="Helvetica";
 
-    // Define nodes with increased spacing
-    dbssvc [label="dbssvc" pos="0,0!"];
-    dbstore [label="dbstore" pos="0,-2!"];
-    rabbitmq [label="rabbitmq" pos="0,-4!"];
-    server [label="server" pos="0,-6!"];
-    artifactstore [label="artifactstore" pos="0,-8!"];
-    agent [label="agent" pos="0,-10!"];
+    // Increase spacing between nodes
+    nodesep=1.0;
+    ranksep=1.0;
+
+    // Define nodes
+    dbssvc [label="dbssvc"];
+    dbstore [label="dbstore"];
+    rabbitmq [label="rabbitmq"];
+    server [label="server"];
+    artifactstore [label="artifactstore"];
+    agent [label="agent"];
 
     // Define edges (reversed directions)
     dbstore -> dbssvc;
