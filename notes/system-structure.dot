@@ -9,15 +9,15 @@ digraph DockerComposeDemo {
     fontsize=20;
     fontname="Helvetica";
 
-    // Define nodes
-    dbssvc [label="dbssvc\n(./demo/containers/dbsdata/Dockerfile)"];
+    // Define nodes with clickable URLs
+    dbssvc [label="dbssvc\n(./demo/containers/dbsdata/Dockerfile)" URL="../demo/containers/dbsdata/Dockerfile" target="_blank"];
     dbstore [label="dbstore\n(minio/minio)"];
-    client_ghmrva [label="client-ghmrva\n(./client/containers/ghmrva/Dockerfile)"];
-    code_server [label="code-server\n(./client/containers/vscode/Dockerfile)"];
+    client_ghmrva [label="client-ghmrva\n(./client/containers/ghmrva/Dockerfile)" URL="../client/containers/ghmrva/Dockerfile" target="_blank"];
+    code_server [label="code-server\n(./client/containers/vscode/Dockerfile)" URL="../client/containers/vscode/Dockerfile" target="_blank"];
     rabbitmq [label="rabbitmq\n(rabbitmq:3-management)"];
-    server [label="server\n(./cmd/server/Dockerfile)"];
+    server [label="server\n(./cmd/server/Dockerfile)" URL="../cmd/server/Dockerfile" target="_blank"];
     artifactstore [label="artifactstore\n(minio/minio)"];
-    agent [label="agent\n(./cmd/agent/Dockerfile)"];
+    agent [label="agent\n(./cmd/agent/Dockerfile)" URL="../cmd/agent/Dockerfile" target="_blank"];
 
     // Define edges (dependencies)
     dbstore -> dbssvc;
@@ -28,4 +28,3 @@ digraph DockerComposeDemo {
     agent -> artifactstore;
     agent -> rabbitmq;
 }
-
