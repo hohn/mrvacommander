@@ -7,6 +7,7 @@
 	"settings": {
 		"sarif-viewer.connectToGithubCodeScanning": "off",
         "codeQL.githubDatabase.download": "never",
-        "makefile.configureOnOpen": false
+        "makefile.configureOnOpen": false,
+        "git.ignoreLimitWarning": true
 	}
 }

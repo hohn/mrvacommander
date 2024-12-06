@@ -40,6 +40,9 @@ digraph DockerComposeDemo {
             <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
                 <tr><td colspan="1" bgcolor="lightblue"><b>client-ghmrva</b></td></tr>
                 <tr><td align="left"><font point-size="10">Dockerfile: ./client/containers/ghmrva/Dockerfile</font></td></tr>
+                <tr><td port="slot1"></td></tr>
+                <tr><td port="slot2"></td></tr>
+                <tr><td port="slot3"></td></tr>
             </table>
         >
     ];
@@ -97,15 +100,11 @@ digraph DockerComposeDemo {
             <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
                 <tr><td colspan="1" bgcolor="lightblue"><b>server</b></td></tr>
                 <tr><td align="left"><font point-size="10">Dockerfile: ./cmd/server/Dockerfile</font></td></tr>
-                <tr><td align="left"><font point-size="10">c.RootHandler</font></td></tr>
-                <tr><td align="left"><font point-size="10">c.MRVARequest</font></td></tr>
+                <tr><td port="c_MRVARequest" align="left"><font point-size="10">c.MRVARequest</font></td></tr>
+                <tr><td port="c_MRVAStatus" align="left"><font point-size="10">c.MRVAStatus</font></td></tr>
+                <tr><td port="c_MRVADownloadArtifact" align="left"><font point-size="10">c.MRVADownloadArtifact</font></td></tr>
                 <tr><td align="left"><font point-size="10">c.MRVARequestID</font></td></tr>
-                <tr><td align="left"><font point-size="10">c.MRVAStatus</font></td></tr>
-                <tr><td align="left"><font point-size="10">c.MRVAStatusID</font></td></tr>
                 <tr><td align="left"><font point-size="10">c.MRVADownloadQLDB</font></td></tr>
-                <tr><td align="left"><font point-size="10">c.MRVADownloadArtifact</font></td></tr>
-                <tr><td align="left"><font point-size="10">c.MRVADownloadArtifactID</font></td></tr>
-                <tr><td align="left"><font point-size="10">c.MRVADownloadServe</font></td></tr>
                 <tr><td align="left"><font point-size="10"><i>Not Found</i></font></td></tr>
             </table>
         >
@@ -119,4 +118,10 @@ digraph DockerComposeDemo {
     agent -> dbstore;
     agent -> artifactstore;
     agent -> rabbitmq;
+
+    // Message links
+    client_ghmrva:slot1 -> server:c_MRVARequest [label="message" style=dashed penwidth=2 fontsize=8];
+    client_ghmrva:slot2 -> server:c_MRVAStatus [label="message" style=dashed  penwidth=2  fontsize=8];
+    client_ghmrva:slot3 -> server:c_MRVADownloadArtifact [label="message" style=dashed penwidth=2  fontsize=8];
+
 }

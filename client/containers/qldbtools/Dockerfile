@@ -20,7 +20,7 @@ WORKDIR /work-gh/mrva/mrvacommander/client/qldbtools/
 RUN pip install --upgrade pip
 
 # Install the required Python packages from requirements.txt
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Install qldbtools
 RUN pip install .
