@@ -15,9 +15,28 @@ digraph DockerComposeDemo {
     client_ghmrva [label="client-ghmrva\n(./client/containers/ghmrva/Dockerfile)" URL="../client/containers/ghmrva/Dockerfile" target="_blank"];
     code_server [label="code-server\n(./client/containers/vscode/Dockerfile)" URL="../client/containers/vscode/Dockerfile" target="_blank"];
     rabbitmq [label="rabbitmq\n(rabbitmq:3-management)"];
-    server [label="server\n(./cmd/server/Dockerfile)" URL="../cmd/server/Dockerfile" target="_blank"];
     artifactstore [label="artifactstore\n(minio/minio)"];
     agent [label="agent\n(./cmd/agent/Dockerfile)" URL="../cmd/agent/Dockerfile" target="_blank"];
+
+    // Expanded 'server' node as an HTML-like table
+    server [
+        shape=plaintext
+        label=<
+            <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+                <tr><td colspan="1" bgcolor="lightblue"><b>server</b></td></tr>
+                <tr><td>/</td></tr>
+                <tr><td>/repos/{owner}/{repo}/code-scanning/codeql/variant-analyses</td></tr>
+                <tr><td>/repositories/{controller_repo_id}/code-scanning/codeql/variant-analyses</td></tr>
+                <tr><td>/repos/{owner}/{repo}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}</td></tr>
+                <tr><td>/repositories/{controller_repo_id}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}</td></tr>
+                <tr><td>/repos/{repo_owner}/{repo_name}/code-scanning/codeql/databases/{repo_language}</td></tr>
+                <tr><td>/repos/{controller_owner}/{controller_repo}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}/repos/{repo_owner}/{repo_name}</td></tr>
+                <tr><td>/repositories/{controller_repo_id}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}/repositories/{repository_id}</td></tr>
+                <tr><td>/download/{encoded_job_spec}</td></tr>
+                <tr><td><i>Not Found</i></td></tr>
+            </table>
+        >
+    ];
 
     // Define edges (dependencies)
     dbstore -> dbssvc;
