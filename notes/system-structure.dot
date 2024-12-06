@@ -9,8 +9,10 @@ digraph DockerComposeDemo {
     fontsize=20;
     fontname="Helvetica";
 
-    // Define nodes with Dockerfile references
+    // Define nodes with clickable Dockerfile references
     dbssvc [
+        href="../demo/containers/dbsdata/Dockerfile"
+        target="_blank"
         shape=plaintext
         label=<
             <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
@@ -31,6 +33,8 @@ digraph DockerComposeDemo {
     ];
 
     client_ghmrva [
+        href="../client/containers/ghmrva/Dockerfile"
+        target="_blank"
         shape=plaintext
         label=<
             <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
@@ -41,6 +45,8 @@ digraph DockerComposeDemo {
     ];
 
     code_server [
+        href="../client/containers/vscode/Dockerfile"
+        target="_blank"
         shape=plaintext
         label=<
             <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
@@ -71,6 +77,8 @@ digraph DockerComposeDemo {
     ];
 
     agent [
+        href="../cmd/agent/Dockerfile"
+        target="_blank"
         shape=plaintext
         label=<
             <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
@@ -82,11 +90,14 @@ digraph DockerComposeDemo {
 
     // Expanded 'server' node with handler names and Dockerfile reference
     server [
+        href="../cmd/server/Dockerfile"
+        target="_blank"
         shape=plaintext
         label=<
             <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
                 <tr><td colspan="1" bgcolor="lightblue"><b>server</b></td></tr>
                 <tr><td align="left"><font point-size="10">Dockerfile: ./cmd/server/Dockerfile</font></td></tr>
+                <tr><td align="left"><font point-size="10">c.RootHandler</font></td></tr>
                 <tr><td align="left"><font point-size="10">c.MRVARequest</font></td></tr>
                 <tr><td align="left"><font point-size="10">c.MRVARequestID</font></td></tr>
                 <tr><td align="left"><font point-size="10">c.MRVAStatus</font></td></tr>
@@ -95,6 +106,7 @@ digraph DockerComposeDemo {
                 <tr><td align="left"><font point-size="10">c.MRVADownloadArtifact</font></td></tr>
                 <tr><td align="left"><font point-size="10">c.MRVADownloadArtifactID</font></td></tr>
                 <tr><td align="left"><font point-size="10">c.MRVADownloadServe</font></td></tr>
+                <tr><td align="left"><font point-size="10"><i>Not Found</i></font></td></tr>
             </table>
         >
     ];
