@@ -24,16 +24,16 @@ digraph DockerComposeDemo {
         label=<
             <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
                 <tr><td colspan="1" bgcolor="lightblue"><b>server</b></td></tr>
-                <tr><td>/</td></tr>
-                <tr><td>/repos/{owner}/{repo}/code-scanning/codeql/variant-analyses</td></tr>
-                <tr><td>/repositories/{controller_repo_id}/code-scanning/codeql/variant-analyses</td></tr>
-                <tr><td>/repos/{owner}/{repo}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}</td></tr>
-                <tr><td>/repositories/{controller_repo_id}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}</td></tr>
-                <tr><td>/repos/{repo_owner}/{repo_name}/code-scanning/codeql/databases/{repo_language}</td></tr>
-                <tr><td>/repos/{controller_owner}/{controller_repo}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}/repos/{repo_owner}/{repo_name}</td></tr>
-                <tr><td>/repositories/{controller_repo_id}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}/repositories/{repository_id}</td></tr>
-                <tr><td>/download/{encoded_job_spec}</td></tr>
-                <tr><td><i>Not Found</i></td></tr>
+                <tr><td align="left"><font point-size="8">/</font></td></tr>
+                <tr><td align="left"><font point-size="8">/repos/{owner}/{repo}/code-scanning/codeql/variant-analyses</font></td></tr>
+                <tr><td align="left"><font point-size="8">/repositories/{controller_repo_id}/code-scanning/codeql/variant-analyses</font></td></tr>
+                <tr><td align="left"><font point-size="8">/repos/{owner}/{repo}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}</font></td></tr>
+                <tr><td align="left"><font point-size="8">/repositories/{controller_repo_id}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}</font></td></tr>
+                <tr><td align="left"><font point-size="8">/repos/{repo_owner}/{repo_name}/code-scanning/codeql/databases/{repo_language}</font></td></tr>
+                <tr><td align="left"><font point-size="8">/repos/{controller_owner}/{controller_repo}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}/repos/{repo_owner}/{repo_name}</font></td></tr>
+                <tr><td align="left"><font point-size="8">/repositories/{controller_repo_id}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}/repositories/{repository_id}</font></td></tr>
+                <tr><td align="left"><font point-size="8">/download/{encoded_job_spec}</font></td></tr>
+                <tr><td align="left"><font point-size="8"><i>Not Found</i></font></td></tr>
             </table>
         >
     ];
