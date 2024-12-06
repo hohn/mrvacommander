@@ -18,22 +18,20 @@ digraph DockerComposeDemo {
     artifactstore [label="artifactstore\n(minio/minio)"];
     agent [label="agent\n(./cmd/agent/Dockerfile)" URL="../cmd/agent/Dockerfile" target="_blank"];
 
-    // Expanded 'server' node as an HTML-like table
+    // Expanded 'server' node with handler names
     server [
         shape=plaintext
         label=<
             <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
                 <tr><td colspan="1" bgcolor="lightblue"><b>server</b></td></tr>
-                <tr><td align="left"><font point-size="8">/</font></td></tr>
-                <tr><td align="left"><font point-size="8">/repos/{owner}/{repo}/code-scanning/codeql/variant-analyses</font></td></tr>
-                <tr><td align="left"><font point-size="8">/repositories/{controller_repo_id}/code-scanning/codeql/variant-analyses</font></td></tr>
-                <tr><td align="left"><font point-size="8">/repos/{owner}/{repo}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}</font></td></tr>
-                <tr><td align="left"><font point-size="8">/repositories/{controller_repo_id}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}</font></td></tr>
-                <tr><td align="left"><font point-size="8">/repos/{repo_owner}/{repo_name}/code-scanning/codeql/databases/{repo_language}</font></td></tr>
-                <tr><td align="left"><font point-size="8">/repos/{controller_owner}/{controller_repo}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}/repos/{repo_owner}/{repo_name}</font></td></tr>
-                <tr><td align="left"><font point-size="8">/repositories/{controller_repo_id}/code-scanning/codeql/variant-analyses/{codeql_variant_analysis_id}/repositories/{repository_id}</font></td></tr>
-                <tr><td align="left"><font point-size="8">/download/{encoded_job_spec}</font></td></tr>
-                <tr><td align="left"><font point-size="8"><i>Not Found</i></font></td></tr>
+                <tr><td align="left"><font point-size="10">c.MRVARequest</font></td></tr>
+                <tr><td align="left"><font point-size="10">c.MRVARequestID</font></td></tr>
+                <tr><td align="left"><font point-size="10">c.MRVAStatus</font></td></tr>
+                <tr><td align="left"><font point-size="10">c.MRVAStatusID</font></td></tr>
+                <tr><td align="left"><font point-size="10">c.MRVADownloadQLDB</font></td></tr>
+                <tr><td align="left"><font point-size="10">c.MRVADownloadArtifact</font></td></tr>
+                <tr><td align="left"><font point-size="10">c.MRVADownloadArtifactID</font></td></tr>
+                <tr><td align="left"><font point-size="10">c.MRVADownloadServe</font></td></tr>
             </table>
         >
     ];
