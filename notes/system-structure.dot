@@ -1,27 +1,25 @@
-digraph DockerCompose {
+digraph DockerComposeDemo {
     rankdir=LR; // Left-to-right layout
     node [shape=box style="rounded,filled" color=lightblue2 fontname="Helvetica"];
     edge [arrowsize=0.5];
     
     // Title
-    label="Container Dependencies";
+    label="Container Dependencies for Demo";
     labelloc=top;
     fontsize=20;
     fontname="Helvetica";
 
-    // Increase spacing between nodes
-    nodesep=1.0;
-    ranksep=1.0;
-
     // Define nodes
-    dbssvc [label="dbssvc"];
-    dbstore [label="dbstore"];
-    rabbitmq [label="rabbitmq"];
-    server [label="server"];
-    artifactstore [label="artifactstore"];
-    agent [label="agent"];
+    dbssvc [label="dbssvc\n(./demo/containers/dbsdata/Dockerfile)"];
+    dbstore [label="dbstore\n(minio/minio)"];
+    client_ghmrva [label="client-ghmrva\n(./client/containers/ghmrva/Dockerfile)"];
+    code_server [label="code-server\n(./client/containers/vscode/Dockerfile)"];
+    rabbitmq [label="rabbitmq\n(rabbitmq:3-management)"];
+    server [label="server\n(./cmd/server/Dockerfile)"];
+    artifactstore [label="artifactstore\n(minio/minio)"];
+    agent [label="agent\n(./cmd/agent/Dockerfile)"];
 
-    // Define edges (reversed directions)
+    // Define edges (dependencies)
     dbstore -> dbssvc;
     server -> dbstore;
     server -> rabbitmq;
@@ -30,3 +28,4 @@ digraph DockerCompose {
     agent -> artifactstore;
     agent -> rabbitmq;
 }
+
