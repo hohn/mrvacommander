@@ -304,7 +304,7 @@
            ~/work-gh/mrva/gh-mrva/gh-mrva-selection.json 
 
         cd ~/work-gh/mrva/gh-mrva/
-        ./gh-mrva submit --language cpp --session mirva-session-1360    \
+        ./gh-mrva submit --language cpp --session mirva-session-4160    \
                   --list mirva-list                                     \
                   --query ~/work-gh/mrva/gh-mrva/FlatBuffersFunc.ql
       #+END_SRC
@@ -314,7 +314,7 @@
         cd ~/work-gh/mrva/gh-mrva/
 
         # Check the status
-        ./gh-mrva status --session mirva-session-1360
+        ./gh-mrva status --session mirva-session-4160
       #+END_SRC
 
    5. Download the sarif files, optionally also get databases.  For the current
@@ -322,13 +322,13 @@
       #+BEGIN_SRC sh 
         cd ~/work-gh/mrva/gh-mrva/
         # Just download the sarif files
-        ./gh-mrva download --session mirva-session-1360 \
-                  --output-dir mirva-session-1360
+        ./gh-mrva download --session mirva-session-4160 \
+                  --output-dir mirva-session-4160
 
         # Download the sarif files and CodeQL dbs
-        ./gh-mrva download --session mirva-session-1360 \
+        ./gh-mrva download --session mirva-session-4160 \
                   --download-dbs \
-                  --output-dir mirva-session-1360
+                  --output-dir mirva-session-4160
       #+END_SRC
 
 ** Write query that has some results
@@ -375,7 +375,7 @@
            ~/work-gh/mrva/gh-mrva/gh-mrva-selection.json 
 
         cd ~/work-gh/mrva/gh-mrva/
-        ./gh-mrva submit --language cpp --session mirva-session-3650    \
+        ./gh-mrva submit --language cpp --session mirva-session-3660    \
                   --list mirva-list                                     \
                   --query ~/work-gh/mrva/gh-mrva/Fprintf.ql
       #+END_SRC
@@ -383,13 +383,13 @@
    4. Check the status
       #+BEGIN_SRC sh 
         cd ~/work-gh/mrva/gh-mrva/
-        ./gh-mrva status --session mirva-session-3650
+        ./gh-mrva status --session mirva-session-3660
       #+END_SRC
 
       This time we have results
       #+BEGIN_SRC text
                 ...
-        0:$ Run name: mirva-session-3650
+        0:$ Run name: mirva-session-3660
         Status: succeeded
         Total runs: 1
         Total successful scans: 11
@@ -413,22 +413,20 @@
       #+END_SRC
 
    5. Download the sarif files, optionally also get databases.  
-
-
       #+BEGIN_SRC sh 
         cd ~/work-gh/mrva/gh-mrva/
         # Just download the sarif files
-        ./gh-mrva download --session mirva-session-3650 \
-                  --output-dir mirva-session-3650
+        ./gh-mrva download --session mirva-session-3660 \
+                  --output-dir mirva-session-3660
 
         # Download the sarif files and CodeQL dbs
-        ./gh-mrva download --session mirva-session-3650 \
+        ./gh-mrva download --session mirva-session-3660 \
                   --download-dbs \
-                  --output-dir mirva-session-3650
+                  --output-dir mirva-session-3660
       #+END_SRC
       #+BEGIN_SRC sh 
         # And list them:
-        \ls -la *3650*
+        \ls -la *3660*
         drwxr-xr-x@ 18 hohn  staff       576 Nov 14 11:54 .
         drwxrwxr-x@ 56 hohn  staff      1792 Nov 14 11:54 ..
         -rwxr-xr-x@  1 hohn  staff   9035554 Nov 14 11:54 Mbed-TLS_mbedtlsctsj17ef85_1.sarif
@@ -453,7 +451,7 @@
 
       Prepare the source directory so the viewer can be pointed at it
       #+BEGIN_SRC sh 
-        cd ~/work-gh/mrva/gh-mrva/mirva-session-3650
+        cd ~/work-gh/mrva/gh-mrva/mirva-session-3660
 
         unzip -qd ampl_gslctsj4b270e_1_db  ampl_gslctsj4b270e_1_db.zip
 
@@ -463,21 +461,63 @@
 
       Use the viewer in VS Code
       #+BEGIN_SRC sh 
-        cd ~/work-gh/mrva/gh-mrva/mirva-session-3650
+        cd ~/work-gh/mrva/gh-mrva/mirva-session-3660
         code ampl_gslctsj4b270e_1.sarif 
 
         # For the file vegas.c, when asked, point the source viewer to 
-        find ~/work-gh/mrva/gh-mrva/mirva-session-3650/ampl_gslctsj4b270e_1_db/codeql_db/src/\
+        find ~/work-gh/mrva/gh-mrva/mirva-session-3660/ampl_gslctsj4b270e_1_db/codeql_db/src/\
              -name vegas.c
 
-        # Here: ~/work-gh/mrva/gh-mrva/mirva-session-3650/ampl_gslctsj4b270e_1_db/codeql_db/src//home/runner/work/bulk-builder/bulk-builder/monte/vegas.c
+        # Here: ~/work-gh/mrva/gh-mrva/mirva-session-3660/ampl_gslctsj4b270e_1_db/codeql_db/src//home/runner/work/bulk-builder/bulk-builder/monte/vegas.c
       #+END_SRC
 
    7. (optional) Large result sets are more easily filtered via
       dataframes or spreadsheets.  Convert the SARIF to CSV if needed; see [[https://github.com/hohn/sarif-cli/][sarif-cli]].
 
-   
+* Running the VS Code plugin
+** Compile and Load the Extension
+   #+BEGIN_SRC sh 
+     cd ~/work-gh/mrva/vscode-codeql
+     git checkout mrva-standalone
 
+     # Install nvm
+     brew install nvm
+     [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh" 
+     # or
+     # curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+
+     # Install correct node version 
+     cd ./extensions/ql-vscode
+     nvm install
+
+     # Build the extension
+     cd ~/work-gh/mrva/vscode-codeql/extensions/ql-vscode
+     npm install
+     npm run build
+
+     # Install extension
+     cd ~/work-gh/mrva/vscode-codeql/dist
+     code --force --install-extension vscode-codeql-*.vsix
+     # Extension 'vscode-codeql-1.13.2-dev.2024.12.10.23.51.57.vsix' was successfully installed.
+   #+END_SRC
+
+** Continue the CLI Sample using the Extension
+   Start VS Code
+   #+BEGIN_SRC sh 
+     cd ~/work-gh/mrva/gh-mrva/
+     code .
+   #+END_SRC
+
+   Set up 'variant analysis repositories', continuin from the
+   =scratch/vscode-selection.json= file formed previously:
+   1. Select '{}' and open db selection file
+   2. paste
+      : ~/work-gh/mrva/mrvacommander/client/qldbtools/scratch/vscode-selection.json
+   3. open =Fprintf.ql=
+   4. right click =>= 'run variant analysis'
+
+   The extension will assemble the pack, send it to the server, and display
+   results as they arrive.
 
 * Footnotes
 [fn:1]The =csvkit= can be installed into the same Python virtual environment as
