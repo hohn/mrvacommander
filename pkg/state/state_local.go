@@ -3,8 +3,8 @@ package state
 import (
 	"fmt"
 	"log/slog"
-	"mrvacommander/pkg/common"
-	"mrvacommander/pkg/queue"
+	"github.com/hohn/mrvacommander/pkg/common"
+	"github.com/hohn/mrvacommander/pkg/queue"
 	"sync"
 )
 

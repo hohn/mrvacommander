@@ -1,6 +1,6 @@
 package artifactstore
 
-import "mrvacommander/pkg/common"
+import "github.com/hohn/mrvacommander/pkg/common"
 
 type Store interface {
 	// GetQueryPack retrieves the query pack from the specified location.

@@ -1,8 +1,8 @@
 package state
 
 import (
-	"mrvacommander/pkg/common"
-	"mrvacommander/pkg/queue"
+	"github.com/hohn/mrvacommander/pkg/common"
+	"github.com/hohn/mrvacommander/pkg/queue"
 )
 
 // StorageInterface defines the methods required for managing storage operations

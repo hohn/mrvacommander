@@ -2,7 +2,7 @@ package qldbstore
 
 import (
 	"fmt"
-	"mrvacommander/pkg/common"
+	"github.com/hohn/mrvacommander/pkg/common"
 	"os"
 	"path/filepath"
 )

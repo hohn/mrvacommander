@@ -14,10 +14,10 @@ import (
 	"strings"
 	"time"
 
-	"mrvacommander/pkg/artifactstore"
-	"mrvacommander/pkg/common"
-	"mrvacommander/pkg/queue"
-	"mrvacommander/utils"
+	"github.com/hohn/mrvacommander/pkg/artifactstore"
+	"github.com/hohn/mrvacommander/pkg/common"
+	"github.com/hohn/mrvacommander/pkg/queue"
+	"github.com/hohn/mrvacommander/utils"
 
 	"github.com/gorilla/mux"
 )

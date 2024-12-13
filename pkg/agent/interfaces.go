@@ -1,9 +1,9 @@
 package agent
 
 import (
-	"mrvacommander/pkg/artifactstore"
-	"mrvacommander/pkg/qldbstore"
-	"mrvacommander/pkg/queue"
+	"github.com/hohn/mrvacommander/pkg/artifactstore"
+	"github.com/hohn/mrvacommander/pkg/qldbstore"
+	"github.com/hohn/mrvacommander/pkg/queue"
 )
 
 type Visibles struct {

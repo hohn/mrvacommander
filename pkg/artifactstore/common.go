@@ -2,7 +2,7 @@ package artifactstore
 
 import (
 	"fmt"
-	"mrvacommander/pkg/common"
+	"github.com/hohn/mrvacommander/pkg/common"
 )
 
 // Restrict the keys / values for ArtifactLocation and centralize the common ones

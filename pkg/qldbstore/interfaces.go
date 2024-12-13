@@ -1,7 +1,7 @@
 package qldbstore
 
 import (
-	"mrvacommander/pkg/common"
+	"github.com/hohn/mrvacommander/pkg/common"
 )
 
 type Store interface {

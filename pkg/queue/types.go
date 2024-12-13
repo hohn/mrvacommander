@@ -1,8 +1,8 @@
 package queue
 
 import (
-	"mrvacommander/pkg/artifactstore"
-	"mrvacommander/pkg/common"
+	"github.com/hohn/mrvacommander/pkg/artifactstore"
+	"github.com/hohn/mrvacommander/pkg/common"
 )
 
 type QueryLanguage string

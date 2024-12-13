@@ -14,15 +14,15 @@ import (
 	"sync"
 	"syscall"
 
-	"mrvacommander/config/mcc"
+	"github.com/hohn/mrvacommander/config/mcc"
 
-	"mrvacommander/pkg/agent"
-	"mrvacommander/pkg/artifactstore"
-	"mrvacommander/pkg/deploy"
-	"mrvacommander/pkg/qldbstore"
-	"mrvacommander/pkg/queue"
-	"mrvacommander/pkg/server"
-	"mrvacommander/pkg/state"
+	"github.com/hohn/mrvacommander/pkg/agent"
+	"github.com/hohn/mrvacommander/pkg/artifactstore"
+	"github.com/hohn/mrvacommander/pkg/deploy"
+	"github.com/hohn/mrvacommander/pkg/qldbstore"
+	"github.com/hohn/mrvacommander/pkg/queue"
+	"github.com/hohn/mrvacommander/pkg/server"
+	"github.com/hohn/mrvacommander/pkg/state"
 )
 
 func main() {

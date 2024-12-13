@@ -10,8 +10,8 @@ import (
 	"sync"
 	"syscall"
 
-	"mrvacommander/pkg/agent"
-	"mrvacommander/pkg/deploy"
+	"github.com/hohn/mrvacommander/pkg/agent"
+	"github.com/hohn/mrvacommander/pkg/deploy"
 )
 
 func main() {

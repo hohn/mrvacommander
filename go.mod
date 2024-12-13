@@ -1,4 +1,4 @@
-module mrvacommander
+module github.com/hohn/mrvacommander
 
 go 1.22.0
 

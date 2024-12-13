@@ -1,11 +1,11 @@
 package server
 
 import (
-	"mrvacommander/pkg/artifactstore"
-	"mrvacommander/pkg/common"
-	"mrvacommander/pkg/qldbstore"
-	"mrvacommander/pkg/queue"
-	"mrvacommander/pkg/state"
+	"github.com/hohn/mrvacommander/pkg/artifactstore"
+	"github.com/hohn/mrvacommander/pkg/common"
+	"github.com/hohn/mrvacommander/pkg/qldbstore"
+	"github.com/hohn/mrvacommander/pkg/queue"
+	"github.com/hohn/mrvacommander/pkg/state"
 )
 
 type SessionInfo struct {
