@@ -4,8 +4,8 @@ services:
     dbssvc:
         ## image: ghcr.io/hohn/dbsdata-container:0.1.24
         build:
-            context: .
-            dockerfile: ./demo/containers/dbsdata/Dockerfile
+            context: ./demo/containers/dbsdata
+            dockerfile: Dockerfile
         container_name: dbssvc
         volumes:
             - dbsdata:/data/mrvacommander/dbstore-data

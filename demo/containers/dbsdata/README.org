@@ -38,12 +38,19 @@
 
     # Persist volume using container
     cd ~/work-gh/mrva/mrvacommander/demo/containers/dbsdata
-    # Note: use mrvacommander_dbsdata, not mrvacommander-dbsdata
-    # Get the data as tar file from the image
+    # Use mrvacommander_dbsdata to access the compose cluster
+    # EITHER
+    # Get the data as tar file from the image using container
+    rm -f dbsdata_backup.tar
     docker run --rm \
            -v mrvacommander_dbsdata:/data \
            -v $(pwd):/backup \
-           busybox sh -c "tar cvf /backup/dbsdata_backup.tar  ."
+           busybox sh -c "tar cf /backup/dbsdata_backup.tar  /data"
+    # OR
+    # Use gnu tar on host.  The macos tar adds extended attributes
+    # brew install gnu-tar
+    rm -f dbsdata_backup.tar && gtar cf dbsdata_backup.tar data/
+
     # Build container with the tarball
     cd ~/work-gh/mrva/mrvacommander/demo/containers/dbsdata
     docker build -t dbsdata-container:0.1.24 .
