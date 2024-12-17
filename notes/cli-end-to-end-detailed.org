@@ -508,7 +508,7 @@
      code .
    #+END_SRC
 
-   Set up 'variant analysis repositories', continuin from the
+   Set up 'variant analysis repositories', continuing from the
    =scratch/vscode-selection.json= file formed previously:
    1. Select '{}' and open db selection file
    2. paste
