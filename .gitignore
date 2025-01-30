@@ -57,3 +57,6 @@ notes/*.html
 
 # Make timestamp files
 mk.*
+demo/containers/dbsdata/data/
+demo/containers/dbsdata/tmp.dbsdata_backup.tar
+client/qldbtools/db-collection-py-1/

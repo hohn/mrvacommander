@@ -4,13 +4,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
+	"os"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 
 	"github.com/hohn/mrvacommander/pkg/common"
 )
 
+const defaultCacheDurationMinutes = 60
+
 type HepcStore struct {
-	Endpoint string
+	Endpoint         string
+	metadataCache    []HepcResult
+	cacheLastUpdated time.Time
+	cacheMutex       sync.Mutex
+	cacheDuration    time.Duration
 }
 
 type HepcResult struct {
@@ -26,28 +38,42 @@ type HepcResult struct {
 }
 
 func NewHepcStore(endpoint string) *HepcStore {
-	return &HepcStore{Endpoint: endpoint}
+	cacheDuration := getMetaCacheDuration()
+	return &HepcStore{
+		Endpoint:      endpoint,
+		cacheDuration: cacheDuration,
+	}
 }
 
-func (h *HepcStore) FindAvailableDBs(analysisReposRequested []common.NameWithOwner) (
-	notFoundRepos []common.NameWithOwner,
-	foundRepos []common.NameWithOwner) {
+func getMetaCacheDuration() time.Duration {
+	durationStr := os.Getenv("MRVA_HEPC_CACHE_DURATION")
+	if durationStr == "" {
+		return time.Minute * defaultCacheDurationMinutes
+	}
+	duration, err := strconv.Atoi(durationStr)
+	if err != nil {
+		slog.Warn("Invalid MRVA_HEPC_CACHE_DURATION value. Using default",
+			durationStr, defaultCacheDurationMinutes,
+		)
+		return time.Minute * defaultCacheDurationMinutes
+	}
+	return time.Minute * time.Duration(duration)
+}
 
-	// Fetch the metadata.json from the Hepc server
+func (h *HepcStore) fetchMetadata() ([]HepcResult, error) {
 	url := fmt.Sprintf("%s/index", h.Endpoint)
 	resp, err := http.Get(url)
 	if err != nil {
-		fmt.Printf("Error fetching metadata: %v\n", err)
-		return analysisReposRequested, nil
+		slog.Warn("Error fetching metadata.", err)
+		return nil, fmt.Errorf("error fetching metadata: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		fmt.Printf("Non-OK HTTP status: %s\n", resp.Status)
-		return analysisReposRequested, nil
+		slog.Warn("Non-OK HTTP status", resp.Status)
+		return nil, fmt.Errorf("non-OK HTTP status: %s", resp.Status)
 	}
 
-	// Decode the response
 	var results []HepcResult
 	decoder := json.NewDecoder(resp.Body)
 	for {
@@ -55,15 +81,38 @@ func (h *HepcStore) FindAvailableDBs(analysisReposRequested []common.NameWithOwn
 		if err := decoder.Decode(&result); err == io.EOF {
 			break
 		} else if err != nil {
-			fmt.Printf("Error decoding JSON: %v\n", err)
-			return analysisReposRequested, nil
+			slog.Warn("Error decoding JSON", err)
+			return nil, fmt.Errorf("error decoding JSON: %w", err)
 		}
 		results = append(results, result)
 	}
 
+	return results, nil
+}
+
+func (h *HepcStore) FindAvailableDBs(analysisReposRequested []common.NameWithOwner) (
+	notFoundRepos []common.NameWithOwner,
+	foundRepos []common.NameWithOwner) {
+
+	// Check cache
+	h.cacheMutex.Lock()
+	if time.Since(h.cacheLastUpdated) > h.cacheDuration {
+		// Cache is expired or not set; refresh
+		results, err := h.fetchMetadata()
+		if err != nil {
+			h.cacheMutex.Unlock()
+			slog.Warn("Error fetching metadata", err)
+			return analysisReposRequested, nil
+		}
+		h.metadataCache = results
+		h.cacheLastUpdated = time.Now()
+	}
+	cachedResults := h.metadataCache
+	h.cacheMutex.Unlock()
+
 	// Compare against requested repos
 	repoSet := make(map[string]struct{})
-	for _, result := range results {
+	for _, result := range cachedResults {
 		repoSet[result.Projname] = struct{}{}
 	}
 
@@ -80,42 +129,67 @@ func (h *HepcStore) FindAvailableDBs(analysisReposRequested []common.NameWithOwn
 }
 
 func (h *HepcStore) GetDatabase(location common.NameWithOwner) ([]byte, error) {
-	// Fetch the latest results for the specified repository
-	url := fmt.Sprintf("%s/api/v1/latest_results/codeql-all", h.Endpoint)
-	resp, err := http.Get(url)
+	// Ensure metadata is up-to-date by using the cache
+	h.cacheMutex.Lock()
+	if time.Since(h.cacheLastUpdated) > h.cacheDuration {
+		// Refresh the metadata cache if it is stale
+		results, err := h.fetchMetadata()
+		if err != nil {
+			h.cacheMutex.Unlock()
+			return nil, fmt.Errorf("error refreshing metadata cache: %w", err)
+		}
+		h.metadataCache = results
+		h.cacheLastUpdated = time.Now()
+	}
+	cachedResults := h.metadataCache
+	h.cacheMutex.Unlock()
+
+	// Construct the key for the requested database
+	key := fmt.Sprintf("%s/%s", location.Owner, location.Repo)
+
+	// Locate the result URL in the cached metadata
+	var resultURL string
+	for _, result := range cachedResults {
+		if result.Projname == key {
+			resultURL = result.ResultURL
+			break
+		}
+	}
+
+	if resultURL == "" {
+		return nil, fmt.Errorf("database not found for repository: %s", key)
+	}
+
+	// Fetch the database content
+	resp, err := http.Get(replaceHepcURL(resultURL))
 	if err != nil {
-		return nil, fmt.Errorf("error fetching database metadata: %w", err)
+		return nil, fmt.Errorf("error fetching database: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("non-OK HTTP status: %s", resp.Status)
+		return nil, fmt.Errorf("non-OK HTTP status for database fetch: %s", resp.Status)
 	}
 
-	var latestResults []HepcResult
-	decoder := json.NewDecoder(resp.Body)
-	if err := decoder.Decode(&latestResults); err != nil {
-		return nil, fmt.Errorf("error decoding JSON: %w", err)
+	// Read and return the database data
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading database content: %w", err)
 	}
 
-	// Find the correct result for the requested repo
-	repoKey := fmt.Sprintf("%s/%s", location.Owner, location.Repo)
-	for _, result := range latestResults {
-		if result.Projname == repoKey {
-			// Fetch the database as a byte slice
-			dbResp, err := http.Get(result.ResultURL)
-			if err != nil {
-				return nil, fmt.Errorf("error fetching database: %w", err)
-			}
-			defer dbResp.Body.Close()
+	return data, nil
+}
 
-			if dbResp.StatusCode != http.StatusOK {
-				return nil, fmt.Errorf("non-OK HTTP status for database fetch: %s", dbResp.Status)
-			}
-
-			return io.ReadAll(dbResp.Body)
-		}
+// replaceHepcURL replaces the fixed "http://hepc" with the value from
+// MRVA_HEPC_ENDPOINT
+func replaceHepcURL(originalURL string) string {
+	hepcEndpoint := os.Getenv("MRVA_HEPC_ENDPOINT")
+	if hepcEndpoint == "" {
+		hepcEndpoint = "http://hepc:8070" // Default fallback
 	}
 
-	return nil, fmt.Errorf("database not found for repository: %s", repoKey)
+	// Replace "http://hepc" at the beginning of the URL
+	newURL := strings.Replace(originalURL, "http://hepc", hepcEndpoint, 1)
+
+	return newURL
 }

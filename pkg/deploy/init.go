@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"os"
+	"strconv"
+
 	"github.com/hohn/mrvacommander/pkg/artifactstore"
 	"github.com/hohn/mrvacommander/pkg/qldbstore"
 	"github.com/hohn/mrvacommander/pkg/queue"
-	"os"
-	"strconv"
 )
 
 func validateEnvVars(requiredEnvVars []string) {
@@ -91,6 +92,20 @@ func InitMinIOCodeQLDatabaseStore() (qldbstore.Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize ql database storage: %v", err)
 	}
+
+	return store, nil
+}
+
+func InitHEPCDatabaseStore() (qldbstore.Store, error) {
+	requiredEnvVars := []string{
+		"MRVA_HEPC_ENDPOINT",
+		"MRVA_HEPC_CACHE_DURATION",
+	}
+	validateEnvVars(requiredEnvVars)
+
+	endpoint := os.Getenv("MRVA_HEPC_ENDPOINT")
+
+	store := qldbstore.NewHepcStore(endpoint)
 
 	return store, nil
 }
