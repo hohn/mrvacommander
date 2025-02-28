@@ -60,3 +60,8 @@ mk.*
 demo/containers/dbsdata/data/
 demo/containers/dbsdata/tmp.dbsdata_backup.tar
 client/qldbtools/db-collection-py-1/
+
+mrva-overview.aux
+mrva-overview.log
+mrva-overview.synctex.gz
+mrva-overview.toc

@@ -11,22 +11,6 @@
 		{
 			"name": "mrvaserver",
 			"path": "../mrvaserver"
-		},
-		{
-			"name": "mrva-docker",
-			"path": "../mrva-docker"
-		},
-		{
-			"name": "mrvahepc",
-			"path": "../mrvahepc"
-		},
-		{
-			"name": "gh-mrva",
-			"path": "../gh-mrva"
-		},
-		{
-			"name": "vscode-codeql",
-			"path": "../vscode-codeql"
 		}
 	],
 	"settings": {
