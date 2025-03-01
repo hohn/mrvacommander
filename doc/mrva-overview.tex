@@ -513,6 +513,59 @@ $\mathcal{R}_{\text{results}}$ = execute_queries(A, Q, $\mathcal{R}_{\text{resul
 
 \FloatBarrier
 
+\section{Execution Loop in Pseudo-Code, hybrid}
+\label{sec:orgb767ab2}
+{\textbf{Algorithm:} Distribute a set of queries \(\mathcal{Q}\) across repositories \(\mathcal{R}\) using agents \(A\)}
+
+\begin{enumerate}
+\item \textbf{\textbf{Initialization}}
+\begin{itemize}
+\item For each repository \(\mathcal{R}_i \in \mathcal{R}\):
+\begin{itemize}
+\item Initialize result sets: \(\mathcal{R}_i^{\mathcal{Q}} \gets \{\}\).
+\end{itemize}
+\item Initialize an empty job queue: \(Q \gets \{\}\).
+\end{itemize}
+
+\item \textbf{\textbf{Enqueue Queries}}
+\begin{itemize}
+\item For each repository \(\mathcal{R}_i \in \mathcal{R}\):
+\begin{itemize}
+\item Enqueue the entire query suite: \(S \xrightarrow{\text{enqueue}(\mathcal{Q}, \mathcal{R}_i)} Q\).
+\end{itemize}
+\end{itemize}
+
+\item \textbf{\textbf{Execution Loop}}
+\begin{itemize}
+\item While \(Q \neq \emptyset\): (agents poll the queue for available jobs)
+\begin{itemize}
+\item For each available agent \(\alpha \in A\):
+\begin{itemize}
+\item Agent autonomously retrieves a job: \(\alpha \xleftarrow{\text{poll}(Q)}\).
+
+\item \textbf{\textbf{Agent Execution Block}}
+\begin{itemize}
+\item Initialize result set for this repository: \(\mathcal{R}_i^{\mathcal{Q}} \gets \{\}\).
+\item For each query \(\mathcal{Q}_j \in \mathcal{Q}\):
+\begin{itemize}
+\item Collect results:  
+\(\mathcal{R}_i^{\mathcal{Q}_j} \gets \{ r_{i,j,1}, r_{i,j,2}, \dots, r_{i,j,k_{i,j}} \}\).
+\item Accumulate results:  
+\(\mathcal{R}_i^{\mathcal{Q}} \gets \mathcal{R}_i^{\mathcal{Q}} \cup \mathcal{R}_i^{\mathcal{Q}_j}\).
+\end{itemize}
+\item Agent sends all accumulated results back to the server:  
+\(\alpha \xrightarrow{(\mathcal{Q}, \mathcal{R}_i, \mathcal{R}_i^{\mathcal{Q}})} S\).
+\end{itemize}
+\end{itemize}
+\end{itemize}
+\end{itemize}
+
+\item \textbf{\textbf{Agent Sends Results}}
+\begin{itemize}
+\item Server sends results for repository \(i\) back to the client:  
+\(S \xrightarrow{(\mathcal{Q}, \mathcal{R}_i, \mathcal{R}_i^{\mathcal{Q}})} C\).
+\end{itemize}
+\end{enumerate}
 
 \end{document}
 
