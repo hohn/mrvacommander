@@ -479,7 +479,7 @@ $\mathcal{R}_{\text{results}}$ = execute_queries(A, Q, $\mathcal{R}_{\text{resul
         \State $\alpha \xleftarrow{\text{poll}(Q)}$ \Comment{Agent autonomously retrieves a job}
 
         % --- Begin Agent Execution Block ---
-        \State \textbf{\rule{25em}{0.7pt}} \Comment{Agent Execution Begins}
+        \State \textbf{\raisebox{0.5ex}{\rule{25em}{0.7pt}}} \Comment{Agent Execution Begins}
 
 
         \State $\mathcal{R}_i^{\mathcal{Q}} \gets \left\{ \, \right\}$ \Comment{Initialize result set for this repository}
@@ -496,7 +496,8 @@ $\mathcal{R}_{\text{results}}$ = execute_queries(A, Q, $\mathcal{R}_{\text{resul
         \State $\alpha \xrightarrow{(\mathcal{Q}, \mathcal{R}_i, \mathcal{R}_i^{\mathcal{Q}})} S$
         \Comment{Agent sends all accumulated results back to server}
 
-        \State \textbf{\rule{25em}{0.7pt}} \Comment{Agent Execution Ends}
+        \State \textbf{\raisebox{0.5ex}{\rule{25em}{0.7pt}}} \Comment{Agent
+          Execution Ends}
         % --- End Agent Execution Block ---
 
         \State $S \xrightarrow{(\mathcal{Q}, \mathcal{R}_i, \mathcal{R}_i^{\mathcal{Q}})} C$
