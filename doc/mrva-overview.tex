@@ -1,12 +1,14 @@
 \documentclass[11pt]{article}
 
 % Load the geometry package to set margins
-\usepackage[margin=1cm]{geometry}
+\usepackage[lmargin=2cm,rmargin=2cm,tmargin=1.8cm,bmargin=1.8cm]{geometry}
 
 % Load CM Bright for math
 \usepackage{amsmath}  % Standard math package
 \usepackage{amssymb}  % Additional math symbols
 \usepackage{cmbright} % Sans-serif math font that complements Fira Sans
+
+\usepackage{fourier}
 
 % Font configuration
 % \usepackage{bera} 
@@ -349,7 +351,7 @@ An individual result from the \(i\)-th repository, \(j\)-th query, and \(k\)-th 
 Each result can be further indexed to track multiple repositories and result sets.
 
 \section{Execution Loop in Pseudo-Code}
-\begin{listing}[h] % h = here, t = top, b = bottom, p = page of floats
+\begin{listing}[H] % h = here, t = top, b = bottom, p = page of floats
     \caption{Distributed Query Execution Algorithm}
 
     \begin{lstlisting}[language=Python]
@@ -399,7 +401,7 @@ while $Q \neq \emptyset$:
 \FloatBarrier
 
 \section{Execution Loop in Pseudo-Code, declarative}
-\begin{listing}[h] % h = here, t = top, b = bottom, p = page of floats
+\begin{listing}[H] % h = here, t = top, b = bottom, p = page of floats
   \caption{Distributed Query Execution Algorithm}
 
 \begin{lstlisting}[language=Python]
@@ -447,12 +449,10 @@ def execute_queries(agents, job_queue, repository_results):
 # Execute the distributed query process
 $\mathcal{R}_{\text{results}}$ = execute_queries(A, Q, $\mathcal{R}_{\text{results}}$)
 \end{lstlisting}
-
-
-
 \end{listing}
 \FloatBarrier
 
+\newpage{}
 \section{Execution Loop in Pseudo-Code, algorithmic}
 \begin{algorithm}
     \caption{Distribute a set of queries $\mathcal{Q}$ across repositories
@@ -479,7 +479,8 @@ $\mathcal{R}_{\text{results}}$ = execute_queries(A, Q, $\mathcal{R}_{\text{resul
         \State $\alpha \xleftarrow{\text{poll}(Q)}$ \Comment{Agent autonomously retrieves a job}
 
         % --- Begin Agent Execution Block ---
-        \State \textbf{(Agent Execution Begins)}
+        \State \textbf{\rule{25em}{0.7pt}} \Comment{Agent Execution Begins}
+
 
         \State $\mathcal{R}_i^{\mathcal{Q}} \gets \left\{ \, \right\}$ \Comment{Initialize result set for this repository}
 
@@ -495,7 +496,7 @@ $\mathcal{R}_{\text{results}}$ = execute_queries(A, Q, $\mathcal{R}_{\text{resul
         \State $\alpha \xrightarrow{(\mathcal{Q}, \mathcal{R}_i, \mathcal{R}_i^{\mathcal{Q}})} S$
         \Comment{Agent sends all accumulated results back to server}
 
-        \State \textbf{(Agent Execution Ends)}
+        \State \textbf{\rule{25em}{0.7pt}} \Comment{Agent Execution Ends}
         % --- End Agent Execution Block ---
 
         \State $S \xrightarrow{(\mathcal{Q}, \mathcal{R}_i, \mathcal{R}_i^{\mathcal{Q}})} C$
