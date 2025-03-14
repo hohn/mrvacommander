@@ -4,17 +4,18 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
+	"path/filepath"
+	"runtime"
+	"sync"
+	"time"
+
 	"github.com/hohn/mrvacommander/pkg/artifactstore"
 	"github.com/hohn/mrvacommander/pkg/codeql"
 	"github.com/hohn/mrvacommander/pkg/common"
 	"github.com/hohn/mrvacommander/pkg/qldbstore"
 	"github.com/hohn/mrvacommander/pkg/queue"
 	"github.com/hohn/mrvacommander/utils"
-	"os"
-	"path/filepath"
-	"runtime"
-	"sync"
-	"time"
 
 	"github.com/elastic/go-sysinfo"
 	"github.com/google/uuid"
@@ -153,7 +154,7 @@ func RunAnalysisJob(
 		Spec:           job.Spec,
 		ResultCount:    0,
 		ResultLocation: artifactstore.ArtifactLocation{},
-		Status:         common.StatusError,
+		Status:         common.StatusFailed,
 	}
 
 	// Create a temporary directory
@@ -218,7 +219,7 @@ func RunAnalysisJob(
 		Spec:                 job.Spec,
 		ResultCount:          runResult.ResultCount,
 		ResultLocation:       resultsLocation,
-		Status:               common.StatusSuccess,
+		Status:               common.StatusSucceeded,
 		SourceLocationPrefix: runResult.SourceLocationPrefix,
 		DatabaseSHA:          runResult.DatabaseSHA,
 	}

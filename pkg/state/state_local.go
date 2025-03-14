@@ -3,9 +3,10 @@ package state
 import (
 	"fmt"
 	"log/slog"
+	"sync"
+
 	"github.com/hohn/mrvacommander/pkg/common"
 	"github.com/hohn/mrvacommander/pkg/queue"
-	"sync"
 )
 
 type LocalState struct {
@@ -97,7 +98,7 @@ func (s *LocalState) GetStatus(js common.JobSpec) (common.Status, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	if _, ok := s.status[js]; !ok {
-		return common.StatusError, fmt.Errorf("status not found for job spec %v", js)
+		return common.StatusFailed, fmt.Errorf("status not found for job spec %v", js)
 	}
 	return s.status[js], nil
 }

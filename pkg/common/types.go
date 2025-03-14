@@ -10,25 +10,28 @@ type NameWithOwner struct {
 type Status int
 
 const (
-	StatusInProgress = iota
-	StatusQueued
-	StatusError
-	StatusSuccess
+	StatusPending Status = iota
+	StatusInProgress
+	StatusSucceeded
 	StatusFailed
+	StatusCanceled
+	StatusTimedOut
 )
 
 func (s Status) ToExternalString() string {
 	switch s {
+	case StatusPending:
+		return "pending"
 	case StatusInProgress:
-		return "in_progress"
-	case StatusQueued:
-		return "queued"
-	case StatusError:
-		return "error"
-	case StatusSuccess:
+		return "inProgress"
+	case StatusSucceeded:
 		return "succeeded"
 	case StatusFailed:
 		return "failed"
+	case StatusCanceled:
+		return "canceled"
+	case StatusTimedOut:
+		return "timedOut"
 	default:
 		return "unknown"
 	}

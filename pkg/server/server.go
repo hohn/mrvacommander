@@ -41,7 +41,7 @@ func (c *CommanderSingle) startAnalyses(
 			QueryLanguage:     queryLanguage,
 		}
 		c.v.Queue.Jobs() <- info
-		c.v.State.SetStatus(jobSpec, common.StatusQueued)
+		c.v.State.SetStatus(jobSpec, common.StatusPending)
 		c.v.State.AddJob(info)
 	}
 }
@@ -132,7 +132,7 @@ func (c *CommanderSingle) submitEmptyStatusResponse(w http.ResponseWriter,
 	scannedRepos := []common.ScannedRepo{}
 
 	var jobStatus common.Status
-	jobStatus = common.StatusSuccess
+	jobStatus = common.StatusSucceeded
 
 	status := common.StatusResponse{
 		SessionId:            jsSessionID,
@@ -191,7 +191,7 @@ func (c *CommanderSingle) submitStatusResponse(w http.ResponseWriter, js common.
 		var artifactSize int
 		var resultCount int
 
-		if status != common.StatusSuccess {
+		if status != common.StatusSucceeded {
 			// If the job is not successful, we don't need to get the result
 			artifactSize = 0
 			resultCount = 0
@@ -436,7 +436,7 @@ func (c *CommanderSingle) sendArtifactDownloadResponse(w http.ResponseWriter, jo
 		return
 	}
 
-	if jobStatus == common.StatusSuccess {
+	if jobStatus == common.StatusSucceeded {
 		jobResult, err := c.v.State.GetResult(jobSpec)
 		if err != nil {
 			slog.Error(err.Error())
