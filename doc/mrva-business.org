@@ -1,0 +1,101 @@
+* MRVA for CodeQL: A Business View
+** Introduction
+   The companion documents in this directory are mostly technical. The purpose of
+   this document is to explain, from a business perspective, what MRVA is and why
+   it matters.
+
+   To illustrate its impact, consider two real-world cases:
+
+*** Case 1: Preventing Costly Security Failures
+    One of our customers faced a significant lawsuit due to inadequate security. 
+    The root cause? Unaddressed technical risks in their code. The work we do 
+    directly prevents similar vulnerabilities from reaching this stage.
+
+    While lawsuits of this scale are rare, security failures are not. More common 
+    consequences include:
+
+    - Compliance violations (e.g., GDPR, SOC2 penalties)
+    - Security breaches leading to reputation damage
+    - Productivity loss from disruptive technical failures
+
+    Lawsuits may be exceptional, but code security failures occur daily. Our role 
+    isn’t just about preventing catastrophic losses—it’s about avoiding the small, 
+    accumulating failures that erode security, compliance, and trust over time.
+
+*** Case 2: Identifying Hidden Risks at Scale
+    Another customer manages a massive software portfolio of 120,000+ distinct 
+    codebases—a scale at which traditional security tools and manual review 
+    processes become impractical. 
+
+    - A few known vulnerabilities had already been identified and patched.
+    - Our analysis uncovered 30 additional high-risk instances, previously undetected.
+
+    These findings were critical because:
+
+    - Traditional security tools break down at scale. Most solutions work well for 
+      isolated codebases but lack the capability to analyze patterns across 
+      120,000 repositories.
+    - Complexity hides risk. Identifying these vulnerabilities required specialized 
+      techniques beyond simple scanning—capable of handling variations, 
+      context, and subtle exploit paths.
+    - Existing security processes failed to detect these vulnerabilities. Without 
+      proactive intervention, these risks would have remained undetected until 
+      a potential breach occurred.
+
+    This case highlights a critical gap in standard security practices. By leveraging 
+    advanced, scalable analysis, we identified and mitigated risks that would have 
+    otherwise gone unnoticed—demonstrating the value of proactive security 
+    at scale.
+
+** Why This Matters
+   These examples, along with others, reinforce the importance of proactive 
+   security—especially in the context of MRVA. Security risks don’t just exist 
+   in theory; they have tangible business consequences. 
+
+   MRVA provides a scalable, systematic approach to identifying and addressing 
+   risks before they escalate—ensuring that security is a strategic advantage, not 
+   just a cost.
+   
+** What is MRVA?
+   MRVA stands for /Multi-Repository Variant Analysis/. The concept is straightforward:
+
+   1. A /problem/ is identified in one codebase.
+   2. Variations of this problem (/variants/) can be defined.
+   3. The organization manages many code repositories (/multi-repository/).
+   4. A systematic /analysis/ is required to detect these variants across all repositories.
+
+   In practice:
+   - Steps 1 & 2: Defined through CodeQL queries, often custom-written for this purpose.
+   - Steps 3 & 4: Can be done manually but come with significant challenges.
+
+*** Challenges of Manual Execution
+    Manually searching for these variants across multiple repositories is possible
+    but inefficient and error-prone due to:
+
+    - /High bookkeeping overhead/ – Tracking thousands of repositories is
+      cumbersome.
+    - /Heavy scripting requirements/ – Expert /Unix scripting skills/ are
+      necessary.
+    - /Scaling limitations/ – Analyzing /thousands of repositories sequentially/
+      is slow, and manual parallelization is impractical.
+    - /Cumbersome review process/ – Results are stored as /raw text files/,
+      requiring multiple processing steps for meaningful analysis.
+
+*** MRVA: A Streamlined, Integrated Solution
+    Instead of relying on manual effort, MRVA is designed to /automate and
+    integrate/ the process.
+
+    - The system is designed to be /machine-driven/ and integrated into an
+      automated pipeline.
+    - Once incorporated, MRVA leverages the /CodeQL VS Code plugin/ to provide a
+      /seamless user experience/.
+    - How it works:
+      - Users submit queries through the UI.
+      - Results are retrieved and displayed dynamically as they become available.
+      - The entire workflow is automated, scalable, and significantly more
+        efficient than manual methods.
+
+    By eliminating manual inefficiencies, MRVA enables organizations to identify
+    and resolve security issues across massive codebases at scale, ensuring both
+    accuracy and speed in vulnerability detection.
+   
