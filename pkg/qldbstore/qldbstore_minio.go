@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+
 	"github.com/hohn/mrvacommander/pkg/common"
 
 	"github.com/minio/minio-go/v7"
@@ -14,7 +15,7 @@ import (
 // XX: static types: split by type?
 // Restrict the keys / values and centralize the common ones here
 const (
-	QL_DB_BUCKETNAME = "qldb"
+	QL_DB_BUCKETNAME = "mrvabucket"
 )
 
 type MinIOCodeQLDatabaseStore struct {
@@ -24,8 +25,9 @@ type MinIOCodeQLDatabaseStore struct {
 
 func NewMinIOCodeQLDatabaseStore(endpoint, id, secret string) (*MinIOCodeQLDatabaseStore, error) {
 	minioClient, err := minio.New(endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(id, secret, ""),
-		Secure: false,
+		Creds:        credentials.NewStaticV4(id, secret, ""),
+		Secure:       false,
+		BucketLookup: minio.BucketLookupDNS, // Enable virtual-host-style addressing
 	})
 	if err != nil {
 		return nil, err

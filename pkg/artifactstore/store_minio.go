@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"math"
+
 	"github.com/hohn/mrvacommander/pkg/common"
 
 	"github.com/minio/minio-go/v7"
@@ -19,24 +20,15 @@ type MinIOArtifactStore struct {
 
 func NewMinIOArtifactStore(endpoint, id, secret string) (*MinIOArtifactStore, error) {
 	minioClient, err := minio.New(endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(id, secret, ""),
-		Secure: false,
+		Creds:        credentials.NewStaticV4(id, secret, ""),
+		Secure:       false,
+		BucketLookup: minio.BucketLookupDNS, // Enable virtual-host-style addressing
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	slog.Info("Connected to MinIO artifact store server")
-
-	// Create "results" bucket
-	if err := common.CreateMinIOBucketIfNotExists(minioClient, AF_BUCKETNAME_RESULTS); err != nil {
-		return nil, fmt.Errorf("could not create results bucket: %v", err)
-	}
-
-	// Create "packs" bucket
-	if err := common.CreateMinIOBucketIfNotExists(minioClient, AF_BUCKETNAME_PACKS); err != nil {
-		return nil, fmt.Errorf("could not create packs bucket: %v", err)
-	}
 
 	return &MinIOArtifactStore{
 		client: minioClient,
@@ -95,7 +87,12 @@ func (store *MinIOArtifactStore) getArtifact(location ArtifactLocation) ([]byte,
 
 func (store *MinIOArtifactStore) saveArtifact(bucket, key string, data []byte,
 	contentType string) (ArtifactLocation, error) {
-	_, err := store.client.PutObject(context.Background(), bucket, key,
+	exists, err := store.client.BucketExists(context.Background(), bucket)
+	if err != nil || !exists {
+		slog.Error("Bucket does not exist", "bucket", bucket)
+	}
+
+	_, err = store.client.PutObject(context.Background(), bucket, key,
 		bytes.NewReader(data), int64(len(data)), minio.PutObjectOptions{
 			ContentType: contentType,
 		})
