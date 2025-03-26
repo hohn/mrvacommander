@@ -2,14 +2,15 @@ package artifactstore
 
 import (
 	"fmt"
+
 	"github.com/hohn/mrvacommander/pkg/common"
 )
 
 // Restrict the keys / values for ArtifactLocation and centralize the common ones
 // here
 const (
-	AF_BUCKETNAME_RESULTS = "results"
-	AF_BUCKETNAME_PACKS   = "packs"
+	AF_BUCKETNAME_RESULTS = "mrvabucket"
+	AF_BUCKETNAME_PACKS   = "mrvabucket"
 )
 
 type ArtifactLocation struct {

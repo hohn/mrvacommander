@@ -69,6 +69,7 @@ func InitMinIOArtifactStore() (artifactstore.Store, error) {
 	secret := os.Getenv("ARTIFACT_MINIO_SECRET")
 
 	store, err := artifactstore.NewMinIOArtifactStore(endpoint, id, secret)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize artifact store: %v", err)
 	}
