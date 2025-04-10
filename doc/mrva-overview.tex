@@ -3,6 +3,34 @@
 % Load the geometry package to set margins
 \usepackage[lmargin=2cm,rmargin=2cm,tmargin=1.8cm,bmargin=1.8cm]{geometry}
 
+% increase nesting depth
+
+\usepackage{enumitem}
+\setlistdepth{9}
+% 
+\renewlist{itemize}{itemize}{9}
+\setlist[itemize,1]{label=\textbullet}
+\setlist[itemize,2]{label=--}
+\setlist[itemize,3]{label=*}
+\setlist[itemize,4]{label=•}
+\setlist[itemize,5]{label=–}
+\setlist[itemize,6]{label=>}
+\setlist[itemize,7]{label=»}
+\setlist[itemize,8]{label=›}
+\setlist[itemize,9]{label=·}
+%
+\renewlist{enumerate}{enumerate}{9}
+\setlist[enumerate,1]{label=\arabic*.,ref=\arabic*}
+\setlist[enumerate,2]{label=\alph*.),ref=\theenumi\alph*}
+\setlist[enumerate,3]{label=\roman*.),ref=\theenumii\roman*}
+\setlist[enumerate,4]{label=\Alph*.),ref=\theenumiii\Alph*}
+\setlist[enumerate,5]{label=\Roman*.),ref=\theenumiv\Roman*}
+\setlist[enumerate,6]{label=\arabic*),ref=\theenumv\arabic*}
+\setlist[enumerate,7]{label=\alph*),ref=\theenumvi\alph*}
+\setlist[enumerate,8]{label=\roman*),ref=\theenumvii\roman*}
+\setlist[enumerate,9]{label=\Alph*),ref=\theenumviii\Alph*}
+
+
 % Load CM Bright for math
 \usepackage{amsmath}  % Standard math package
 \usepackage{amssymb}  % Additional math symbols
@@ -29,25 +57,25 @@
 \setmonofont{IBMPlexMono-Light}
 % Define custom settings for listings
 \lstset{
-    language=Python,
-    basicstyle=\ttfamily\small,        % Monospaced font
-    commentstyle=\itshape\color{gray}, % Italic and gray for comments
-    keywordstyle=\color{blue},         % Keywords in blue
-    stringstyle=\color{red},           % Strings in red
-    mathescape=true,                   % Enable math in comments
-    breaklines=true,                   % Break long lines
-    numbers=left,                      % Add line numbers
-    numberstyle=\tiny\color{gray},     % Style for line numbers
-    frame=single,                      % Add a frame around the code
+  language=Python,
+  basicstyle=\ttfamily\small,        % Monospaced font
+  commentstyle=\itshape\color{gray}, % Italic and gray for comments
+  keywordstyle=\color{blue},         % Keywords in blue
+  stringstyle=\color{red},           % Strings in red
+  mathescape=true,                   % Enable math in comments
+  breaklines=true,                   % Break long lines
+  numbers=left,                      % Add line numbers
+  numberstyle=\tiny\color{gray},     % Style for line numbers
+  frame=single,                      % Add a frame around the code
 }
 
 \usepackage{newfloat}  % Allows creating custom float types
 
 % Define 'listing' as a floating environment
 \DeclareFloatingEnvironment[
-    fileext=lol,
-    listname=List of Listings,
-    name=Listing
+fileext=lol,
+listname=List of Listings,
+name=Listing
 ]{listing}
 
 % To prevent floats from moving past a section boundary but still allow some floating:
@@ -74,12 +102,12 @@
 \date{Technical Report 20250224}
 
 \hypersetup{
- pdfauthor={Michael Hohn},
- pdftitle={MRVA for CodeQL},
- pdfkeywords={},
- pdfsubject={},
- pdfcreator={Emacs 29.1},
- pdflang={English}}
+  pdfauthor={Michael Hohn},
+  pdftitle={MRVA for CodeQL},
+  pdfkeywords={},
+  pdfsubject={},
+  pdfcreator={Emacs 29.1},
+  pdflang={English}}
 
 \begin{document}
 
@@ -91,17 +119,17 @@
 The MRVA system is organized as a collection of services. On the server side, the
 system is containerized using Docker and comprises several key components:
 \begin{itemize}
-    \item {\textbf{Server}}: Acts as the central coordinator.
-    \item \textbf{Agents}: One or more agents that execute tasks.
-    \item \textbf{RabbitMQ}: Handles messaging between components.
-    \item \textbf{MinIO}: Provides storage for both queries and results.
-    \item \textbf{HEPC}: An HTTP endpoint that hosts and serves CodeQL databases.
+\item {\textbf{Server}}: Acts as the central coordinator.
+\item \textbf{Agents}: One or more agents that execute tasks.
+\item \textbf{RabbitMQ}: Handles messaging between components.
+\item \textbf{MinIO}: Provides storage for both queries and results.
+\item \textbf{HEPC}: An HTTP endpoint that hosts and serves CodeQL databases.
 \end{itemize}
 
 On the client side, users can interact with the system in two ways:
 \begin{itemize}
-    \item {\textbf{VSCode-CodeQL}}: A graphical interface integrated with Visual Studio Code.
-    \item \textbf{gh-mrva CLI}: A command-line interface that connects to the server in a similar way.
+\item {\textbf{VSCode-CodeQL}}: A graphical interface integrated with Visual Studio Code.
+\item \textbf{gh-mrva CLI}: A command-line interface that connects to the server in a similar way.
 \end{itemize}
 
 This architecture enables a robust and flexible workflow for code analysis, combining a containerized back-end with both graphical and CLI front-end tools.
@@ -114,15 +142,15 @@ overview.
 \subsection{Execution Overview}
 
 The \textit{MRVA system} is a distributed platform for executing \textit{CodeQL
-queries} across multiple repositories using a set of worker agents. The system is
+  queries} across multiple repositories using a set of worker agents. The system is
 {containerized} and built around a set of core services:
 
 \begin{itemize}
-    \item \textbf{Server}: Coordinates job distribution and result aggregation.
-    \item \textbf{Agents}: Execute queries independently and return results.
-    \item \textbf{RabbitMQ}: Handles messaging between system components.
-    \item \textbf{MinIO}: Stores query inputs and execution results.
-    \item \textbf{HEPC}: Serves CodeQL databases over HTTP.
+\item \textbf{Server}: Coordinates job distribution and result aggregation.
+\item \textbf{Agents}: Execute queries independently and return results.
+\item \textbf{RabbitMQ}: Handles messaging between system components.
+\item \textbf{MinIO}: Stores query inputs and execution results.
+\item \textbf{HEPC}: Serves CodeQL databases over HTTP.
 \end{itemize}
 
 Clients interact with MRVA via \texttt{VSCode-CodeQL} (a graphical interface) or
@@ -132,21 +160,21 @@ server.
 The execution process follows a structured workflow:
 
 \begin{enumerate}
-    \item A client submits a set of queries $\mathcal{Q}$ targeting a repository
-      set $\mathcal{R}$.
-    \item The server enqueues jobs and distributes them to available agents.
-    \item Each agent retrieves a job, executes queries against its assigned repository, and accumulates results.
-    \item The agent sends results back to the server, which then forwards them to the client.
+\item A client submits a set of queries $\mathcal{Q}$ targeting a repository
+  set $\mathcal{R}$.
+\item The server enqueues jobs and distributes them to available agents.
+\item Each agent retrieves a job, executes queries against its assigned repository, and accumulates results.
+\item The agent sends results back to the server, which then forwards them to the client.
 \end{enumerate}
 
 This full round-trip can be expressed as:
 
 \begin{equation}
-    \text{Client} \xrightarrow{\mathcal{Q}} \text{Server}
-    \xrightarrow{\text{enqueue}} 
-    \text{Queue} \xrightarrow{\text{dispatch}} \text{Agent}
-    \xrightarrow{\mathcal{Q}(\mathcal{R}_i)}
-    \text{Server} \xrightarrow{\mathcal{Q}(\mathcal{R}_i} \text{Client}
+  \text{Client} \xrightarrow{\mathcal{Q}} \text{Server}
+  \xrightarrow{\text{enqueue}} 
+  \text{Queue} \xrightarrow{\text{dispatch}} \text{Agent}
+  \xrightarrow{\mathcal{Q}(\mathcal{R}_i)}
+  \text{Server} \xrightarrow{\mathcal{Q}(\mathcal{R}_i} \text{Client}
 \end{equation}
 
 where the Client submits queries to the Server, which enqueues jobs in the
@@ -181,12 +209,12 @@ is that both setups follow the same structural approach:
 
 Thus:
 \begin{itemize}
-    \item The {functional architecture is identical} between the single-machine and cluster setups.
-    \item The {primary difference} is in \textit{scale}:
-    \begin{itemize}
-        \item A single machine is limited by \textit{local CPU and RAM}.
-        \item A cluster is constrained by \textit{network and inter-node coordination overhead} but allows for higher overall compute capacity.
-    \end{itemize}
+\item The {functional architecture is identical} between the single-machine and cluster setups.
+\item The {primary difference} is in \textit{scale}:
+  \begin{itemize}
+  \item A single machine is limited by \textit{local CPU and RAM}.
+  \item A cluster is constrained by \textit{network and inter-node coordination overhead} but allows for higher overall compute capacity.
+  \end{itemize}
 \end{itemize}
 
 
@@ -195,84 +223,84 @@ Thus:
 The following table enumerates the types (messages) passed from Client to Server.
 
 \begin{longtable}{|p{5cm}|p{5cm}|p{5cm}|}
-\hline
-\rowcolor{gray!20} \textbf{Type Name} & \textbf{Field} & \textbf{Type} \\
-\hline
-\endfirsthead
+  \hline
+  \rowcolor{gray!20} \textbf{Type Name} & \textbf{Field} & \textbf{Type} \\
+  \hline
+  \endfirsthead
 
-\hline
-\rowcolor{gray!20} \textbf{Type Name} & \textbf{Field} & \textbf{Type} \\
-\hline
-\endhead
+  \hline
+  \rowcolor{gray!20} \textbf{Type Name} & \textbf{Field} & \textbf{Type} \\
+  \hline
+  \endhead
 
-\hline
-\endfoot
+  \hline
+  \endfoot
 
-\hline
-\endlastfoot
+  \hline
+  \endlastfoot
 
-ServerState & NextID & () $\rightarrow$ int \\
-& GetResult & JobSpec $\rightarrow$ IO (Either Error AnalyzeResult) \\
-& GetJobSpecByRepoId & (int, int) $\rightarrow$ IO (Either Error JobSpec) \\
-& SetResult & (JobSpec, AnalyzeResult) $\rightarrow$ IO () \\
-& GetJobList & int $\rightarrow$ IO (Either Error \textbf{[AnalyzeJob]}) \\
-& GetJobInfo & JobSpec $\rightarrow$ IO (Either Error JobInfo) \\
-& SetJobInfo & (JobSpec, JobInfo) $\rightarrow$ IO () \\
-& GetStatus & JobSpec $\rightarrow$ IO (Either Error Status) \\
-& SetStatus & (JobSpec, Status) $\rightarrow$ IO () \\
-& AddJob & AnalyzeJob $\rightarrow$ IO () \\
+  ServerState & NextID & () $\rightarrow$ int \\
+                                        & GetResult & JobSpec $\rightarrow$ IO (Either Error AnalyzeResult) \\
+                                        & GetJobSpecByRepoId & (int, int) $\rightarrow$ IO (Either Error JobSpec) \\
+                                        & SetResult & (JobSpec, AnalyzeResult) $\rightarrow$ IO () \\
+                                        & GetJobList & int $\rightarrow$ IO (Either Error \textbf{[AnalyzeJob]}) \\
+                                        & GetJobInfo & JobSpec $\rightarrow$ IO (Either Error JobInfo) \\
+                                        & SetJobInfo & (JobSpec, JobInfo) $\rightarrow$ IO () \\
+                                        & GetStatus & JobSpec $\rightarrow$ IO (Either Error Status) \\
+                                        & SetStatus & (JobSpec, Status) $\rightarrow$ IO () \\
+                                        & AddJob & AnalyzeJob $\rightarrow$ IO () \\
 
-\hline
-JobSpec & sessionID & int \\
-& nameWithOwner & string \\
+  \hline
+  JobSpec & sessionID & int \\
+                                        & nameWithOwner & string \\
 
-\hline
-AnalyzeResult & spec & JobSpec \\
-& status & Status \\
-& resultCount & int \\
-& resultLocation & ArtifactLocation \\
-& sourceLocationPrefix & string \\
-& databaseSHA & string \\
+  \hline
+  AnalyzeResult & spec & JobSpec \\
+                                        & status & Status \\
+                                        & resultCount & int \\
+                                        & resultLocation & ArtifactLocation \\
+                                        & sourceLocationPrefix & string \\
+                                        & databaseSHA & string \\
 
-\hline
-ArtifactLocation & Key & string \\
-& Bucket & string \\
+  \hline
+  ArtifactLocation & Key & string \\
+                                        & Bucket & string \\
 
-\hline
-AnalyzeJob & Spec & JobSpec \\
-& QueryPackLocation & ArtifactLocation \\
-& QueryLanguage & QueryLanguage \\
+  \hline
+  AnalyzeJob & Spec & JobSpec \\
+                                        & QueryPackLocation & ArtifactLocation \\
+                                        & QueryLanguage & QueryLanguage \\
 
-\hline
-QueryLanguage &  & string \\
+  \hline
+  QueryLanguage &  & string \\
 
-\hline
-JobInfo & QueryLanguage & string \\
-& CreatedAt & string \\
-& UpdatedAt & string \\
-& SkippedRepositories & SkippedRepositories \\
+  \hline
+  JobInfo & QueryLanguage & string \\
+                                        & CreatedAt & string \\
+                                        & UpdatedAt & string \\
+                                        & SkippedRepositories & SkippedRepositories \\
 
-\hline
-SkippedRepositories & AccessMismatchRepos & AccessMismatchRepos \\
-& NotFoundRepos & NotFoundRepos \\
-& NoCodeqlDBRepos & NoCodeqlDBRepos \\
-& OverLimitRepos & OverLimitRepos \\
+  \hline
+  SkippedRepositories & AccessMismatchRepos & AccessMismatchRepos \\
+                                        & NotFoundRepos & NotFoundRepos \\
+                                        & NoCodeqlDBRepos & NoCodeqlDBRepos \\
+                                        & OverLimitRepos & OverLimitRepos \\
 
-\hline
-AccessMismatchRepos & RepositoryCount & int \\
-& Repositories & \textbf{[Repository]} \\
+  \hline
+  AccessMismatchRepos & RepositoryCount & int \\
+                                        & Repositories & \textbf{[Repository]} \\
 
-\hline
-NotFoundRepos & RepositoryCount & int \\
-& RepositoryFullNames & \textbf{[string]} \\
+  \hline
+  NotFoundRepos & RepositoryCount & int \\
+                                        & RepositoryFullNames & \textbf{[string]} \\
 
-\hline
-Repository & ID & int \\
-& Name & string \\
-& FullName & string \\
-& Private & bool \\
-& StargazersCount & int \\
-& UpdatedAt & string \\
+  \hline
+  Repository & ID & int \\
+                                        & Name & string \\
+                                        & FullName & string \\
+                                        & Private & bool \\
+                                        & StargazersCount & int \\
+                                        & UpdatedAt & string \\
 
 \end{longtable}
 
@@ -283,22 +311,22 @@ Repository & ID & int \\
 We define the following symbols for entities in the system:
 
 \begin{center}
-    \begin{tabular}{lll}
-        Concept                                                                       & Symbol                            & Description                                                         \\[0pt]
-        \hline
-        \href{vscode://file//Users/hohn/work-gh/mrva/gh-mrva/README.org:39:1}{Client} & \(C\)                             & The source of the query submission                                  \\[0pt]
-        Server                                                                        & \(S\)                             & Manages job queue and communicates results back to the client       \\[0pt]
-        Job Queue                                                                     & \(Q\)                             & Queue for managing submitted jobs                                   \\[0pt]
-        Agent                                                                         & \(\alpha\)                        & Independently polls, executes jobs, and accumulates results         \\[0pt]
-        Agent Set                                                                     & \(A\)                             & The set of all available agents                                     \\[0pt]
-        Query Suite                                                                   & \(\mathcal{Q}\)                   & Collection of queries submitted by the client                       \\[0pt]
-        Repository List                                                               & \(\mathcal{R}\)                   & Collection of repositories                                          \\[0pt]
-        \(i\)-th Repository                                                           & \(\mathcal{R}_i\)                 & Specific repository indexed by \(i\)                                \\[0pt]
-        \(j\)-th Query                                                                & \(\mathcal{Q}_j\)                 & Specific query from the suite indexed by \(j\)                      \\[0pt]
-        Query Result                                                                  & \(r_{i,j,k_{i,j}}\)               & \(k_{i,j}\)-th result from query \(j\) executed on repository \(i\) \\[0pt]
-        Query Result Set                                                              & \(\mathcal{R}_i^{\mathcal{Q}_j}\) & Set of all results for query \(j\) on repository \(i\)              \\[0pt]
-        Accumulated Results                                                           & \(\mathcal{R}_i^{\mathcal{Q}}\)   & All results from executing all queries on \(\mathcal{R}_i\)         \\[0pt]
-    \end{tabular}
+  \begin{tabular}{lll}
+    Concept                                                                       & Symbol                            & Description                                                         \\[0pt]
+    \hline
+    \href{vscode://file//Users/hohn/work-gh/mrva/gh-mrva/README.org:39:1}{Client} & \(C\)                             & The source of the query submission                                  \\[0pt]
+    Server                                                                        & \(S\)                             & Manages job queue and communicates results back to the client       \\[0pt]
+    Job Queue                                                                     & \(Q\)                             & Queue for managing submitted jobs                                   \\[0pt]
+    Agent                                                                         & \(\alpha\)                        & Independently polls, executes jobs, and accumulates results         \\[0pt]
+    Agent Set                                                                     & \(A\)                             & The set of all available agents                                     \\[0pt]
+    Query Suite                                                                   & \(\mathcal{Q}\)                   & Collection of queries submitted by the client                       \\[0pt]
+    Repository List                                                               & \(\mathcal{R}\)                   & Collection of repositories                                          \\[0pt]
+    \(i\)-th Repository                                                           & \(\mathcal{R}_i\)                 & Specific repository indexed by \(i\)                                \\[0pt]
+    \(j\)-th Query                                                                & \(\mathcal{Q}_j\)                 & Specific query from the suite indexed by \(j\)                      \\[0pt]
+    Query Result                                                                  & \(r_{i,j,k_{i,j}}\)               & \(k_{i,j}\)-th result from query \(j\) executed on repository \(i\) \\[0pt]
+    Query Result Set                                                              & \(\mathcal{R}_i^{\mathcal{Q}_j}\) & Set of all results for query \(j\) on repository \(i\)              \\[0pt]
+    Accumulated Results                                                           & \(\mathcal{R}_i^{\mathcal{Q}}\)   & All results from executing all queries on \(\mathcal{R}_i\)         \\[0pt]
+  \end{tabular}
 \end{center}
 
 
@@ -307,17 +335,17 @@ We define the following symbols for entities in the system:
 The full round-trip execution, from query submission to result delivery, can be summarized as:
 
 \[
-    C \xrightarrow{\mathcal{Q}} S \xrightarrow{\text{enqueue}} Q
-    \xrightarrow{\text{poll}}
-    \alpha \xrightarrow{\mathcal{Q}(\mathcal{R}_i)} S \xrightarrow{\mathcal{R}_i^{\mathcal{Q}}} C
+  C \xrightarrow{\mathcal{Q}} S \xrightarrow{\text{enqueue}} Q
+  \xrightarrow{\text{poll}}
+  \alpha \xrightarrow{\mathcal{Q}(\mathcal{R}_i)} S \xrightarrow{\mathcal{R}_i^{\mathcal{Q}}} C
 \]
 
 \begin{itemize}
-    \item \(C \to S\): Client submits a query suite \(\mathcal{Q}\) to the server.
-    \item \(S \to Q\): Server enqueues the query suite \((\mathcal{Q}, \mathcal{R}_i)\) for each repository.
-    \item \(Q \to \alpha\): Agent \(\alpha\) polls the queue and retrieves a job.
-    \item \(\alpha \to S\): Agent executes the queries and returns the accumulated results \(\mathcal{R}_i^{\mathcal{Q}}\) to the server.
-    \item \(S \to C\): Server sends the complete result set \(\mathcal{R}_i^{\mathcal{Q}}\) for each repository back to the client.
+\item \(C \to S\): Client submits a query suite \(\mathcal{Q}\) to the server.
+\item \(S \to Q\): Server enqueues the query suite \((\mathcal{Q}, \mathcal{R}_i)\) for each repository.
+\item \(Q \to \alpha\): Agent \(\alpha\) polls the queue and retrieves a job.
+\item \(\alpha \to S\): Agent executes the queries and returns the accumulated results \(\mathcal{R}_i^{\mathcal{Q}}\) to the server.
+\item \(S \to C\): Server sends the complete result set \(\mathcal{R}_i^{\mathcal{Q}}\) for each repository back to the client.
 \end{itemize}
 
 \section{Result Representation}
@@ -330,31 +358,31 @@ For the complete collection of results across all repositories and queries:
 
 where:
 \begin{itemize}
-    \item \(N\) is the total number of repositories.
-    \item \(M\) is the total number of queries in \(\mathcal{Q}\).
-    \item \(k_{i,j}\) is the number of results from executing query
-      \(\mathcal{Q}_j\)
-      on repository \(\mathcal{R}_i\).
+\item \(N\) is the total number of repositories.
+\item \(M\) is the total number of queries in \(\mathcal{Q}\).
+\item \(k_{i,j}\) is the number of results from executing query
+  \(\mathcal{Q}_j\)
+  on repository \(\mathcal{R}_i\).
 \end{itemize}
 
 An individual result from the \(i\)-th repository, \(j\)-th query, and \(k\)-th result is:
 \[
-    r_{i,j,k}
+  r_{i,j,k}
 \]
 
 
 
 \[
-    C \xrightarrow{\mathcal{Q}} S \xrightarrow{\text{enqueue}} Q \xrightarrow{\text{dispatch}} \alpha \xrightarrow{\mathcal{Q}(\mathcal{R}_i)} S \xrightarrow{r_{i,j}} C
+  C \xrightarrow{\mathcal{Q}} S \xrightarrow{\text{enqueue}} Q \xrightarrow{\text{dispatch}} \alpha \xrightarrow{\mathcal{Q}(\mathcal{R}_i)} S \xrightarrow{r_{i,j}} C
 \]
 
 Each result can be further indexed to track multiple repositories and result sets.
 
 \section{Execution Loop in Pseudo-Code}
 \begin{listing}[H] % h = here, t = top, b = bottom, p = page of floats
-    \caption{Distributed Query Execution Algorithm}
+  \caption{Distributed Query Execution Algorithm}
 
-    \begin{lstlisting}[language=Python]
+\begin{lstlisting}[language=Python]
 # Distributed Query Execution with Agent Polling and Accumulated Results
 
 # Initialization
@@ -455,60 +483,60 @@ $\mathcal{R}_{\text{results}}$ = execute_queries(A, Q, $\mathcal{R}_{\text{resul
 \newpage{}
 \section{Execution Loop in Pseudo-Code, algorithmic}
 \begin{algorithm}
-    \caption{Distribute a set of queries $\mathcal{Q}$ across repositories
-      $\mathcal{R}$ using agents $A$}
-    \begin{algorithmic}[1] % Line numbering enabled
-        \Procedure{DistributedQueryExecution}{$\mathcal{Q}, \mathcal{R}, A$}
+  \caption{Distribute a set of queries $\mathcal{Q}$ across repositories
+    $\mathcal{R}$ using agents $A$}
+  \begin{algorithmic}[1] % Line numbering enabled
+    \Procedure{DistributedQueryExecution}{$\mathcal{Q}, \mathcal{R}, A$}
 
-        \ForAll{$\mathcal{R}_i \in \mathcal{R}$}
+      \ForAll{$\mathcal{R}_i \in \mathcal{R}$}
         \Comment{Initialize result sets for each repository and query}
         \State $\mathcal{R}_i^{\mathcal{Q}} \gets \left\{ \, \right\}$
-        \EndFor
+      \EndFor
 
-        \State $Q \gets \left\{ \, \right\}$ \Comment{Initialize empty job queue}
+      \State $Q \gets \left\{ \, \right\}$ \Comment{Initialize empty job queue}
 
-        \ForAll{$\mathcal{R}_i \in \mathcal{R}$}
+      \ForAll{$\mathcal{R}_i \in \mathcal{R}$}
         \Comment{Enqueue the entire query suite across all repositories}
         \State $S \xrightarrow{\text{enqueue}(\mathcal{Q}, \mathcal{R}_i)} Q$
-        \EndFor
+      \EndFor
 
-        \While{$Q \neq \emptyset$}
+      \While{$Q \neq \emptyset$}
         \Comment{Agents poll the queue for available jobs}
 
         \ForAll{$\alpha \in A$ \textbf{where} $\alpha$ \text{is available}}
-        \State $\alpha \xleftarrow{\text{poll}(Q)}$ \Comment{Agent autonomously retrieves a job}
+          \State $\alpha \xleftarrow{\text{poll}(Q)}$ \Comment{Agent autonomously retrieves a job}
 
-        % --- Begin Agent Execution Block ---
-        \State \textbf{\raisebox{0.5ex}{\rule{25em}{0.7pt}}} \Comment{Agent Execution Begins}
+          % --- Begin Agent Execution Block ---
+          \State \textbf{\raisebox{0.5ex}{\rule{25em}{0.7pt}}} \Comment{Agent Execution Begins}
 
 
-        \State $\mathcal{R}_i^{\mathcal{Q}} \gets \left\{ \, \right\}$ \Comment{Initialize result set for this repository}
+          \State $\mathcal{R}_i^{\mathcal{Q}} \gets \left\{ \, \right\}$ \Comment{Initialize result set for this repository}
 
-        \ForAll{$\mathcal{Q}_j \in \mathcal{Q}$}
-        \State $\mathcal{R}_i^{\mathcal{Q}_j} \gets \left\{ r_{i,j,1}, r_{i,j,2}, \dots, r_{i,j,k_{i,j}} \right\}$
-        \Comment{Collect results for query $j$ on repository $i$}
+          \ForAll{$\mathcal{Q}_j \in \mathcal{Q}$}
+            \State $\mathcal{R}_i^{\mathcal{Q}_j} \gets \left\{ r_{i,j,1}, r_{i,j,2}, \dots, r_{i,j,k_{i,j}} \right\}$
+            \Comment{Collect results for query $j$ on repository $i$}
 
-        \State $\mathcal{R}_i^{\mathcal{Q}} \gets \mathcal{R}_i^{\mathcal{Q}}
+            \State $\mathcal{R}_i^{\mathcal{Q}} \gets \mathcal{R}_i^{\mathcal{Q}}
             \cup \mathcal{R}_i^{\mathcal{Q}_j}$
-        \Comment{Accumulate results}
+            \Comment{Accumulate results}
+          \EndFor
+
+          \State $\alpha \xrightarrow{(\mathcal{Q}, \mathcal{R}_i, \mathcal{R}_i^{\mathcal{Q}})} S$
+          \Comment{Agent sends all accumulated results back to server}
+
+          \State \textbf{\raisebox{0.5ex}{\rule{25em}{0.7pt}}} \Comment{Agent
+            Execution Ends}
+          % --- End Agent Execution Block ---
+
+          \State $S \xrightarrow{(\mathcal{Q}, \mathcal{R}_i, \mathcal{R}_i^{\mathcal{Q}})} C$
+          \Comment{Server sends results for repository $i$ back to the client}
+
         \EndFor
 
-        \State $\alpha \xrightarrow{(\mathcal{Q}, \mathcal{R}_i, \mathcal{R}_i^{\mathcal{Q}})} S$
-        \Comment{Agent sends all accumulated results back to server}
+      \EndWhile
 
-        \State \textbf{\raisebox{0.5ex}{\rule{25em}{0.7pt}}} \Comment{Agent
-          Execution Ends}
-        % --- End Agent Execution Block ---
-
-        \State $S \xrightarrow{(\mathcal{Q}, \mathcal{R}_i, \mathcal{R}_i^{\mathcal{Q}})} C$
-        \Comment{Server sends results for repository $i$ back to the client}
-
-        \EndFor
-
-        \EndWhile
-
-        \EndProcedure
-    \end{algorithmic}
+    \EndProcedure
+  \end{algorithmic}
 \end{algorithm}
 
 \FloatBarrier
@@ -519,52 +547,52 @@ $\mathcal{R}_{\text{results}}$ = execute_queries(A, Q, $\mathcal{R}_{\text{resul
 
 \begin{enumerate}
 \item \textbf{\textbf{Initialization}}
-\begin{itemize}
-\item For each repository \(\mathcal{R}_i \in \mathcal{R}\):
-\begin{itemize}
-\item Initialize result sets: \(\mathcal{R}_i^{\mathcal{Q}} \gets \{\}\).
-\end{itemize}
-\item Initialize an empty job queue: \(Q \gets \{\}\).
-\end{itemize}
+  \begin{itemize}
+  \item For each repository \(\mathcal{R}_i \in \mathcal{R}\):
+    \begin{itemize}
+    \item Initialize result sets: \(\mathcal{R}_i^{\mathcal{Q}} \gets \{\}\).
+    \end{itemize}
+  \item Initialize an empty job queue: \(Q \gets \{\}\).
+  \end{itemize}
 
 \item \textbf{\textbf{Enqueue Queries}}
-\begin{itemize}
-\item For each repository \(\mathcal{R}_i \in \mathcal{R}\):
-\begin{itemize}
-\item Enqueue the entire query suite: \(S \xrightarrow{\text{enqueue}(\mathcal{Q}, \mathcal{R}_i)} Q\).
-\end{itemize}
-\end{itemize}
+  \begin{itemize}
+  \item For each repository \(\mathcal{R}_i \in \mathcal{R}\):
+    \begin{itemize}
+    \item Enqueue the entire query suite: \(S \xrightarrow{\text{enqueue}(\mathcal{Q}, \mathcal{R}_i)} Q\).
+    \end{itemize}
+  \end{itemize}
 
 \item \textbf{\textbf{Execution Loop}}
-\begin{itemize}
-\item While \(Q \neq \emptyset\): (agents poll the queue for available jobs)
-\begin{itemize}
-\item For each available agent \(\alpha \in A\):
-\begin{itemize}
-\item Agent autonomously retrieves a job: \(\alpha \xleftarrow{\text{poll}(Q)}\).
+  \begin{itemize}
+  \item While \(Q \neq \emptyset\): (agents poll the queue for available jobs)
+    \begin{itemize}
+    \item For each available agent \(\alpha \in A\):
+      \begin{itemize}
+      \item Agent autonomously retrieves a job: \(\alpha \xleftarrow{\text{poll}(Q)}\).
 
-\item \textbf{\textbf{Agent Execution Block}}
-\begin{itemize}
-\item Initialize result set for this repository: \(\mathcal{R}_i^{\mathcal{Q}} \gets \{\}\).
-\item For each query \(\mathcal{Q}_j \in \mathcal{Q}\):
-\begin{itemize}
-\item Collect results:  
-\(\mathcal{R}_i^{\mathcal{Q}_j} \gets \{ r_{i,j,1}, r_{i,j,2}, \dots, r_{i,j,k_{i,j}} \}\).
-\item Accumulate results:  
-\(\mathcal{R}_i^{\mathcal{Q}} \gets \mathcal{R}_i^{\mathcal{Q}} \cup \mathcal{R}_i^{\mathcal{Q}_j}\).
-\end{itemize}
-\item Agent sends all accumulated results back to the server:  
-\(\alpha \xrightarrow{(\mathcal{Q}, \mathcal{R}_i, \mathcal{R}_i^{\mathcal{Q}})} S\).
-\end{itemize}
-\end{itemize}
-\end{itemize}
-\end{itemize}
+      \item \textbf{\textbf{Agent Execution Block}}
+        \begin{itemize}
+        \item Initialize result set for this repository: \(\mathcal{R}_i^{\mathcal{Q}} \gets \{\}\).
+        \item For each query \(\mathcal{Q}_j \in \mathcal{Q}\):
+          \begin{itemize}
+          \item Collect results:  
+            \(\mathcal{R}_i^{\mathcal{Q}_j} \gets \{ r_{i,j,1}, r_{i,j,2}, \dots, r_{i,j,k_{i,j}} \}\).
+          \item Accumulate results:  
+            \(\mathcal{R}_i^{\mathcal{Q}} \gets \mathcal{R}_i^{\mathcal{Q}} \cup \mathcal{R}_i^{\mathcal{Q}_j}\).
+          \end{itemize}
+        \item Agent sends all accumulated results back to the server:  
+          \(\alpha \xrightarrow{(\mathcal{Q}, \mathcal{R}_i, \mathcal{R}_i^{\mathcal{Q}})} S\).
+        \end{itemize}
+      \end{itemize}
+    \end{itemize}
+  \end{itemize}
 
 \item \textbf{\textbf{Agent Sends Results}}
-\begin{itemize}
-\item Server sends results for repository \(i\) back to the client:  
-\(S \xrightarrow{(\mathcal{Q}, \mathcal{R}_i, \mathcal{R}_i^{\mathcal{Q}})} C\).
-\end{itemize}
+  \begin{itemize}
+  \item Server sends results for repository \(i\) back to the client:  
+    \(S \xrightarrow{(\mathcal{Q}, \mathcal{R}_i, \mathcal{R}_i^{\mathcal{Q}})} C\).
+  \end{itemize}
 \end{enumerate}
 
 \end{document}
