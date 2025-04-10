@@ -1,6 +1,9 @@
 package qldbstore
 
 import (
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -223,13 +226,45 @@ func (h *HepcStore) FindAvailableDBs(analysisReposRequested []common.NameWithOwn
 	return notFoundRepos, foundRepos
 }
 
+func extractDatabaseFromTar(tarStream io.Reader) ([]byte, bool, error) {
+	gzReader, err := gzip.NewReader(tarStream)
+	if err != nil {
+		slog.Error("failed to open gzip stream", "error", err)
+		return nil, false, fmt.Errorf("failed to open gzip stream: %w", err)
+	}
+	defer gzReader.Close()
+
+	tarReader := tar.NewReader(gzReader)
+
+	for {
+		hdr, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			slog.Error("failed to read tar entry", "error", err)
+			return nil, false, fmt.Errorf("failed to read tar entry: %w", err)
+		}
+
+		if hdr.Name == "artifacts/codeql_database.zip" {
+			var buf bytes.Buffer
+			if _, err := io.Copy(&buf, tarReader); err != nil {
+				slog.Error("failed to extract zip from tar", "error", err)
+				return nil, false, fmt.Errorf("failed to extract zip from tar: %w", err)
+			}
+			return buf.Bytes(), true, nil
+		}
+	}
+
+	return nil, false, nil // not found
+}
+
 func (h *HepcStore) GetDatabase(location common.NameWithOwner) ([]byte, error) {
-	// Ensure metadata is up-to-date by using the cache
 	h.cacheMutex.Lock()
 	if time.Since(h.cacheLastUpdated) > h.cacheDuration {
-		// Refresh the metadata cache if it is stale
 		results, err := h.fetchMetadata()
 		if err != nil {
+			slog.Error("error refreshing metadata cache", "error", err)
 			h.cacheMutex.Unlock()
 			return nil, fmt.Errorf("error refreshing metadata cache: %w", err)
 		}
@@ -239,10 +274,8 @@ func (h *HepcStore) GetDatabase(location common.NameWithOwner) ([]byte, error) {
 	cachedResults := h.metadataCache
 	h.cacheMutex.Unlock()
 
-	// Construct the key for the requested database
 	key := fmt.Sprintf("%s/%s", location.Owner, location.Repo)
 
-	// Locate the result URL in the cached metadata
 	var resultURL string
 	for _, result := range cachedResults {
 		if result.Projname == key {
@@ -252,27 +285,43 @@ func (h *HepcStore) GetDatabase(location common.NameWithOwner) ([]byte, error) {
 	}
 
 	if resultURL == "" {
+		slog.Error("database not found in metadata", "repo", key)
 		return nil, fmt.Errorf("database not found for repository: %s", key)
 	}
 
-	// Fetch the database content
 	resp, err := http.Get(replaceHepcURL(resultURL))
 	if err != nil {
+		slog.Error("failed to fetch database", "url", resultURL, "error", err)
 		return nil, fmt.Errorf("error fetching database: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		slog.Error("non-OK HTTP status", "status", resp.Status, "url", resultURL)
 		return nil, fmt.Errorf("non-OK HTTP status for database fetch: %s", resp.Status)
 	}
 
-	// Read and return the database data
-	data, err := io.ReadAll(resp.Body)
+	// Buffer the full gzip tar stream into RAM
+	fullBody, err := io.ReadAll(resp.Body)
 	if err != nil {
+		slog.Error("error reading full database stream into memory", "error", err)
 		return nil, fmt.Errorf("error reading database content: %w", err)
 	}
 
-	return data, nil
+	// Create a fresh reader from RAM buffer for extraction
+	data, found, err := extractDatabaseFromTar(bytes.NewReader(fullBody))
+	if err != nil {
+		slog.Error("error extracting from tar stream", "error", err)
+		return nil, err
+	}
+
+	if found {
+		slog.Info("found nested zip", "path", "artifacts/codeql_database.zip")
+		return data, nil
+	}
+
+	slog.Info("nested zip not found, returning full original stream from buffer")
+	return fullBody, nil
 }
 
 // replaceHepcURL replaces the fixed "http://hepc" with the value from
