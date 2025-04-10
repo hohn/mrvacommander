@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -60,11 +62,11 @@ func getMetaCacheDuration() time.Duration {
 	return time.Minute * time.Duration(duration)
 }
 
-func (h *HepcStore) fetchMetadata() ([]HepcResult, error) {
+func (h *HepcStore) fetchViaHTTP() ([]HepcResult, error) {
 	url := fmt.Sprintf("%s/index", h.Endpoint)
 	resp, err := http.Get(url)
 	if err != nil {
-		slog.Warn("Error fetching metadata.", err)
+		slog.Warn("Error fetching metadata", "err", err)
 		return nil, fmt.Errorf("error fetching metadata: %w", err)
 	}
 	defer resp.Body.Close()
@@ -88,6 +90,99 @@ func (h *HepcStore) fetchMetadata() ([]HepcResult, error) {
 	}
 
 	return results, nil
+}
+
+func (h *HepcStore) fetchViaCli() ([]HepcResult, error) {
+	refrootDir := os.Getenv("MRVA_HEPC_REFROOT")
+	outDir := os.Getenv("MRVA_HEPC_OUTDIR")
+	toolName := os.Getenv("MRVA_HEPC_TOOL")
+
+	var missing []string
+
+	if refrootDir == "" {
+		slog.Error("Missing required environment variable", "var", "MRVA_HEPC_REFROOT")
+		missing = append(missing, "MRVA_HEPC_REFROOT")
+	}
+	if outDir == "" {
+		slog.Error("Missing required environment variable", "var", "MRVA_HEPC_OUTDIR")
+		missing = append(missing, "MRVA_HEPC_OUTDIR")
+	}
+	if toolName == "" {
+		slog.Error("Missing required environment variable", "var", "MRVA_HEPC_TOOL")
+		missing = append(missing, "MRVA_HEPC_TOOL")
+	}
+
+	if len(missing) > 0 {
+		return nil, fmt.Errorf("missing required environment variables: %s", strings.Join(missing, ", "))
+	}
+
+	// Expand ~ in outDir
+	if strings.HasPrefix(outDir, "~/") {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			slog.Error("Unable to get home directory", "error", err)
+			return nil, err
+		}
+		outDir = filepath.Join(home, outDir[2:])
+	}
+
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		slog.Error("Failed to create output directory", "error", err)
+		return nil, err
+	}
+
+	jsonPath := filepath.Join(outDir, "spigot-results.json")
+
+	cmd := exec.Command(
+		"./run-spigot.sh",
+		refrootDir,
+		outDir,
+		toolName,
+	)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	slog.Info("Starting shell script", "command", strings.Join(cmd.Args, " "))
+
+	if err := cmd.Run(); err != nil {
+		slog.Error("Shell script failed", "error", err)
+		return nil, err
+	}
+
+	slog.Info("Shell script completed successfully")
+
+	// Decode the resulting JSON file
+	f, err := os.Open(jsonPath)
+	if err != nil {
+		slog.Error("Failed to open JSON output", "path", jsonPath, "error", err)
+		return nil, fmt.Errorf("failed to open result file: %w", err)
+	}
+	defer f.Close()
+
+	var results []HepcResult
+	decoder := json.NewDecoder(f)
+	for {
+		var result HepcResult
+		if err := decoder.Decode(&result); err == io.EOF {
+			break
+		} else if err != nil {
+			slog.Warn("Error decoding CLI JSON", "error", err)
+			return nil, fmt.Errorf("error decoding CLI JSON: %w", err)
+		}
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+func (h *HepcStore) fetchMetadata() ([]HepcResult, error) {
+	// Get via request or cli?
+	hepcDataViaCli := os.Getenv("MRVA_HEPC_DATAVIACLI")
+	if hepcDataViaCli == "1" {
+		return h.fetchViaCli()
+	} else {
+		return h.fetchViaHTTP()
+	}
 }
 
 func (h *HepcStore) FindAvailableDBs(analysisReposRequested []common.NameWithOwner) (
