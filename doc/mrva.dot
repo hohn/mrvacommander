@@ -1,0 +1,56 @@
+digraph mrvacommander {
+    rankdir=LR;
+    node [shape=box style=filled fillcolor=lightgrey fontname="monospace"];
+
+    // Entry points
+    cmd_server     [label="cmd/server\nmain()", fillcolor=lightblue];
+    cmd_agent      [label="cmd/agent\nmain()", fillcolor=lightblue];
+
+    // Config
+    config         [label="config/mcc\nparseEnv()", shape=ellipse, fillcolor=lightyellow];
+
+    // Server-side
+    server         [label="pkg/server\nServer.Run()"];
+    deploy         [label="pkg/deploy\nInit()"];
+    qldbstore      [label="pkg/qldbstore\nQLDB Store"];
+    artifactstore  [label="pkg/artifactstore\nArtifact Store"];
+    queue          [label="pkg/queue\nQueue Interface"];
+
+    // Agent-side
+    agent          [label="pkg/agent\nAgent.Run()"];
+    state          [label="pkg/state\nState"];
+    codeql         [label="pkg/codeql\nrunCodeQL()"];
+
+    // Common
+    common         [label="pkg/common\nTypes, MinIO, Jobs"];
+    utils          [label="utils\nDownload, Archive"];
+
+    // Edges: config used by both
+    cmd_server -> config;
+    cmd_agent  -> config;
+
+    // Server wiring
+    cmd_server -> server;
+    server -> queue;
+    server -> artifactstore;
+    server -> qldbstore;
+
+    // Agent wiring
+    cmd_agent -> agent;
+    agent -> queue;
+    agent -> codeql;
+    agent -> artifactstore;
+    agent -> state;
+
+    // Shared deps
+    server -> common;
+    agent  -> common;
+    codeql -> common;
+    qldbstore -> common;
+    artifactstore -> common;
+
+    // Utils used by backends
+    qldbstore -> utils;
+    artifactstore -> utils;
+    codeql -> utils;
+}
