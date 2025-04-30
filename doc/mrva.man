@@ -1,0 +1,84 @@
+.TH MRVACOMMANDER 7 "April 2025" "MRVA Project" "System Overview"
+.SH NAME
+mrvacommander \- distributed CodeQL task queue and execution system
+.SH SYNOPSIS
+.B server
+.RI [ environment ]
+.br
+.B agent
+.RI [ environment ]
+.SH DESCRIPTION
+mrvacommander coordinates analysis jobs over multiple worker nodes using queues, pluggable storage, and CodeQL execution. It consists of multiple interacting packages and entry points.
+
+.SH STRUCTURE
+.TP
+.B cmd/server
+Entry point. Loads configuration, initializes dependencies, runs queue subscriber with a dispatcher.
+.TP
+.B cmd/agent
+Entry point. Loads configuration, runs a processing loop: receive job, execute query, save result, update state.
+
+.SH CONFIGURATION
+.TP
+.B config/mcc
+Parses environment variables into structured configuration. Modules include:
+.IR queue ,
+.IR storage ,
+.IR logger ,
+.IR commander .
+
+.SH SERVER SIDE MODULES
+.TP
+.B pkg/server
+Initializes:
+  queue backend
+  QLDB store
+  artifact store
+
+Subscribes to queue and dispatches jobs to handler.
+.TP
+.B pkg/deploy
+Deployment helpers: validate environment variables, bootstrap key services.
+
+.SH AGENT SIDE MODULES
+.TP
+.B pkg/agent
+Receives jobs, executes CodeQL queries, stores outputs, marks completion.
+.TP
+.B pkg/state
+Tracks which jobs have been completed. Local file-backed.
+
+.SH SHARED MODULES
+.TP
+.B pkg/common
+Core types: Job, JobOutput, NameWithOwner, Query.
+Includes MinIO wrappers, external API access, and job spec parsing.
+.TP
+.B pkg/codeql
+Defines query structure and executes CodeQL against a database.
+.TP
+.B pkg/qldbstore
+Provides read-only access to CodeQL databases via:
+  - MinIO (S3)
+  - HTTP (hepc)
+  - Filesystem
+.TP
+.B pkg/artifactstore
+Persists job results. Implementations:
+  - MinIO
+  - Memory
+.TP
+.B pkg/queue
+Job queue interface. Implementations:
+  - RabbitMQ
+  - In-memory single-node
+.TP
+.B utils
+Generic helpers:
+  - HTTP download
+  - tar.gz extraction
+
+.SH SEE ALSO
+.BR codeql (1),
+.BR rabbitmq-server (1),
+.BR minio (1)
