@@ -1,0 +1,41 @@
+* sighelp.go : GPT-Assistable Semantic Outline
+
+  This file provides *non-functional symbolic structure* for the corresponding =.go= file (e.g. =init.go=), optimized for:
+
+  - GPT parsing and assistance
+  - IDE symbol navigation (LSP)
+  - Type-checking to detect drift
+  - Readable overview for human developers
+
+  Each =sighelp_XXX()= function:
+
+  - Mirrors a real function (e.g. =InitRabbitMQ=)
+  - Calls it with placeholder arguments
+  - Discards the result to avoid side effects
+  - Includes structured GPT-readable comments in the form =// gpt:<tag>: …=
+
+  This allows both humans and GPT tools to:
+
+  - See what functions exist and what they do
+  - Understand return types and call relations
+  - Navigate codebases via structure, not prose
+
+  **Example**
+
+  #+BEGIN_SRC go
+    // gpt:flowinfo: InitMinIOArtifactStore returns a store configured via env vars
+    func sighelp_InitMinIOArtifactStore() {
+        var s artifactstore.Store
+        var err error
+        s, err = InitMinIOArtifactStore()
+        _ = s
+        _ = err
+    }
+  #+END_SRC
+
+  **Style Guidelines**
+
+  - Always use valid, compilable Go.
+  - Maintain one =sighelp_= per actual function.
+  - Add =// gpt:= comments to express intent or relationships.
+  - Avoid runtime logic — this file is for *structure*, not execution.
