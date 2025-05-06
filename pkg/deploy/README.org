@@ -39,3 +39,49 @@
   - Maintain one =sighelp_= per actual function.
   - Add =// gpt:= comments to express intent or relationships.
   - Avoid runtime logic — this file is for *structure*, not execution.
+
+* GPT-Assisted Spec → Code Change Workflow
+
+  To reduce time spent mapping high-level spec changes to actual code edits, we use this workflow to integrate GPT into the loop. This allows structured delegation of search, mapping, and edit proposal.
+
+  **Flow**
+
+  1. You declare a spec change as a structured Org block (see below).
+  2. GPT uses =sighelp.go= (and optionally the real code) to:
+     - Identify affected functions
+     - Propose an edit plan
+     - Track and validate type-level constraints
+  3. You confirm the plan or adjust scope.
+  4. GPT writes candidate diffs or summaries for manual patching.
+
+  **Example Change Request**
+
+  #+BEGIN_SRC org
+    ,* Change: Make artifact store initialization async with retry
+    ,* Affects: InitMinIOArtifactStore, InitMinIOCodeQLDatabaseStore
+    ,* Required: non-blocking behavior, robust to transient failures
+    ,* Notes: Must be compatible with sighelp stubs and InitX signatures
+  #+END_SRC
+
+  **GPT Responsibilities**
+
+  - Match affected symbols from =sighelp_XXX()= stubs
+  - Generate patch plan as Org list:
+    #+BEGIN_SRC org
+      ,* deploy/init.go
+        - InitMinIOArtifactStore: wrap NewMinIOArtifactStore in goroutine, add retry
+        - InitMinIOCodeQLDatabaseStore: apply same pattern
+    #+END_SRC
+  - Output scoped diffs, patch instructions, or replacement code
+
+  **Optional Enhancements**
+
+  - GPT can update =sighelp.go= alongside implementation changes
+  - You may keep =change.org= files in the repo to track historical refactor plans
+  - Each change block can include tags like =:spec:async:init:= for search
+
+* Summary
+
+  This structure treats GPT as a symbolic reasoning assistant that uses =sighelp.go= as its internal call graph. It allows high-level human changes to be mapped, tracked, and diffed without manual bottom-up spelunking.
+
+  This flow is especially effective when multiple entry points share structural patterns (e.g. InitXXX for services).
