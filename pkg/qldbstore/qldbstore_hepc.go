@@ -94,18 +94,12 @@ func (h *HepcStore) fetchViaHTTP() ([]HepcResult, error) {
 
 	return results, nil
 }
-
 func (h *HepcStore) fetchViaCli() ([]HepcResult, error) {
-	refrootDir := os.Getenv("MRVA_HEPC_REFROOT")
 	outDir := os.Getenv("MRVA_HEPC_OUTDIR")
 	toolName := os.Getenv("MRVA_HEPC_TOOL")
 
 	var missing []string
 
-	if refrootDir == "" {
-		slog.Error("Missing required environment variable", "var", "MRVA_HEPC_REFROOT")
-		missing = append(missing, "MRVA_HEPC_REFROOT")
-	}
 	if outDir == "" {
 		slog.Error("Missing required environment variable", "var", "MRVA_HEPC_OUTDIR")
 		missing = append(missing, "MRVA_HEPC_OUTDIR")
@@ -136,23 +130,35 @@ func (h *HepcStore) fetchViaCli() ([]HepcResult, error) {
 
 	jsonPath := filepath.Join(outDir, "spigot-results.json")
 
-	cmd := exec.Command(
-		"./run-spigot.sh",
-		refrootDir,
-		outDir,
-		toolName,
-	)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	slog.Info("Starting shell script", "command", strings.Join(cmd.Args, " "))
-
-	if err := cmd.Run(); err != nil {
-		slog.Error("Shell script failed", "error", err)
+	// ----------------------
+	// Go version of
+	// spigot-cli bulk-download-results    \
+	// --tool-name "$TOOL_NAME"                    \
+	// --metadata-only all                         \
+	// > "$OUT_DIR/spigot-results.json"
+	// ----------------------
+	outFile, err := os.Create(jsonPath)
+	if err != nil {
+		slog.Error("Failed to create spigot output file", "error", err)
 		return nil, err
 	}
+	defer outFile.Close()
 
-	slog.Info("Shell script completed successfully")
+	cmd := exec.Command(
+		"spigot-cli",
+		"bulk-download-results",
+		"--tool-name", toolName,
+		"--metadata-only", "all",
+	)
+	cmd.Stdout = outFile
+
+	cmd.Stderr = os.Stderr // for error logging
+
+	if err := cmd.Run(); err != nil {
+		slog.Error("spigot-cli failed", "error", err)
+		return nil, err
+	}
+	// ----------------------
 
 	// Decode the resulting JSON file
 	f, err := os.Open(jsonPath)

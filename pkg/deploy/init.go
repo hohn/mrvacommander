@@ -102,7 +102,6 @@ func InitHEPCDatabaseStore() (qldbstore.Store, error) {
 		"MRVA_HEPC_ENDPOINT",
 		"MRVA_HEPC_CACHE_DURATION",
 		"MRVA_HEPC_DATAVIACLI",
-		"MRVA_HEPC_REFROOT",
 		"MRVA_HEPC_OUTDIR",
 		"MRVA_HEPC_TOOL",
 	}
