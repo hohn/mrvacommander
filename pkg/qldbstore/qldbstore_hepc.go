@@ -307,26 +307,35 @@ func (h *HepcStore) GetDatabase(location common.NameWithOwner) ([]byte, error) {
 		return nil, fmt.Errorf("non-OK HTTP status for database fetch: %s", resp.Status)
 	}
 
-	// Buffer the full gzip tar stream into RAM
+	// Buffer the full stream into RAM
 	fullBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		slog.Error("error reading full database stream into memory", "error", err)
 		return nil, fmt.Errorf("error reading database content: %w", err)
 	}
 
-	// Create a fresh reader from RAM buffer for extraction
-	data, found, err := extractDatabaseFromTar(bytes.NewReader(fullBody))
-	if err != nil {
-		slog.Error("error extracting from tar stream", "error", err)
-		return nil, err
-	}
+	// The input could be the codeql db as zip, or a tar stream containing the zip;
+	// If gzip header is found, treat the input as a tar+gz archive
 
-	if found {
-		slog.Info("found nested zip", "path", "artifacts/codeql_database.zip")
-		return data, nil
-	}
+	// Check for gzip magic number (0x1F 0x8B)
+	isGzip := len(fullBody) >= 2 && fullBody[0] == 0x1F && fullBody[1] == 0x8B
 
-	slog.Info("nested zip not found, returning full original stream from buffer")
+	if isGzip {
+		// Extract zip data from tar+gz archive
+		data, found, err := extractDatabaseFromTar(bytes.NewReader(fullBody))
+		if err != nil {
+			slog.Error("error extracting from tar stream", "error", err)
+			return nil, err
+		}
+		if !found {
+			slog.Warn("tar archive read succeeded, but zip entry not found")
+			return nil, fmt.Errorf("zip file not found in tar archive")
+		} else {
+			return data, nil
+		}
+	}
+	// Treat input as raw zip file content
+	slog.Info("no gzip header found; assuming raw zip content")
 	return fullBody, nil
 }
 
