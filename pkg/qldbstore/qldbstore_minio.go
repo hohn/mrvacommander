@@ -14,7 +14,7 @@ import (
 
 // XX: static types: split by type?
 // Restrict the keys / values and centralize the common ones here
-const (
+var (
 	QL_DB_BUCKETNAME = "mrvabucket"
 )
 
@@ -23,11 +23,13 @@ type MinIOCodeQLDatabaseStore struct {
 	bucketName string
 }
 
-func NewMinIOCodeQLDatabaseStore(endpoint, id, secret string) (*MinIOCodeQLDatabaseStore, error) {
+func NewMinIOCodeQLDatabaseStore(endpoint, id, secret string,
+	lookup minio.BucketLookupType) (*MinIOCodeQLDatabaseStore, error) {
+
 	minioClient, err := minio.New(endpoint, &minio.Options{
 		Creds:        credentials.NewStaticV4(id, secret, ""),
 		Secure:       false,
-		BucketLookup: minio.BucketLookupDNS, // Enable virtual-host-style addressing
+		BucketLookup: lookup,
 	})
 	if err != nil {
 		return nil, err

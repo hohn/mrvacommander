@@ -8,7 +8,7 @@ import (
 
 // Restrict the keys / values for ArtifactLocation and centralize the common ones
 // here
-const (
+var (
 	AF_BUCKETNAME_RESULTS = "mrvabucket"
 	AF_BUCKETNAME_PACKS   = "mrvabucket"
 )

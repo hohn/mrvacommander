@@ -18,11 +18,11 @@ type MinIOArtifactStore struct {
 	client *minio.Client
 }
 
-func NewMinIOArtifactStore(endpoint, id, secret string) (*MinIOArtifactStore, error) {
+func NewMinIOArtifactStore(endpoint, id, secret string, lookup minio.BucketLookupType) (*MinIOArtifactStore, error) {
 	minioClient, err := minio.New(endpoint, &minio.Options{
 		Creds:        credentials.NewStaticV4(id, secret, ""),
 		Secure:       false,
-		BucketLookup: minio.BucketLookupDNS, // Enable virtual-host-style addressing
+		BucketLookup: lookup,
 	})
 	if err != nil {
 		return nil, err

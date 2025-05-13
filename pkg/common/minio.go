@@ -16,6 +16,7 @@ func CreateMinIOBucketIfNotExists(client *minio.Client, bucketName string) error
 	}
 
 	if !exists {
+		// if env.Get("MRVA_S3_PATHSTYLE") == "true" {}
 		slog.Info("Creating bucket", "name", bucketName)
 		err = client.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{})
 		if err != nil {
