@@ -1,0 +1,22 @@
+* tuple hashing functions across languages
+  There are three parallel implementations of a hash for every entry of a tuple
+  list.  The functions produce identical results across 3 languages and can be
+  used across agent / server / client.
+
+  #+BEGIN_SRC sh 
+    hohn@ghm3 ~/work-gh/mrva/mrvacommander/experimental/qldb-specification
+    0:$ node tuple-hash.js
+    [
+      '91b80a9933218ff5bc62df8ff71f1252',
+      'b0934b29293e91aefaac73c99fc75e94'
+    ]
+
+    hohn@ghm3 ~/work-gh/mrva/mrvacommander/experimental/qldb-specification
+    0:$ python3 tuple-hash.py
+    ['91b80a9933218ff5bc62df8ff71f1252', 'b0934b29293e91aefaac73c99fc75e94']
+
+    hohn@ghm3 ~/work-gh/mrva/mrvacommander/experimental/qldb-specification
+    0:$ go run tuple-hash.go
+    [91b80a9933218ff5bc62df8ff71f1252 b0934b29293e91aefaac73c99fc75e94]
+  #+END_SRC
+
