@@ -40,7 +40,8 @@ func (store *MinIOArtifactStore) GetQueryPack(location ArtifactLocation) ([]byte
 }
 
 func (store *MinIOArtifactStore) SaveQueryPack(jobId int, data []byte) (ArtifactLocation, error) {
-	return store.saveArtifact(AF_BUCKETNAME_PACKS, deriveKeyFromSessionId(jobId), data, "application/gzip")
+	key := fmt.Sprintf("%d", jobId)
+	return store.saveArtifact(AF_BUCKETNAME_PACKS, key, data, "application/gzip")
 }
 
 func (store *MinIOArtifactStore) GetResult(location ArtifactLocation) ([]byte, error) {
@@ -62,9 +63,9 @@ func (store *MinIOArtifactStore) GetResultSize(location ArtifactLocation) (int, 
 
 	return int(objectInfo.Size), nil
 }
-
 func (store *MinIOArtifactStore) SaveResult(jobSpec common.JobSpec, data []byte) (ArtifactLocation, error) {
-	return store.saveArtifact(AF_BUCKETNAME_RESULTS, deriveKeyFromJobSpec(jobSpec), data, "application/zip")
+	key := fmt.Sprintf("%d-%s", jobSpec.SessionID, jobSpec.NameWithOwner)
+	return store.saveArtifact(AF_BUCKETNAME_RESULTS, key, data, "application/zip")
 }
 
 func (store *MinIOArtifactStore) getArtifact(location ArtifactLocation) ([]byte, error) {

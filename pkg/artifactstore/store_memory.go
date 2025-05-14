@@ -2,8 +2,9 @@ package artifactstore
 
 import (
 	"fmt"
-	"github.com/hohn/mrvacommander/pkg/common"
 	"sync"
+
+	"github.com/hohn/mrvacommander/pkg/common"
 )
 
 // InMemoryArtifactStore is an in-memory implementation of the ArtifactStore interface
@@ -38,7 +39,7 @@ func (store *InMemoryArtifactStore) SaveQueryPack(sessionId int, data []byte) (A
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
-	key := deriveKeyFromSessionId(sessionId)
+	key := fmt.Sprintf("%d", sessionId)
 	store.packs[key] = data
 
 	location := ArtifactLocation{
@@ -79,7 +80,7 @@ func (store *InMemoryArtifactStore) SaveResult(jobSpec common.JobSpec, data []by
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
-	key := deriveKeyFromJobSpec(jobSpec)
+	key := fmt.Sprintf("%d-%s", jobSpec.SessionID, jobSpec.NameWithOwner)
 	store.results[key] = data
 
 	location := ArtifactLocation{
