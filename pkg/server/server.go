@@ -326,11 +326,13 @@ func (c *CommanderSingle) MRVAStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 // Download artifacts
-func (c *CommanderSingle) MRVADownloadArtifactCommon(w http.ResponseWriter, r *http.Request, jobRepoId int, jobSpec common.JobSpec) {
+func (c *CommanderSingle) MRVADownloadArtifactCommon(w http.ResponseWriter,
+	r *http.Request, jobRepoId int, jobSpec common.JobSpec) {
 	slog.Debug("MRVA artifact download",
 		"codeql_variant_analysis_id", jobSpec.SessionID,
 		"repo_owner", jobSpec.NameWithOwner.Owner,
 		"repo_name", jobSpec.NameWithOwner.Repo,
+		"jobRepoId", jobRepoId,
 	)
 
 	c.sendArtifactDownloadResponse(w, jobRepoId, jobSpec)
@@ -424,7 +426,8 @@ func (c *CommanderSingle) MRVADownloadArtifact(w http.ResponseWriter, r *http.Re
 	c.MRVADownloadArtifactCommon(w, r, -1, jobSpec)
 }
 
-func (c *CommanderSingle) sendArtifactDownloadResponse(w http.ResponseWriter, jobRepoId int, jobSpec common.JobSpec) {
+func (c *CommanderSingle) sendArtifactDownloadResponse(w http.ResponseWriter,
+	jobRepoId int, jobSpec common.JobSpec) {
 	var response common.DownloadResponse
 
 	slog.Debug("Forming download response", "job", jobSpec)
@@ -510,6 +513,8 @@ func (c *CommanderSingle) sendArtifactDownloadResponse(w http.ResponseWriter, jo
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	slog.Debug("MRVA: Sending download response", "responseJson", responseJson)
 
 	// Send analysisReposJSON via ResponseWriter
 	w.Header().Set("Content-Type", "application/json")
