@@ -1,0 +1,236 @@
+\documentclass[11pt]{article}
+
+% Load the geometry package to set margins
+\usepackage[lmargin=2cm,rmargin=2cm,tmargin=1.8cm,bmargin=1.8cm]{geometry}
+
+% increase nesting depth
+
+\usepackage{enumitem}
+\setlistdepth{9}
+% 
+\renewlist{itemize}{itemize}{9}
+\setlist[itemize,1]{label=\textbullet}
+\setlist[itemize,2]{label=--}
+\setlist[itemize,3]{label=*}
+\setlist[itemize,4]{label=•}
+\setlist[itemize,5]{label=–}
+\setlist[itemize,6]{label=>}
+\setlist[itemize,7]{label=»}
+\setlist[itemize,8]{label=›}
+\setlist[itemize,9]{label=·}
+%
+\renewlist{enumerate}{enumerate}{9}
+\setlist[enumerate,1]{label=\arabic*.,ref=\arabic*}
+\setlist[enumerate,2]{label=\alph*.),ref=\theenumi\alph*}
+\setlist[enumerate,3]{label=\roman*.),ref=\theenumii\roman*}
+\setlist[enumerate,4]{label=\Alph*.),ref=\theenumiii\Alph*}
+\setlist[enumerate,5]{label=\Roman*.),ref=\theenumiv\Roman*}
+\setlist[enumerate,6]{label=\arabic*),ref=\theenumv\arabic*}
+\setlist[enumerate,7]{label=\alph*),ref=\theenumvi\alph*}
+\setlist[enumerate,8]{label=\roman*),ref=\theenumvii\roman*}
+\setlist[enumerate,9]{label=\Alph*),ref=\theenumviii\Alph*}
+
+
+% Load CM Bright for math
+\usepackage{amsmath}  % Standard math package
+\usepackage{amssymb}  % Additional math symbols
+\usepackage{cmbright} % Sans-serif math font that complements Fira Sans
+
+\usepackage{fourier}
+
+% Font configuration
+% \usepackage{bera} 
+% or
+% Load Fira Sans for text
+\usepackage{fontspec}
+\setmainfont{Fira Sans}  % System-installed Fira Sans
+\renewcommand{\familydefault}{\sfdefault}  % Set sans-serif as default
+
+% pseudo-code with math
+\usepackage{listings}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{colortbl}
+% Set TT font
+% \usepackage{inconsolata}
+% or
+\setmonofont{IBMPlexMono-Light}
+% Define custom settings for listings
+\lstset{
+  language=Python,
+  basicstyle=\ttfamily\small,        % Monospaced font
+  commentstyle=\itshape\color{gray}, % Italic and gray for comments
+  keywordstyle=\color{blue},         % Keywords in blue
+  stringstyle=\color{red},           % Strings in red
+  mathescape=true,                   % Enable math in comments
+  breaklines=true,                   % Break long lines
+  numbers=left,                      % Add line numbers
+  numberstyle=\tiny\color{gray},     % Style for line numbers
+  frame=single,                      % Add a frame around the code
+}
+
+\usepackage{newfloat}  % Allows creating custom float types
+
+% Define 'listing' as a floating environment
+\DeclareFloatingEnvironment[
+fileext=lol,
+listname=List of Listings,
+name=Listing
+]{listing}
+
+% To prevent floats from moving past a section boundary but still allow some floating:
+\usepackage{placeins}
+% used with \FloatBarrier 
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+% Title, Author, and Date (or Report Number)
+\title{MRVA component interconnections}
+\author{Michael Hohn}
+\date{Technical Report 20250524}
+
+\hypersetup{
+  pdfauthor={Michael Hohn},
+  pdftitle={MRVA component interconnections},
+  pdfkeywords={},
+  pdfsubject={},
+  pdfcreator={Emacs 29.1},
+  pdflang={English}}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\section{Overview}
+\label{sec:overview}
+
+The MRVA system is organized as a collection of services. On the server side, the
+system is containerized using Docker and comprises several key components:
+
+
+\begin{itemize}
+\item {\textbf{Server}}: Acts as the central coordinator.
+\item \textbf{Agents}: One or more agents that execute tasks.
+\item \textbf{RabbitMQ}: Handles messaging between components.
+\item \textbf{MinIO}: Provides storage for both queries and results.
+\item \textbf{HEPC}: An HTTP endpoint that hosts and serves CodeQL databases.
+\end{itemize}
+
+The execution process follows a structured workflow:
+
+\begin{enumerate}
+\item A client submits a set of queries $\mathcal{Q}$ targeting a repository
+  set $\mathcal{R}$.
+\item The server enqueues jobs and distributes them to available agents.
+\item Each agent retrieves a job, executes queries against its assigned repository, and accumulates results.
+\item The agent sends results back to the server, which then forwards them to the client.
+\end{enumerate}
+
+This full round-trip can be expressed as:
+
+\begin{equation}
+  \text{Client} \xrightarrow{\mathcal{Q}} \text{Server}
+  \xrightarrow{\text{enqueue}} 
+  \text{Queue} \xrightarrow{\text{dispatch}} \text{Agent}
+  \xrightarrow{\mathcal{Q}(\mathcal{R}_i)}
+  \text{Server} \xrightarrow{\mathcal{Q}(\mathcal{R}_i} \text{Client}
+\end{equation}
+
+\section{Symbols and Notation}
+\label{sec:orgb695d5a}
+
+We define the following symbols for entities in the system:
+
+\begin{center}
+  \begin{tabular}{lll}
+    Concept                                                                       & Symbol                            & Description                                                         \\[0pt]
+    \hline
+    Client & \(C\)                             & The source of the query submission                                  \\[0pt]
+    Server                                                                        & \(S\)                             & Manages job queue and communicates results back to the client       \\[0pt]
+    Job Queue                                                                     & \(Q\)                             & Queue for managing submitted jobs                                   \\[0pt]
+    Agent                                                                         & \(\alpha\)                        & Independently polls, executes jobs, and accumulates results         \\[0pt]
+    Agent Set                                                                     & \(A\)                             & The set of all available agents                                     \\[0pt]
+    Query Suite                                                                   & \(\mathcal{Q}\)                   & Collection of queries submitted by the client                       \\[0pt]
+    Repository List                                                               & \(\mathcal{R}\)                   & Collection of repositories                                          \\[0pt]
+    \(i\)-th Repository                                                           & \(\mathcal{R}_i\)                 & Specific repository indexed by \(i\)                                \\[0pt]
+    \(j\)-th Query                                                                & \(\mathcal{Q}_j\)                 & Specific query from the suite indexed by \(j\)                      \\[0pt]
+    Query Result                                                                  & \(r_{i,j,k_{i,j}}\)               & \(k_{i,j}\)-th result from query \(j\) executed on repository \(i\) \\[0pt]
+    Query Result Set                                                              & \(\mathcal{R}_i^{\mathcal{Q}_j}\) & Set of all results for query \(j\) on repository \(i\)              \\[0pt]
+    Accumulated Results                                                           & \(\mathcal{R}_i^{\mathcal{Q}}\)   & All results from executing all queries on \(\mathcal{R}_i\)         \\[0pt]
+  \end{tabular}
+\end{center}
+
+
+\section{Full Round-Trip Representation}
+\label{sec:full-round-trip}
+The full round-trip execution, from query submission to result delivery, can be summarized as:
+
+\[
+  C \xrightarrow{\mathcal{Q}} S \xrightarrow{\text{enqueue}} Q
+  \xrightarrow{\text{poll}}
+  \alpha \xrightarrow{\mathcal{Q}(\mathcal{R}_i)} S \xrightarrow{\mathcal{R}_i^{\mathcal{Q}}} C
+\]
+
+\begin{itemize}
+\item \(C \to S\): Client submits a query suite \(\mathcal{Q}\) to the server.
+\item \(S \to Q\): Server enqueues the query suite \((\mathcal{Q}, \mathcal{R}_i)\) for each repository.
+\item \(Q \to \alpha\): Agent \(\alpha\) polls the queue and retrieves a job.
+\item \(\alpha \to S\): Agent executes the queries and returns the accumulated results \(\mathcal{R}_i^{\mathcal{Q}}\) to the server.
+\item \(S \to C\): Server sends the complete result set \(\mathcal{R}_i^{\mathcal{Q}}\) for each repository back to the client.
+\end{itemize}
+
+
+\section{Result Representation}
+
+For the complete collection of results across all repositories and queries:
+\[
+  \mathcal{R}^{\mathcal{Q}} = \bigcup_{i=1}^{N} \bigcup_{j=1}^{M}
+  \left\{ r_{i,j,1}, r_{i,j,2}, \dots, r_{i,j,k_{i,j}} \right\}
+\]
+
+where:
+\begin{itemize}
+\item \(N\) is the total number of repositories.
+\item \(M\) is the total number of queries in \(\mathcal{Q}\).
+\item \(k_{i,j}\) is the number of results from executing query
+  \(\mathcal{Q}_j\)
+  on repository \(\mathcal{R}_i\).
+\end{itemize}
+
+An individual result from the \(i\)-th repository, \(j\)-th query, and \(k\)-th result is:
+\[
+  r_{i,j,k}
+\]
+
+
+
+\[
+  C \xrightarrow{\mathcal{Q}} S \xrightarrow{\text{enqueue}} Q \xrightarrow{\text{dispatch}} \alpha \xrightarrow{\mathcal{Q}(\mathcal{R}_i)} S \xrightarrow{r_{i,j}} C
+\]
+
+Each result can be further indexed to track multiple repositories and result sets.
+
+
+
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: nil
+%%% TeX-engine: luatex
+%%% TeX-command-extra-options: "-synctex=1 -shell-escape -interaction=nonstopmode"
+%%% End:
