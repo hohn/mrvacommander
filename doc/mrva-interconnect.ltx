@@ -224,6 +224,101 @@ An individual result from the \(i\)-th repository, \(j\)-th query, and \(k\)-th 
 Each result can be further indexed to track multiple repositories and result sets.
 
 
+\section{Graph Extraction from Log Table}
+
+Assume we have a structured event log represented as a set of tuples.
+
+\subsection*{Event Log Structure}
+
+Let
+\[
+\mathcal{T} = \{ t_1, t_2, \dots, t_n \}
+\]
+be the set of all events, where each event
+\[
+t_i = (\mathit{id}_i, \tau_i, a_i, e_i, q_i, r_i, c_i)
+\]
+consists of:
+\begin{itemize}
+  \item \(\mathit{id}_i\): unique event ID
+  \item \(\tau_i\): timestamp
+  \item \(a_i\): actor (e.g., ``agent\_alpha1'')
+  \item \(e_i\): event type (e.g., ``enqueue'', ``execute'')
+  \item \(q_i\): query ID
+  \item \(r_i\): repository ID
+  \item \(c_i\): result count (may be \(\bot\) if not applicable)
+\end{itemize}
+
+Let
+\[
+\mathcal{G} = (V, E)
+\]
+be a directed graph constructed from \(\mathcal{T}\), with vertices \(V\) and edges \(E\).
+
+\subsection*{Graph Definition}
+
+\begin{align*}
+V &= \{ \mathit{id}_i \mid t_i \in \mathcal{T} \} \\
+E &\subseteq V \times V
+\end{align*}
+
+Edges capture temporal or semantic relationships between events.
+
+\subsection*{Construction Steps}
+
+\paragraph{1. Partition by Job Identity}
+Define the set of job identifiers:
+\[
+J = \{ (q, r) \mid \exists i: q_i = q \land r_i = r \}
+\]
+Then for each \((q, r) \in J\), define:
+\[
+\mathcal{T}_{q,r} = \{ t_i \in \mathcal{T} \mid q_i = q \land r_i = r \}
+\]
+
+\paragraph{2. Sort by Time}
+Order each \(\mathcal{T}_{q,r}\) as a list:
+\[
+\mathcal{T}_{q,r} = [ t_{i_1}, t_{i_2}, \dots, t_{i_k} ]
+\quad \text{such that } \tau_{i_j} < \tau_{i_{j+1}}
+\]
+
+\paragraph{3. Causal Edges}
+Define within-job edges:
+\[
+E_{q,r} = \{ (\mathit{id}_{i_j}, \mathit{id}_{i_{j+1}}) \mid 1 \leq j < k \}
+\]
+
+\paragraph{4. Global Causal Graph}
+Take the union:
+\[
+E_{\text{causal}} = \bigcup_{(q, r) \in J} E_{q,r}
+\]
+
+\paragraph{5. Semantic Edges (Optional)}
+Define semantic predicates such as:
+\[
+\mathsf{pulls}(i, j) \iff e_i = \text{enqueue} \land e_j = \text{pull} \land
+q_i = q_j \land r_i = r_j \land \tau_i < \tau_j \land a_i = \text{server} \land a_j = \text{agent}
+\]
+Then:
+\[
+E_{\text{semantic}} = \{ (\mathit{id}_i, \mathit{id}_j) \mid \mathsf{pulls}(i, j) \}
+\]
+
+\subsection*{Final Graph}
+
+\begin{align*}
+V &= \{ \mathit{id}_i \mid t_i \in \mathcal{T} \} \\
+E &= E_{\text{causal}} \cup E_{\text{semantic}}
+\end{align*}
+
+\subsection*{Notes}
+\begin{itemize}
+  \item This construction is generic: the log store \(\mathcal{T}\) may come from a database, file, or tuple-indexed dictionary.
+  \item Each semantic edge rule corresponds to a logical filter/join over \(\mathcal{T}\).
+  \item The construction is schema-free on the graph side and can be recomputed on demand with different edge logic.
+\end{itemize}
 
 
 \end{document}
