@@ -233,6 +233,15 @@ func (h *HepcStore) FindAvailableDBs(analysisReposRequested []common.NameWithOwn
 }
 
 func extractDatabaseFromTar(tarStream io.Reader) ([]byte, bool, error) {
+	/*
+	   Input: tarStream ∈ GZIP(TAR(Files))
+
+	   Find f ∈ Files | name(f) = "artifacts/codeql_database.zip"
+
+	   if ∃ f → (bytes(f), true, nil)
+	   if ¬∃ f → (nil, false, nil)
+	   if error  → (nil, false, error)
+	*/
 	gzReader, err := gzip.NewReader(tarStream)
 	if err != nil {
 		slog.Error("failed to open gzip stream", "error", err)
