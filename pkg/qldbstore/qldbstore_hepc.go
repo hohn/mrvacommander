@@ -51,6 +51,14 @@ func NewHepcStore(endpoint string) *HepcStore {
 }
 
 func getMetaCacheDuration() time.Duration {
+	/*
+	   Input:
+	       env("MRVA_HEPC_CACHE_DURATION") = s
+
+	   if s = "" ∨ s ∉ int →  defaultCacheDurationMinutes × time.Minute
+
+	   else → int(s) × time.Minute
+	*/
 	durationStr := os.Getenv("MRVA_HEPC_CACHE_DURATION")
 	if durationStr == "" {
 		return time.Minute * defaultCacheDurationMinutes
@@ -66,6 +74,25 @@ func getMetaCacheDuration() time.Duration {
 }
 
 func (h *HepcStore) fetchViaHTTP() ([]HepcResult, error) {
+	/*
+	   Input:
+	       h.Endpoint = baseURL
+	       url := baseURL + "/index"
+
+	   Do:
+	       HTTP GET url → resp
+
+	   Require:
+	       resp.StatusCode = 200
+
+	   Then:
+	       decode resp.Body as stream of HepcResult
+
+	   Output:
+	       if success → (results, nil)
+	       if net/http/json error → (nil, error)
+	*/
+
 	url := fmt.Sprintf("%s/index", h.Endpoint)
 	resp, err := http.Get(url)
 	if err != nil {
@@ -94,7 +121,36 @@ func (h *HepcStore) fetchViaHTTP() ([]HepcResult, error) {
 
 	return results, nil
 }
+
 func (h *HepcStore) fetchViaCli() ([]HepcResult, error) {
+	/*
+	   Inputs:
+	       env("MRVA_HEPC_OUTDIR") = outDir
+	       env("MRVA_HEPC_TOOL")   = toolName
+
+	   Require:
+	       outDir ≠ "" ∧ toolName ≠ ""
+	       (expand ~ in outDir)
+	       mkdir(outDir)
+
+	   Let:
+	       jsonPath := outDir / "spigot-results.json"
+
+	   Do:
+	       run:
+	         spigot-cli bulk-download-results
+	           --tool-name toolName
+	           --metadata-only all
+	         > jsonPath
+
+	   Then:
+	       decode jsonPath as JSON array or stream of HepcResult
+
+	   Output:
+	       if success → (results, nil)
+	       if env/exec/json error → (nil, error)
+	*/
+
 	outDir := os.Getenv("MRVA_HEPC_OUTDIR")
 	toolName := os.Getenv("MRVA_HEPC_TOOL")
 
@@ -197,6 +253,28 @@ func (h *HepcStore) fetchMetadata() ([]HepcResult, error) {
 func (h *HepcStore) FindAvailableDBs(analysisReposRequested []common.NameWithOwner) (
 	notFoundRepos []common.NameWithOwner,
 	foundRepos []common.NameWithOwner) {
+	/*
+	   Input:
+	       analysisReposRequested : List[Repo]
+	       h.metadataCache        : List[HepcResult]
+	       h.cacheLastUpdated     : Time
+	       h.cacheDuration        : Duration
+
+	   If time.Now() − h.cacheLastUpdated > h.cacheDuration:
+	       h.metadataCache := fetchMetadata()    // or return (requested, nil) on error
+	       h.cacheLastUpdated := time.Now()
+
+	   Let:
+	       repoSet := { r.Projname | r ∈ h.metadataCache }
+
+	   Partition:
+	       analysisReposRequested into:
+	           foundRepos     = { r ∈ requested | r ∈ repoSet }
+	           notFoundRepos  = { r ∈ requested | r ∉ repoSet }
+
+	   Output:
+	       (notFoundRepos, foundRepos)
+	*/
 
 	// Check cache
 	h.cacheMutex.Lock()
@@ -275,6 +353,41 @@ func extractDatabaseFromTar(tarStream io.Reader) ([]byte, bool, error) {
 }
 
 func (h *HepcStore) GetDatabase(location common.NameWithOwner) ([]byte, error) {
+	/*
+	   Input:
+	       location = (owner, repo)
+	       key := owner + "/" + repo
+
+	   Step 1 — Ensure metadata cache:
+	       if now − h.cacheLastUpdated > h.cacheDuration:
+	           h.metadataCache := fetchMetadata()
+	           h.cacheLastUpdated := now
+	       else:
+	           use h.metadataCache
+
+	       if fetchMetadata fails → (nil, error)
+
+	   Step 2 — Lookup URL:
+	       if ∃ r ∈ h.metadataCache | r.Projname = key → resultURL := r.ResultURL
+	       if ¬∃ r → return (nil, "not found")
+
+	   Step 3 — Download:
+	       GET replaceHepcURL(resultURL) → resp
+	       if status ≠ 200 → (nil, "bad HTTP")
+
+	       body := ReadAll(resp.Body)
+	       if error → return (nil, error)
+
+	   Step 4 — Detect + Decode:
+	       if hasGzipHeader(body):
+	           extractDatabaseFromTar(body) → (data, found, err)
+	           if err     → (nil, err)
+	           if ¬found → (nil, "zip not found")
+	           → (data, nil)
+	       else:
+	           → (body, nil)
+	*/
+
 	h.cacheMutex.Lock()
 	if time.Since(h.cacheLastUpdated) > h.cacheDuration {
 		results, err := h.fetchMetadata()
