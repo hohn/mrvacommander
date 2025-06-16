@@ -102,51 +102,6 @@ func InitMinIOArtifactStore() (artifactstore.Store, error) {
 	return store, nil
 
 }
-
-func InitMinIOCodeQLDatabaseStore() (qldbstore.Store, error) {
-	requiredEnvVars := []string{
-		"QLDB_MINIO_ENDPOINT",
-		"QLDB_MINIO_ID",
-		"QLDB_MINIO_SECRET",
-		"MRVA_MINIO_VIRTUAL_HOST",
-	}
-	validateEnvVars(requiredEnvVars)
-
-	endpoint := os.Getenv("QLDB_MINIO_ENDPOINT")
-	id := os.Getenv("QLDB_MINIO_ID")
-	secret := os.Getenv("QLDB_MINIO_SECRET")
-	useVirtual := os.Getenv("MRVA_MINIO_VIRTUAL_HOST") == "1"
-
-	var lookup minio.BucketLookupType
-	var bucketName string
-
-	if useVirtual {
-		parsedURL, err := url.Parse(endpoint)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse QLDB_MINIO_ENDPOINT: %w", err)
-		}
-		hostParts := strings.Split(parsedURL.Hostname(), ".")
-		if len(hostParts) < 2 {
-			return nil, fmt.Errorf("unable to extract bucket from host: %s", parsedURL.Hostname())
-		}
-		bucketName = hostParts[0]
-		lookup = minio.BucketLookupDNS
-	} else {
-		bucketName = "mrvabucket"
-		lookup = minio.BucketLookupPath
-	}
-
-	// TODO: unify into one. clean up state handling.
-	qldbstore.QL_DB_BUCKETNAME = bucketName
-
-	store, err := qldbstore.NewMinIOCodeQLDatabaseStore(endpoint, id, secret, lookup)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize ql database storage: %v", err)
-	}
-
-	return store, nil
-}
-
 func InitHEPCDatabaseStore() (qldbstore.Store, error) {
 	requiredEnvVars := []string{
 		"MRVA_HEPC_ENDPOINT",

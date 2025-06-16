@@ -126,33 +126,44 @@ func (q *RabbitMQQueue) Close() {
 }
 
 func (q *RabbitMQQueue) ConsumeJobs(queueName string) {
-	autoAck := false
-	msgs, err := q.channel.Consume(queueName, "", autoAck, false, false, false, nil)
+	const pollInterval = 5 * time.Second
 
-	if err != nil {
-		slog.Error("failed to consume from queue", slog.Any("error", err))
-	}
+	// | scenario          | result                                |
+	// |-------------------+---------------------------------------|
+	// | Queue is empty    | msg = zero, ok = false, err = nil     |
+	// | Queue has message | msg = valid, ok = true, err = nil     |
+	// | Connection lost   | msg = zero, ok = false, err = non-nil |
 
-	for msg := range msgs {
-		// Process message
-		job := AnalyzeJob{}
-		err := json.Unmarshal(msg.Body, &job)
+	for {
+		msg, ok, err := q.channel.Get(queueName, false) // false = manual ack
 		if err != nil {
-			slog.Error("failed to unmarshal job", slog.Any("error", err))
+			slog.Error("polling error while getting job", slog.Any("error", err))
+			time.Sleep(pollInterval)
 			continue
 		}
+
+		if !ok {
+			// No message in queue
+			time.Sleep(pollInterval)
+			continue
+		}
+
+		var job AnalyzeJob
+		if err := json.Unmarshal(msg.Body, &job); err != nil {
+			slog.Error("failed to unmarshal job", slog.Any("error", err))
+			_ = msg.Nack(false, false) // do not requeue
+			continue
+		}
+
+		// Send job to channel for processing
 		q.jobs <- job
 
-		// Acknowledge the message after successful processing
-		err = msg.Ack(false)
-		if err != nil {
-			slog.Error("Failed to acknowledge job consumption message",
-				slog.Any("error", err))
+		// Acknowledge successful processing
+		if err := msg.Ack(false); err != nil {
+			slog.Error("failed to ack job message", slog.Any("error", err))
 			continue
 		}
-
 	}
-	close(q.jobs)
 }
 
 func (q *RabbitMQQueue) PublishResults(queueName string) {
@@ -247,30 +258,31 @@ func (q *RabbitMQQueue) PublishJobs(queueName string) {
 }
 
 func (q *RabbitMQQueue) ConsumeResults(queueName string) {
-	autoAck := false
-	msgs, err := q.channel.Consume(queueName, "", autoAck, false, false, false, nil)
-	if err != nil {
-		slog.Error("failed to register a consumer", slog.Any("error", err))
-	}
+	autoAck := false // false = manual ack
+	sleepFor := 5    // polling interval
 
-	for msg := range msgs {
-		// Process message
-		result := AnalyzeResult{}
-		err := json.Unmarshal(msg.Body, &result)
+	for {
+		msg, ok, err := q.channel.Get(queueName, autoAck)
 		if err != nil {
-			slog.Error("failed to unmarshal result", slog.Any("error", err))
+			slog.Error("poll error", slog.Any("err", err))
+			time.Sleep(time.Duration(sleepFor) * time.Second)
 			continue
 		}
+		if !ok {
+			// no message
+			time.Sleep(time.Duration(sleepFor) * time.Second)
+			continue
+		}
+
+		var result AnalyzeResult
+		if err := json.Unmarshal(msg.Body, &result); err != nil {
+			slog.Error("unmarshal error", slog.Any("err", err))
+			_ = msg.Nack(false, false) // finish .Get() with nack
+			continue
+		}
+
 		q.results <- result
-
-		// Acknowledge the message after successful processing
-		err = msg.Ack(false)
-		if err != nil {
-			slog.Error("Failed to acknowledge result consumption message",
-				slog.Any("error", err))
-			continue
-		}
-
+		_ = msg.Ack(false) // finish .Get() with nack
 	}
-	close(q.results)
+
 }
