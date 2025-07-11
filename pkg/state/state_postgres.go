@@ -255,6 +255,22 @@ func (s *PGState) SetStatus(js common.JobSpec, status common.Status) {
 	}
 }
 
+func (s *PGState) GetStatus(js common.JobSpec) (common.Status, error) {
+	ctx := context.Background()
+
+	var status int
+	err := s.pool.QueryRow(ctx, `
+		SELECT status
+		FROM job_status
+		WHERE session_id = $1 AND owner = $2 AND repo = $3
+	`, js.SessionID, js.Owner, js.Repo).Scan(&status)
+	if err != nil {
+		return 0, err // caller must interpret not-found vs. real error
+	}
+
+	return common.Status(status), nil
+}
+
 func (s *PGState) AddJob(job queue.AnalyzeJob) {
 	ctx := context.Background()
 	js := job.Spec
