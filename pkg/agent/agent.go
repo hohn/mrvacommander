@@ -124,7 +124,15 @@ func RunAnalysisJob(
 
 	databaseData, err := dbs.GetDatabase(job.Spec.NameWithOwner)
 	if err != nil {
-		return result, fmt.Errorf("failed to get database: %w", err)
+		slog.Error("Failed to get database",
+			slog.String("owner", job.Spec.Owner),
+			slog.String("repo", job.Spec.Repo),
+			slog.Int("session_id", job.Spec.SessionID),
+			slog.String("operation", "GetDatabase"),
+			slog.Any("error", err),
+		)
+		return result, fmt.Errorf("failed to get database for %s/%s: %w",
+			job.Spec.Owner, job.Spec.Repo, err)
 	}
 
 	// Write the CodeQL database data to the filesystem

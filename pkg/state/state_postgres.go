@@ -17,25 +17,52 @@ type PGState struct {
 	pool *pgxpool.Pool
 }
 
-// ----- Create a new PGState, reading connection info from env vars
+func validateEnvVars(requiredEnvVars []string) {
+	missing := false
+
+	for _, envVar := range requiredEnvVars {
+		if _, ok := os.LookupEnv(envVar); !ok {
+			slog.Error("Missing required environment variable", "key", envVar)
+			missing = true
+		}
+	}
+
+	if missing {
+		os.Exit(1)
+	}
+}
+
 func NewPGState() *PGState {
 	ctx := context.Background()
 
-	// Get connection URL from environment (standard: PGHOST, PGPORT, etc.)
-	dbURL := os.Getenv("DATABASE_URL") // canonical way: use DATABASE_URL
-	if dbURL == "" {
-		slog.Error("DATABASE_URL environment variable must be set")
-		os.Exit(1)
+	required := []string{
+		"POSTGRES_USER",
+		"POSTGRES_PASSWORD",
+		"POSTGRES_DB",
+		// Host & port may be omitted if you rely on Docker DNS, but list
+		// them here to make the requirement explicit:
+		"POSTGRES_HOST",
+		"POSTGRES_PORT",
 	}
 
-	// Create a pool config
+	validateEnvVars(required)
+
+	// Assemble from vars
+	user := os.Getenv("POSTGRES_USER")
+	pass := os.Getenv("POSTGRES_PASSWORD")
+	host := os.Getenv("POSTGRES_HOST")
+	port := os.Getenv("POSTGRES_PORT")
+	db := os.Getenv("POSTGRES_DB")
+
+	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", user, pass, host, port, db)
+	slog.Info("Assembled Postgres connection URL from POSTGRES_* variables", "url", dbURL)
+
 	config, err := pgxpool.ParseConfig(dbURL)
 	if err != nil {
-		slog.Error("Failed to parse DATABASE_URL", "error", err)
+		slog.Error("Failed to parse connection URL", "url", dbURL, "error", err)
 		os.Exit(1)
 	}
 
-	// Optionally set pool tuning here
 	config.MaxConns = 10
 
 	pool, err := pgxpool.NewWithConfig(ctx, config)
@@ -46,7 +73,6 @@ func NewPGState() *PGState {
 
 	slog.Info("Connected to Postgres", "max_conns", config.MaxConns)
 
-	// schema initialization
 	SetupSchemas(pool)
 
 	return &PGState{pool: pool}
