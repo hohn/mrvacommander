@@ -321,9 +321,7 @@ func (s *PGState) AddJob(job queue.AnalyzeJob) {
 	// 2. determine next job_repo_id for this session ------------
 	var nextID int
 	err = s.pool.QueryRow(ctx, `
-		SELECT COALESCE(MAX(job_repo_id)+1, 0)
-		FROM job_repo_map
-		WHERE session_id = $1
+	   	SELECT COUNT(*) FROM job_repo_map WHERE session_id = $1
 	`, js.SessionID).Scan(&nextID)
 	if err != nil {
 		slog.Error("AddJob: lookup next job_repo_id failed", "session", js.SessionID, "error", err)
