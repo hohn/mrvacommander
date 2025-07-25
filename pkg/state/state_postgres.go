@@ -385,8 +385,11 @@ func (s *PGState) GetJobList(sessionId int) ([]queue.AnalyzeJob, error) {
 	ctx := context.Background()
 
 	rows, err := s.pool.Query(ctx, `
-		SELECT payload FROM analyze_jobs
-		WHERE session_id = $1
+		SELECT aj.payload FROM analyze_jobs aj
+		JOIN job_repo_map jrm ON aj.session_id = jrm.session_id 
+		    AND aj.owner = jrm.owner AND aj.repo = jrm.repo
+		WHERE aj.session_id = $1
+		ORDER BY jrm.job_repo_id
 	`, sessionId)
 	if err != nil {
 		return nil, err
