@@ -118,7 +118,7 @@ func SetupSchemas(pool *pgxpool.Pool) {
 					seq_name := 'job_repo_id_seq_' || session_id_param;
 					
 					-- Create sequence if it doesn't exist
-					EXECUTE format('CREATE SEQUENCE IF NOT EXISTS %I START 0', seq_name);
+					EXECUTE format('CREATE SEQUENCE IF NOT EXISTS %I START 1', seq_name);
 					
 					-- Get next value from the sequence
 					EXECUTE format('SELECT nextval(%L)', seq_name) INTO next_id;
@@ -356,7 +356,7 @@ func (s *PGState) AddJob(job queue.AnalyzeJob) {
 		SELECT get_next_job_repo_id($1)
 	`, js.SessionID).Scan(&nextID)
 	if err != nil {
-		slog.Error("AddJob: get_next_job_repo_id failed", "session", js.SessionID, "error", err)
+		slog.Error("AddJob: get_next_job_repo_id failed", "session", js.SessionID, "error", err) /* XX: hit here */
 		panic("AddJob(): " + err.Error())
 	}
 
