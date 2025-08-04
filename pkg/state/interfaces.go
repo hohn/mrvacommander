@@ -18,6 +18,9 @@ type ServerState interface {
 	// TODO: fix this hacky logic
 	GetJobSpecByRepoId(sessionId int, jobRepoId int) (common.JobSpec, error)
 
+	// The repo id is uniquely determined by NameWithOwner
+	GetRepoId(owner common.NameWithOwner) int
+
 	// SetResult stores the analysis result for the specified session ID and repository.
 	SetResult(js common.JobSpec, ar queue.AnalyzeResult)
 

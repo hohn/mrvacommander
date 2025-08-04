@@ -3,14 +3,12 @@ package state
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 
 	"github.com/hohn/mrvacommander/pkg/common"
 	"github.com/hohn/mrvacommander/pkg/queue"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -297,89 +295,26 @@ func (s *PGState) GetStatus(js common.JobSpec) (common.Status, error) {
 	return common.Status(status), nil
 }
 
-func (s *PGState) BijectJobRepo(
-	ctx context.Context,
-	owner *string,
-	repo *string,
-	jobRepoID *int,
-) error {
-	switch {
+// GetRepoId returns a stable unique ID for a given (owner, repo).
+// If the pair doesn't exist, it is inserted atomically.
+func (s *PGState) GetRepoId(cno common.NameWithOwner) int {
+	ctx := context.Background()
 
-	case owner != nil && repo != nil && jobRepoID != nil:
-		// Try reverse lookup
-		var gotOwner, gotRepo string
-		err := s.pool.QueryRow(ctx,
-			`SELECT owner, repo FROM job_repo_map WHERE job_repo_id = $1`,
-			*jobRepoID).Scan(&gotOwner, &gotRepo)
+	var jobRepoID int
 
-		if err == nil {
-			// Entry exists — check consistency
-			if gotOwner != *owner || gotRepo != *repo {
-				slog.Error("BijectJobRepo: ID-to-(owner,repo) mismatch",
-					"job_repo_id", *jobRepoID,
-					"expected_owner", gotOwner,
-					"expected_repo", gotRepo,
-					"given_owner", *owner,
-					"given_repo", *repo)
-				return fmt.Errorf("BijectJobRepo mismatch: (%s, %s) ≠ (%s, %s)", *owner, *repo, gotOwner, gotRepo)
-			}
-			return nil
-		}
-
-		// If not found, insert (owner, repo) and get correct job_repo_id
-		if errors.Is(err, pgx.ErrNoRows) {
-			slog.Info("BijectJobRepo: entry missing, inserting new mapping",
-				"owner", *owner, "repo", *repo)
-
-			return s.pool.QueryRow(ctx, `
+	err := s.pool.QueryRow(ctx, `
 			INSERT INTO job_repo_map (owner, repo)
 			VALUES ($1, $2)
 			ON CONFLICT (owner, repo) DO UPDATE SET owner = EXCLUDED.owner
 			RETURNING job_repo_id
-		`, *owner, *repo).Scan(jobRepoID)
-		}
-
-		// Some other DB error
-		slog.Error("BijectJobRepo: reverse lookup failed",
-			"job_repo_id", *jobRepoID,
-			"error", err)
-		return fmt.Errorf("reverse lookup failed: %w", err)
-
-	case owner != nil && repo != nil:
-		// Forward insert or lookup
-		err := s.pool.QueryRow(ctx, `
-			INSERT INTO job_repo_map (owner, repo)
-			VALUES ($1, $2)
-			ON CONFLICT (owner, repo) DO UPDATE SET owner = EXCLUDED.owner
-			RETURNING job_repo_id
-		`, *owner, *repo).Scan(jobRepoID)
-		if err != nil {
-			slog.Error("BijectJobRepo: insert/lookup failed",
-				"owner", *owner,
-				"repo", *repo,
-				"error", err)
-			return err
-		}
-		return nil
-
-	case jobRepoID != nil:
-		// Reverse lookup
-		err := s.pool.QueryRow(ctx, `
-			SELECT owner, repo FROM job_repo_map WHERE job_repo_id = $1
-		`, *jobRepoID).Scan(owner, repo)
-		if err != nil {
-			slog.Error("BijectJobRepo: reverse lookup failed",
-				"job_repo_id", *jobRepoID,
-				"error", err)
-			return err
-		}
-		return nil
-
-	default:
-		err := fmt.Errorf("BijectJobRepo: at least one of (owner, repo) or jobRepoID must be non-nil")
-		slog.Error("BijectJobRepo: bad call", "error", err)
-		return err
+		`, cno.Owner, cno.Repo).Scan(&jobRepoID)
+	if err != nil {
+		slog.Error("GetRepoId failed", "NameWithOwner", cno, "error", err)
+		panic("GetRepoId: " + err.Error())
 	}
+
+	return jobRepoID
+
 }
 
 func (s *PGState) AddJob(job queue.AnalyzeJob) {
@@ -412,12 +347,7 @@ func (s *PGState) AddJob(job queue.AnalyzeJob) {
 	}
 
 	// 2. Get job_repo_id
-	var jobRepoID int
-	err = s.BijectJobRepo(ctx, &js.Owner, &js.Repo, &jobRepoID)
-	if err != nil {
-		slog.Error("BijectJobRepo failed", "jobspec", js, "error", err)
-		panic("BijectJobRepo: " + err.Error())
-	}
+	jobRepoID := s.GetRepoId(job.Spec.NameWithOwner)
 
 	// Commit the transaction
 	if err = tx.Commit(ctx); err != nil {

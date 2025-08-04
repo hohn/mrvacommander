@@ -176,9 +176,8 @@ func (c *CommanderSingle) submitStatusResponse(w http.ResponseWriter, js common.
 	}
 
 	// Loop through all jobs under the same session id
-	// The jobRepoId from the range should now match the stored job_repo_id
-	// due to the ORDER BY job_repo_id in GetJobList()
-	for jobRepoId, job := range jobs {
+	//  fix
+	for _, job := range jobs {
 
 		// Get the job status
 		status, err := c.v.State.GetStatus(job.Spec)
@@ -211,6 +210,8 @@ func (c *CommanderSingle) submitStatusResponse(w http.ResponseWriter, js common.
 			}
 			resultCount = jobResult.ResultCount
 		}
+		// Get jobRepoID from (owner,repo)
+		jobRepoId := c.v.State.GetRepoId(job.Spec.NameWithOwner)
 
 		// Append all scanned (complete and incomplete) repos to the response
 		scannedRepos = append(scannedRepos,
