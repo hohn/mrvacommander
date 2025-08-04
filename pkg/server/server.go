@@ -179,20 +179,7 @@ func (c *CommanderSingle) submitStatusResponse(w http.ResponseWriter, js common.
 	// The jobRepoId from the range should now match the stored job_repo_id
 	// due to the ORDER BY job_repo_id in GetJobList()
 	for jobRepoId, job := range jobs {
-		// Validate that the slice index matches the expected repo ID
-		// This helps catch ordering issues between different state implementations
-		if expectedJobSpec, err := c.v.State.GetJobSpecByRepoId(js.SessionID, jobRepoId); err != nil {
-			slog.Warn("Job repo ID validation failed", 
-				"sessionId", js.SessionID, 
-				"jobRepoId", jobRepoId, 
-				"error", err)
-		} else if expectedJobSpec.Owner != job.Spec.Owner || expectedJobSpec.Repo != job.Spec.Repo {
-			slog.Error("Job repo ID mismatch detected", 
-				"sessionId", js.SessionID,
-				"jobRepoId", jobRepoId,
-				"expected", expectedJobSpec.NameWithOwner,
-				"actual", job.Spec.NameWithOwner)
-		}
+
 		// Get the job status
 		status, err := c.v.State.GetStatus(job.Spec)
 		if err != nil {
