@@ -1,0 +1,128 @@
+* system structure
+   #+BEGIN_SRC dot :file dwg-r2.svg :cmdline -Kdot -Tsvg
+     digraph MRVA_Containers {
+         rankdir=LR;
+         node [shape=plaintext fontname="Helvetica"];
+         edge [arrowsize=0.5];
+
+         // Title
+         label="Container Dependencies for MRVA";
+         labelloc=top;
+         fontsize=20;
+         fontname="Helvetica";
+
+         // mrvastore-init
+         mrvastore_init [
+             shape=plaintext
+             label=<
+             <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+             <tr><td bgcolor="lightblue"><b>mrvastore-init</b></td></tr>
+             <tr><td align="left"><font point-size="10">Image: minio/mc</font></td></tr>
+             </table>
+             >
+         ];
+
+         // mrvastore
+         mrvastore [
+             shape=plaintext
+             label=<
+             <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+             <tr><td bgcolor="lightblue"><b>mrvastore</b></td></tr>
+             <tr><td align="left"><font point-size="10">Image: minio/minio:RELEASE.2024-06-11T03-13-30Z</font></td></tr>
+             </table>
+             >
+         ];
+
+         // client-ghmrva
+         client_ghmrva [
+             shape=plaintext
+             label=<
+             <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+             <tr><td bgcolor="lightblue"><b>client-ghmrva</b></td></tr>
+             <tr><td align="left"><font point-size="10">Image: client-ghmrva-container:0.4.0</font></td></tr>
+             </table>
+             >
+         ];
+
+         // code-server
+         code_server [
+             shape=plaintext
+             label=<
+             <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+             <tr><td bgcolor="lightblue"><b>code-server</b></td></tr>
+             <tr><td align="left"><font point-size="10">Image: code-server-initialized:0.4.0</font></td></tr>
+             </table>
+             >
+         ];
+
+         // hepc
+         hepc [
+             shape=plaintext
+             label=<
+             <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+             <tr><td bgcolor="lightblue"><b>hepc</b></td></tr>
+             <tr><td align="left"><font point-size="10">Image: mrva-hepc-container:0.4.0</font></td></tr>
+             </table>
+             >
+         ];
+
+         // rabbitmq
+         rabbitmq [
+             shape=plaintext
+             label=<
+             <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+             <tr><td bgcolor="lightblue"><b>rabbitmq</b></td></tr>
+             <tr><td align="left"><font point-size="10">Image: rabbitmq:3-management</font></td></tr>
+             </table>
+             >
+         ];
+
+         // server
+         server [
+             shape=plaintext
+             label=<
+             <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+             <tr><td bgcolor="lightblue"><b>server</b></td></tr>
+             <tr><td align="left"><font point-size="10">Image: mrva-server:0.4.0</font></td></tr>
+             <tr><td port="slot1"></td></tr>
+             <tr><td port="slot2"></td></tr>
+             <tr><td port="slot3"></td></tr>
+             </table>
+             >
+         ];
+
+         // postgres
+         postgres [
+             shape=plaintext
+             label=<
+             <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+             <tr><td bgcolor="lightblue"><b>postgres</b></td></tr>
+             <tr><td align="left"><font point-size="10">Image: postgres:15</font></td></tr>
+             </table>
+             >
+         ];
+
+         // agent
+         agent [
+             shape=plaintext
+             label=<
+             <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+             <tr><td bgcolor="lightblue"><b>agent</b></td></tr>
+             <tr><td align="left"><font point-size="10">Image: mrva-agent:0.4.0</font></td></tr>
+             </table>
+             >
+         ];
+
+         // Edges (dependencies)
+         mrvastore_init -> mrvastore;
+         server -> rabbitmq;
+         server -> mrvastore;
+         server -> postgres;
+         server -> hepc;
+         agent -> rabbitmq;
+         agent -> mrvastore;
+         agent -> hepc;
+         code_server -> server;
+         client_ghmrva -> server;
+     }
+   #+END_SRC
