@@ -41,3 +41,8 @@ type JobSpec struct {
 	SessionID int
 	NameWithOwner
 }
+
+type StatusSummary struct {
+	Overall Status
+	Counts  map[Status]int
+}

@@ -279,20 +279,68 @@ func (s *PGState) SetStatus(js common.JobSpec, status common.Status) {
 	}
 }
 
-func (s *PGState) GetStatus(js common.JobSpec) (common.Status, error) {
+func (s *PGState) GetSessionStatus(sessionID int) (common.StatusSummary, error) {
 	ctx := context.Background()
 
-	var status int
-	err := s.pool.QueryRow(ctx, `
-		SELECT status
-		FROM job_status
-		WHERE session_id = $1 AND owner = $2 AND repo = $3
-	`, js.SessionID, js.Owner, js.Repo).Scan(&status)
+	rows, err := s.pool.Query(ctx, `
+        SELECT status
+        FROM job_status
+        WHERE session_id = $1
+    `, sessionID)
 	if err != nil {
-		return 0, err // caller must interpret not-found vs. real error
+		return common.StatusSummary{}, err
+	}
+	defer rows.Close()
+
+	counts := map[common.Status]int{
+		common.StatusPending:    0,
+		common.StatusInProgress: 0,
+		common.StatusSucceeded:  0,
+		common.StatusFailed:     0,
+		common.StatusCanceled:   0,
+		common.StatusTimedOut:   0,
+	}
+	total := 0
+
+	for rows.Next() {
+		var st int
+		if err := rows.Scan(&st); err != nil {
+			return common.StatusSummary{}, err
+		}
+		counts[common.Status(st)]++
+		total++
 	}
 
-	return common.Status(status), nil
+	// apply deterministic rules
+	var overall common.Status
+	switch {
+	case counts[common.StatusSucceeded] == total:
+		overall = common.StatusSucceeded
+	case counts[common.StatusFailed] == total:
+		overall = common.StatusFailed
+	case counts[common.StatusCanceled] == total:
+		overall = common.StatusCanceled
+	case counts[common.StatusTimedOut] == total:
+		overall = common.StatusFailed
+	case counts[common.StatusInProgress] > 0:
+		overall = common.StatusPending
+	case counts[common.StatusPending] > 0 && counts[common.StatusInProgress] == 0:
+		overall = common.StatusPending
+	case counts[common.StatusPending] == 0 && counts[common.StatusInProgress] == 0:
+		overall = common.StatusSucceeded // covers mixed complete
+	default:
+		overall = common.StatusPending
+	}
+
+	return common.StatusSummary{Overall: overall, Counts: counts}, nil
+}
+
+func (s *PGState) GetStatus(js common.JobSpec) (common.Status, error) {
+	summary, err := s.GetSessionStatus(js.SessionID)
+	if err != nil {
+		return 0, err
+	}
+	return summary.Overall, nil
 }
 
 // GetRepoId returns a stable unique ID for a given (owner, repo).
