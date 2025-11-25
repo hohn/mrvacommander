@@ -3,6 +3,13 @@
     mc-db-refine-info) and push the databases it lists to the mrvacommander minio
     DB.
 """
+# /// script
+# dependencies = [
+#   "pandas",
+#   "numpy",
+#   "minio",
+# ]
+# ///
 import argparse
 import qldbtools.utils as utils
 import logging
