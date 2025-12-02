@@ -406,6 +406,12 @@ func (h *HepcStore) GetDatabase(location common.NameWithOwner) ([]byte, error) {
 
 	var resultURL string
 	for _, result := range cachedResults {
+		// TODO:  handle cid-containing names properly.
+		// The original info may just be owner=Serial-Studio repo=Serial-Studio; this is legacy behavior.
+		// After retrieval, the full CID-using name, e.g.
+		// 		http://hepc:8070/db/db-collection-host.tmp/Serial-Studio-Serial-Studio-ctsj-2b2721.zip
+		// will be used implicitly.
+		// The correct incoming repo name is Serial-Studio-ctsj-2b2721 -- it includes the CID
 		if result.Projname == key {
 			resultURL = result.ResultURL
 			break
