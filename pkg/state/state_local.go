@@ -103,6 +103,56 @@ func (s *LocalState) GetStatus(js common.JobSpec) (common.Status, error) {
 	return s.status[js], nil
 }
 
+func (s *LocalState) GetSessionStatus(sessionID int) (common.StatusSummary, error) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	counts := map[common.Status]int{
+		common.StatusPending:    0,
+		common.StatusInProgress: 0,
+		common.StatusSucceeded:  0,
+		common.StatusFailed:     0,
+		common.StatusCanceled:   0,
+		common.StatusTimedOut:   0,
+	}
+	total := 0
+
+	// Count statuses for all jobs in this session
+	for jobSpec, status := range s.status {
+		if jobSpec.SessionID == sessionID {
+			counts[status]++
+			total++
+		}
+	}
+
+	if total == 0 {
+		return common.StatusSummary{}, fmt.Errorf("no jobs found for session %d", sessionID)
+	}
+
+	// Apply deterministic rules (same as PGState)
+	var overall common.Status
+	switch {
+	case counts[common.StatusSucceeded] == total:
+		overall = common.StatusSucceeded
+	case counts[common.StatusFailed] == total:
+		overall = common.StatusFailed
+	case counts[common.StatusCanceled] == total:
+		overall = common.StatusCanceled
+	case counts[common.StatusTimedOut] == total:
+		overall = common.StatusFailed
+	case counts[common.StatusInProgress] > 0:
+		overall = common.StatusPending
+	case counts[common.StatusPending] > 0 && counts[common.StatusInProgress] == 0:
+		overall = common.StatusPending
+	case counts[common.StatusPending] == 0 && counts[common.StatusInProgress] == 0:
+		overall = common.StatusSucceeded // covers mixed complete
+	default:
+		overall = common.StatusPending
+	}
+
+	return common.StatusSummary{Overall: overall, Counts: counts}, nil
+}
+
 func (s *LocalState) SetStatus(js common.JobSpec, status common.Status) {
 	s.mutex.Lock()
 	s.status[js] = status

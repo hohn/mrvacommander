@@ -319,6 +319,13 @@ func (q *RabbitMQQueue) ConsumeResults(queueName string) {
 	sleepFor := 5    // polling interval
 
 	for {
+
+		if err := q.reconnectIfNeeded(); err != nil {
+			slog.Error("failed to reconnect", slog.Any("error", err))
+			time.Sleep(10 * time.Second)
+			continue
+		}
+
 		msg, ok, err := q.channel.Get(queueName, autoAck)
 		if err != nil {
 			slog.Error("poll error", slog.Any("err", err))

@@ -12,6 +12,7 @@ import (
 	"github.com/hohn/mrvacommander/pkg/artifactstore"
 	"github.com/hohn/mrvacommander/pkg/qldbstore"
 	"github.com/hohn/mrvacommander/pkg/queue"
+	"github.com/hohn/mrvacommander/pkg/state"
 	"github.com/minio/minio-go/v7"
 )
 
@@ -117,4 +118,9 @@ func InitHEPCDatabaseStore() (qldbstore.Store, error) {
 	store := qldbstore.NewHepcStore(endpoint)
 
 	return store, nil
+}
+
+func InitPGState() state.ServerState {
+	slog.Info("Initializing Postgres state")
+	return state.NewPGState()
 }

@@ -2,6 +2,8 @@ package state
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -55,12 +57,35 @@ func NewPGState() *PGState {
 	db := os.Getenv("POSTGRES_DB")
 
 	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", user, pass, host, port, db)
-	slog.Info("Assembled Postgres connection URL from POSTGRES_* variables", "url", dbURL)
+	redactedDbURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", user, "<redacted>", host, port, db)
+	slog.Info("Assembled Postgres connection URL from POSTGRES_* variables", "url", redactedDbURL)
 
 	config, err := pgxpool.ParseConfig(dbURL)
 	if err != nil {
 		slog.Error("Failed to parse connection URL", "url", dbURL, "error", err)
 		os.Exit(1)
+	}
+
+	// Configure custom CA certificate if specified
+	if caCertFile := os.Getenv("POSTGRES_CA_CERT_FILE"); caCertFile != "" {
+		slog.Info("Using custom CA certificate file", "file", caCertFile)
+
+		caCert, err := os.ReadFile(caCertFile)
+		if err != nil {
+			slog.Error("Failed to read CA certificate file", "file", caCertFile, "error", err)
+			os.Exit(1)
+		}
+
+		caCertPool := x509.NewCertPool()
+		if !caCertPool.AppendCertsFromPEM(caCert) {
+			slog.Error("Failed to parse CA certificate", "file", caCertFile)
+			os.Exit(1)
+		}
+
+		config.ConnConfig.TLSConfig = &tls.Config{
+			RootCAs:    caCertPool,
+			ServerName: host,
+		}
 	}
 
 	config.MaxConns = 10
@@ -273,6 +298,8 @@ func (s *PGState) SetStatus(js common.JobSpec, status common.Status) {
 		DO UPDATE SET status = EXCLUDED.status
 	`, js.SessionID, js.Owner, js.Repo, status)
 
+	slog.Debug("SetStatus:", "jobspec", js, "status", status)
+
 	if err != nil {
 		slog.Error("SetStatus failed", "job", js, "status", status, "error", err)
 		panic("SetStatus(): " + err.Error())
@@ -336,11 +363,19 @@ func (s *PGState) GetSessionStatus(sessionID int) (common.StatusSummary, error) 
 }
 
 func (s *PGState) GetStatus(js common.JobSpec) (common.Status, error) {
-	summary, err := s.GetSessionStatus(js.SessionID)
+	ctx := context.Background()
+
+	var status int
+	err := s.pool.QueryRow(ctx, `
+		SELECT status
+		FROM job_status
+		WHERE session_id = $1 AND owner = $2 AND repo = $3
+	`, js.SessionID, js.Owner, js.Repo).Scan(&status)
 	if err != nil {
 		return 0, err
 	}
-	return summary.Overall, nil
+
+	return common.Status(status), nil
 }
 
 // GetRepoId returns a stable unique ID for a given (owner, repo).

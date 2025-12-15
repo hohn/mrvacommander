@@ -231,9 +231,9 @@ func (c *CommanderSingle) submitStatusResponse(w http.ResponseWriter, js common.
 		)
 	}
 
-	jobStatus, err := c.v.State.GetStatus(js)
+	sessionSummary, err := c.v.State.GetSessionStatus(js.SessionID)
 	if err != nil {
-		slog.Error("Error getting job status", "error", err.Error())
+		slog.Error("Error getting session status", "error", err.Error())
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
@@ -247,7 +247,7 @@ func (c *CommanderSingle) submitStatusResponse(w http.ResponseWriter, js common.
 		CreatedAt:            ji.CreatedAt,
 		UpdatedAt:            ji.UpdatedAt,
 		ActionsWorkflowRunID: -1, // FIXME
-		Status:               jobStatus.ToExternalString(),
+		Status:               sessionSummary.Overall.ToExternalString(),
 		ScannedRepositories:  scannedRepos,
 		SkippedRepositories:  ji.SkippedRepositories,
 	}

@@ -13,6 +13,7 @@ import (
 	"github.com/hohn/mrvacommander/pkg/common"
 	"github.com/hohn/mrvacommander/pkg/qldbstore"
 	"github.com/hohn/mrvacommander/pkg/queue"
+	"github.com/hohn/mrvacommander/pkg/state"
 	"github.com/hohn/mrvacommander/utils"
 
 	"github.com/google/uuid"
@@ -55,6 +56,7 @@ func StartAndMonitorWorkers(ctx context.Context,
 	artifacts artifactstore.Store,
 	databases qldbstore.Store,
 	queue queue.Queue,
+	serverState state.ServerState,
 	desiredWorkerCount int,
 	wg *sync.WaitGroup) {
 
@@ -73,7 +75,7 @@ func StartAndMonitorWorkers(ctx context.Context,
 		stopChan := make(chan struct{})
 		stopChans[i] = stopChan
 		wg.Add(1)
-		go RunWorker(ctx, artifacts, databases, queue, stopChan, wg)
+		go RunWorker(ctx, artifacts, databases, queue, serverState, stopChan, wg)
 	}
 
 	// Wait for context cancellation
@@ -177,6 +179,7 @@ func RunWorker(ctx context.Context,
 	artifacts artifactstore.Store,
 	databases qldbstore.Store,
 	queue queue.Queue,
+	serverState state.ServerState,
 	stopChan chan struct{},
 	wg *sync.WaitGroup) {
 	const (
@@ -201,6 +204,8 @@ func RunWorker(ctx context.Context,
 					return
 				}
 				slog.Info("Running analysis job", slog.Any("job", job))
+				// Set status to InProgress when starting the job
+				serverState.SetStatus(job.Spec, common.StatusInProgress)
 				result, err := RunAnalysisJob(job, artifacts, databases)
 				if err != nil {
 					slog.Error("Failed to run analysis job", slog.Any("error", err))

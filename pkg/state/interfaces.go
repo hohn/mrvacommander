@@ -36,6 +36,9 @@ type ServerState interface {
 	// GetStatus retrieves the status of a job for the specified session ID and repository.
 	GetStatus(js common.JobSpec) (common.Status, error)
 
+	// GetSessionStatus retrieves the aggregated status summary for all jobs in a session.
+	GetSessionStatus(sessionID int) (common.StatusSummary, error)
+
 	// SetStatus stores the status of a job for the specified session ID and repository.
 	SetStatus(js common.JobSpec, status common.Status)
 
