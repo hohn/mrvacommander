@@ -52,6 +52,12 @@ func setupEndpoints(c CommanderAPI) {
 	// Root handler
 	r.HandleFunc("/", c.RootHandler)
 
+	// Health check endpoint for Kubernetes-style probes
+	r.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+	})
+
 	// Endpoints for submitting new analyses
 	r.HandleFunc("/repos/{owner}/{repo}/code-scanning/codeql/variant-analyses", c.MRVARequest)
 	r.HandleFunc("/repositories/{controller_repo_id}/code-scanning/codeql/variant-analyses", c.MRVARequestID)

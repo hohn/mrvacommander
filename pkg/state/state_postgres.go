@@ -106,6 +106,22 @@ func NewPGState() *PGState {
 func SetupSchemas(pool *pgxpool.Pool) {
 	ctx := context.Background()
 
+	conn, err := pool.Acquire(ctx)
+	if err != nil {
+		slog.Error("Failed to acquire DB connection", "error", err)
+		os.Exit(1)
+	}
+	defer conn.Release()
+
+	// Acquire global schema lock (blocks)
+	slog.Info("Waiting for schema lock")
+	_, err = conn.Exec(ctx, `SELECT pg_advisory_lock($1);`, int64(0x3160fd6122a5607d))
+	if err != nil {
+		slog.Error("Failed to acquire schema lock", "error", err)
+		os.Exit(1)
+	}
+	defer conn.Exec(ctx, `SELECT pg_advisory_unlock($1);`, int64(0x3160fd6122a5607d))
+
 	schemas := []struct {
 		name string
 		sql  string
@@ -119,13 +135,13 @@ func SetupSchemas(pool *pgxpool.Pool) {
 					repo        TEXT NOT NULL,
 					UNIQUE(owner, repo)
 				);
-			  `,
+			`,
 		},
 		{
 			name: "session_id_seq",
 			sql: `
-        		CREATE SEQUENCE IF NOT EXISTS session_id_seq;
-	        `,
+				CREATE SEQUENCE IF NOT EXISTS session_id_seq;
+			`,
 		},
 		{
 			name: "analyze_results",
@@ -178,9 +194,9 @@ func SetupSchemas(pool *pgxpool.Pool) {
 	}
 
 	for _, schema := range schemas {
-		_, err := pool.Exec(ctx, schema.sql)
+		_, err := conn.Exec(ctx, schema.sql)
 		if err != nil {
-			slog.Error("Failed to create table", "table", schema.name, "error", err)
+			slog.Error("Failed to create schema", "table", schema.name, "error", err)
 			os.Exit(1)
 		}
 		slog.Info("Schema initialized", "table", schema.name)
