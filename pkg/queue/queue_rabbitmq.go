@@ -92,6 +92,16 @@ func NewRabbitMQQueue(
 		return nil, fmt.Errorf("failed to set QoS: %w", err)
 	}
 
+	// Enable publisher confirms so that publishJob/publishResult
+	// confirmations actually arrive.  (reconnectIfNeeded already does
+	// this, but the initial connection skips that path.)
+	err = ch.Confirm(false)
+	if err != nil {
+		ch.Close()
+		conn.Close()
+		return nil, fmt.Errorf("failed to enable publisher confirms: %w", err)
+	}
+
 	result := RabbitMQQueue{
 		conn:       conn,
 		channel:    ch,
