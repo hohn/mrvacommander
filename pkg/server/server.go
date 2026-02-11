@@ -30,7 +30,7 @@ func (c *CommanderSingle) startAnalyses(
 
 	slog.Debug("Queueing analysis jobs", "count", len(analysisRepos))
 
-	for _, nwo := range analysisRepos {
+	for i, nwo := range analysisRepos {
 		jobSpec := common.JobSpec{
 			SessionID:     sessionId,
 			NameWithOwner: nwo,
@@ -40,10 +40,15 @@ func (c *CommanderSingle) startAnalyses(
 			QueryPackLocation: queryPackLocation,
 			QueryLanguage:     queryLanguage,
 		}
-		c.v.Queue.Jobs() <- info
+		slog.Debug("Sending job to queue", "jobNum", i+1, "total", len(analysisRepos), "repo", nwo)
+		c.v.Queue.Jobs() <- info // See func (q *RabbitMQQueue) PublishJobs
+		slog.Debug("Job sent to queue", "jobNum", i+1)
 		c.v.State.SetStatus(jobSpec, common.StatusPending)
 		c.v.State.AddJob(info)
 	}
+
+	slog.Debug("Finished queueing analysis jobs")
+
 }
 
 func setupEndpoints(c CommanderAPI) {
@@ -606,15 +611,16 @@ func (c *CommanderSingle) MRVARequestCommon(w http.ResponseWriter, r *http.Reque
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(submitResponseJson)
+	slog.Debug("Response sent for submitted analysis job", "id", sessionInfo.ID)
 }
 
 func (c *CommanderSingle) MRVARequestID(w http.ResponseWriter, r *http.Request) {
-	slog.Debug("MRVARequestID")
+	slog.Debug("MRVARequestID", "url", r.URL)
 	c.MRVARequestCommon(w, r)
 }
 
 func (c *CommanderSingle) MRVARequest(w http.ResponseWriter, r *http.Request) {
-	slog.Debug("MRVARequest")
+	slog.Debug("MRVARequest", "url", r.URL)
 	c.MRVARequestCommon(w, r)
 }
 

@@ -151,6 +151,14 @@ func (q *RabbitMQQueue) reconnectIfNeeded() error {
 		return fmt.Errorf("failed to open channel: %w", err)
 	}
 
+	// Enable publisher confirms on the channel once during setup
+	err = ch.Confirm(false)
+	if err != nil {
+		ch.Close()
+		conn.Close()
+		return fmt.Errorf("failed to enable publisher confirms: %w", err)
+	}
+
 	// Optional: redeclare queues here
 	// _, _ = ch.QueueDeclare(...)
 
@@ -224,93 +232,143 @@ func (q *RabbitMQQueue) ConsumeJobs(queueName string) {
 }
 
 func (q *RabbitMQQueue) PublishResults(queueName string) {
+	const pollInterval = 5 * time.Second
+
 	for result := range q.results {
-		q.publishResult(queueName, result)
+		for {
+			if err := q.reconnectIfNeeded(); err != nil {
+				slog.Error("failed to reconnect for publishing", slog.Any("error", err))
+				time.Sleep(10 * time.Second)
+				continue
+			}
+
+			if err := q.publishResult(queueName, result); err != nil {
+				slog.Error("failed to publish result, will retry", slog.Any("error", err))
+				q.invalidateConnection()
+				time.Sleep(pollInterval)
+				continue
+			}
+
+			// Successfully published, move to next result
+			break
+		}
 	}
 }
 
-func (q *RabbitMQQueue) publishResult(queueName string, result AnalyzeResult) {
+func (q *RabbitMQQueue) publishResult(queueName string, result AnalyzeResult) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
 	resultBytes, err := json.Marshal(result)
 	if err != nil {
-		slog.Error("failed to marshal result", slog.Any("error", err))
-		return
+		slog.Error("publishResult: failed to marshal result", slog.Any("error", err))
+		return fmt.Errorf("failed to marshal result: %w", err)
 	}
 
-	// Enable publisher confirms on the channel
-	err = q.channel.Confirm(false)
-	if err != nil {
-		slog.Error("Failed to enable publisher confirms", slog.Any("error", err))
+	// Check channel validity with mutex protection
+	q.mu.Lock()
+	ch := q.channel
+	if ch == nil {
+		q.mu.Unlock()
+		slog.Error("publishResult: channel is nil")
+		return fmt.Errorf("channel is nil")
 	}
+	q.mu.Unlock()
 
-	// Set up a confirmation channel.  This uses a large capacity to avoid blocking.
+	// Set up a confirmation channel. This uses a large capacity to avoid blocking.
 	confirmChannelSize := 99999
-	confirmations := q.channel.NotifyPublish(make(chan amqp.Confirmation, confirmChannelSize))
+	confirmations := ch.NotifyPublish(make(chan amqp.Confirmation, confirmChannelSize))
 
 	// Publish the message
 	slog.Debug("Publishing result", slog.String("result", string(resultBytes)))
-	err = q.channel.PublishWithContext(ctx, "", queueName, false, false,
+	err = ch.PublishWithContext(ctx, "", queueName, false, false,
 		amqp.Publishing{
 			ContentType: "application/json",
 			Body:        resultBytes,
 		})
 	if err != nil {
 		slog.Error("failed to publish result", slog.Any("error", err))
+		return fmt.Errorf("failed to publish result: %w", err)
 	}
 
 	// Wait for the confirmation
 	confirm := <-confirmations
 	if !confirm.Ack {
 		slog.Error("Publish result message confirmation failed")
+		return fmt.Errorf("publish result message confirmation failed")
 	}
 
+	return nil
 }
 
-func (q *RabbitMQQueue) publishJob(queueName string, job AnalyzeJob) {
+func (q *RabbitMQQueue) publishJob(queueName string, job AnalyzeJob) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
 	jobBytes, err := json.Marshal(job)
 	if err != nil {
 		slog.Error("failed to marshal job", slog.Any("error", err))
-		return
+		return fmt.Errorf("failed to marshal job: %w", err)
 	}
 
-	// Enable publisher confirms on the channel
-	err = q.channel.Confirm(false)
-	if err != nil {
-		slog.Error("Failed to enable publisher confirms", slog.Any("error", err))
+	// Check channel validity with mutex protection
+	q.mu.Lock()
+	ch := q.channel
+	if ch == nil {
+		q.mu.Unlock()
+		slog.Error("publishJob: channel is nil")
+		return fmt.Errorf("channel is nil")
 	}
+	q.mu.Unlock()
 
-	// Set up a confirmation channel.  This uses a large capacity to avoid
+	// Set up a confirmation channel. This uses a large capacity to avoid
 	// blocking server requests.
 	confirmChannelSize := 99999
-	confirmations := q.channel.NotifyPublish(make(chan amqp.Confirmation, confirmChannelSize))
+	confirmations := ch.NotifyPublish(make(chan amqp.Confirmation, confirmChannelSize))
 
 	// Publish the job
 	slog.Debug("Publishing job", slog.String("job", string(jobBytes)))
-	err = q.channel.PublishWithContext(ctx, "", queueName, false, false,
+	err = ch.PublishWithContext(ctx, "", queueName, false, false,
 		amqp.Publishing{
 			ContentType: "application/json",
 			Body:        jobBytes,
 		})
 	if err != nil {
 		slog.Error("failed to publish job", slog.Any("error", err))
+		return fmt.Errorf("failed to publish job: %w", err)
 	}
 
 	// Wait for the confirmation
 	confirm := <-confirmations
 	if !confirm.Ack {
-		slog.Error("Publish result message confirmation failed")
+		slog.Error("Publish job message confirmation failed")
+		return fmt.Errorf("publish job message confirmation failed")
 	}
 
+	return nil
 }
 
 func (q *RabbitMQQueue) PublishJobs(queueName string) {
+	const pollInterval = 5 * time.Second
+
 	for job := range q.jobs {
-		q.publishJob(queueName, job)
+		for {
+			if err := q.reconnectIfNeeded(); err != nil {
+				slog.Error("failed to reconnect for publishing", slog.Any("error", err))
+				time.Sleep(10 * time.Second)
+				continue
+			}
+
+			if err := q.publishJob(queueName, job); err != nil {
+				slog.Error("failed to publish job, will retry", slog.Any("error", err))
+				q.invalidateConnection()
+				time.Sleep(pollInterval)
+				continue
+			}
+
+			// Successfully published, move to next job
+			break
+		}
 	}
 }
 

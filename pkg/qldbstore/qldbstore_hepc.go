@@ -276,6 +276,8 @@ func (h *HepcStore) FindAvailableDBs(analysisReposRequested []common.NameWithOwn
 	       (notFoundRepos, foundRepos)
 	*/
 
+	slog.Debug("FindAvailableDBs/start", "requested", analysisReposRequested[0:3],
+		"totalRequested", len(analysisReposRequested))
 	// Check cache
 	h.cacheMutex.Lock()
 	if time.Since(h.cacheLastUpdated) > h.cacheDuration {
